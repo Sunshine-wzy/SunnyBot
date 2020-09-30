@@ -6,8 +6,8 @@ plugins {
     id("net.mamoe.mirai-console") version "1.0-RC-dev-28"
 }
 
-group = "org.example"
-version = "0.1.0"
+group = "io.github.sunshinewzy"
+version = "1.0.0"
 
 repositories {
     mavenLocal()
