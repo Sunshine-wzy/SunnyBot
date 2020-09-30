@@ -1,9 +1,10 @@
-package org.example.mirai.plugin
+package io.github.sunshinewzy.sunnybot
 
 import net.mamoe.mirai.console.plugin.jvm.JvmPluginDescription
 import net.mamoe.mirai.console.plugin.jvm.KotlinPlugin
 import net.mamoe.mirai.utils.info
-import org.example.mirai.plugin.io.github.sunshinewzy.sunnybot.sunnyInit
+
+const val NAMESPACE = "Sunny"
 
 object PluginMain : KotlinPlugin(
     JvmPluginDescription(
@@ -15,5 +16,9 @@ object PluginMain : KotlinPlugin(
         logger.info { "Hello Sunny!" }
         
         sunnyInit()
+    }
+
+    override fun onDisable() {
+        
     }
 }
