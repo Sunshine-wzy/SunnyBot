@@ -1,7 +1,6 @@
-package org.example.mirai.plugin
+package io.github.sunshinewzy.test
 
 import io.github.sunshinewzy.sunnybot.PluginMain
-import net.mamoe.mirai.alsoLogin
 import net.mamoe.mirai.console.MiraiConsole
 import net.mamoe.mirai.console.plugin.PluginManager.INSTANCE.enable
 import net.mamoe.mirai.console.plugin.PluginManager.INSTANCE.load
@@ -13,9 +12,9 @@ suspend fun main() {
     PluginMain.load()
     PluginMain.enable()
 
-    val bot = MiraiConsole.addBot(123456, "") {
-        fileBasedDeviceInfo()
-    }.alsoLogin()
+//    val bot = MiraiConsole.addBot(123456L, "password") {
+//        fileBasedDeviceInfo()
+//    }.alsoLogin()
 
     MiraiConsole.job.join()
 }
