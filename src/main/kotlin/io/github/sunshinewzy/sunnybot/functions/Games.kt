@@ -1,14 +1,18 @@
 package io.github.sunshinewzy.sunnybot.functions
 
-import io.github.sunshinewzy.sunnybot.groups.SGroup
-import io.github.sunshinewzy.sunnybot.groups.groups
 import io.github.sunshinewzy.sunnybot.miraiBot
+import io.github.sunshinewzy.sunnybot.objects.SGroup
+import io.github.sunshinewzy.sunnybot.objects.SPlayerData
+import io.github.sunshinewzy.sunnybot.objects.groups
+import io.github.sunshinewzy.sunnybot.objects.regPlayer
 import net.mamoe.mirai.contact.Group
 import net.mamoe.mirai.contact.Member
 import net.mamoe.mirai.event.subscribeMessages
 import net.mamoe.mirai.message.data.PlainText
 import java.util.*
 import java.util.stream.Collectors
+
+// region Hour24 - 24点
 
 private val hour24characters = listOf(
     '+', '-', '*', '/', '(', ')'
@@ -18,14 +22,18 @@ fun hour24() {
 
     miraiBot?.subscribeMessages {
 
-        (contains("sunshine") or contains("阳光") or startsWith("#")) hour@{
+        (contains("sunny") or contains("阳光") or startsWith("#")) hour@{
             if (sender !is Member)
                 return@hour
             val member = sender as Member
             val group = member.group
             val id = group.id
-            val sGroup = groups[id] ?: return@hour
+            if(!groups.containsKey(id))
+                groups[id] = SGroup(group)
+            val sGroup = groups[id]!!
             var msg = this.message[PlainText.Key]?.contentToString()
+            
+            regPlayer(member)
 
             if (msg != null) {
                 if (msg.startsWith("#")) msg = msg.substring(1)
@@ -65,13 +73,13 @@ fun hour24() {
 
                             //操作数入栈
                             var x = 0
-                            while (msg[i] in '0'..'9') x =
-                                x * 10 + msg[i++].toInt() - '0'.toInt()
+                            while (msg[i] in '0'..'9')
+                                x = x * 10 + (msg[i++].toInt() - '0'.toInt())
                             if (!isHour24(x, sGroup)) {
                                 //表达式合法性二次检查
                                 reply(
                                     "输入的文本错误 只能含有符号+ - * / ( )以及数字" +
-                                            sGroup.hour24[1] + " " + sGroup.hour24[2] + " " + sGroup.hour24[3] + " " + sGroup.hour24[4]
+                                            sGroup.hour24[1] + "  " + sGroup.hour24[2] + "  " + sGroup.hour24[3] + "  " + sGroup.hour24[4]
                                 )
                                 return@hour
                             }
@@ -116,13 +124,20 @@ fun hour24() {
                         }
                         reply(senderName + "的表达式计算结果为: " + number[0])
                         if (number[0] == 24) {
-                            reply("恭喜玩家 $senderName 获得胜利！")
+                            val rewardSTD = Random().nextInt(5) + 6
+                            SPlayerData.sPlayerMap[member.id]!!.std += rewardSTD
+                            reply("恭喜玩家 $senderName 获得胜利！\n"
+                                + "获得奖励: $rewardSTD STD")
                             sGroup.runningState = ""
                         } else {
                             reply("$senderName 答案错误")
                         }
                     }
+                    
+                    
                     else -> {
+                        if (msg.contains("24点"))
+                            startHour24(group)
                     }
                 }
 
@@ -156,13 +171,14 @@ suspend fun startHour24(group: Group) {
     }
 
     group.sendMessage(
-        "-----=====24点-游戏开始=====-----\n"
+        "=====24点-游戏开始=====\n"
                 + "输入\"再来亿把\"以重新开始\n"
                 + "输入\"老子不会\"以结束游戏\n"
                 + "请用下面给出的4个数通过+ - * /四种运算\n"
                 + "以及()求出24即为胜利\n"
                 + "输入#后接你的答案\n\n"
-                + sGroup.hour24[1] + "\t" + sGroup.hour24[2] + "\t" + sGroup.hour24[3] + "\t" + sGroup.hour24[4]
+                + sGroup.hour24[1] + "  " + sGroup.hour24[2] + "  " + sGroup.hour24[3] + "  " + sGroup.hour24[4]
+                + "\n==============="
     )
 }
 
@@ -201,3 +217,5 @@ private fun popHour24(number: Stack<Int>, operator: Stack<Char>): Boolean {
     }
     return true
 }
+
+// endregion
