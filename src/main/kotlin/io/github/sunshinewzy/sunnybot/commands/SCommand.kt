@@ -7,9 +7,17 @@ import net.mamoe.mirai.console.command.SimpleCommand
 
 suspend fun SimpleCommand.reg(permittee: String) {
     register()
-    ConsoleCommandSender.executeCommand("/permission permit $permittee ${this.permission.id}")
+    setPermit(permission.id.toString(), permittee)
 }
 
 suspend fun SimpleCommand.reg() {
     reg("m*")
+}
+
+suspend fun setPermit(permissionId: String, permittee: String) {
+    ConsoleCommandSender.executeCommand("/permission permit $permittee $permissionId")
+}
+
+suspend fun setPermit(permissionId: String) {
+    setPermit(permissionId, "m*")
 }

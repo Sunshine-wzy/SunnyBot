@@ -1,6 +1,7 @@
 package io.github.sunshinewzy.sunnybot
 
 import io.github.sunshinewzy.sunnybot.commands.regSSimpleCommands
+import io.github.sunshinewzy.sunnybot.commands.setPermit
 import io.github.sunshinewzy.sunnybot.functions.AntiRecall
 import io.github.sunshinewzy.sunnybot.functions.hour24
 import io.github.sunshinewzy.sunnybot.functions.startHour24
@@ -16,11 +17,15 @@ val miraiScope = CoroutineScope(SupervisorJob())
 var antiRecall: AntiRecall? = null
 
 suspend fun sunnyInit() {
-    regCmd()
+    //全局消息监听
+    regMsg()
+    //注册简单指令
     regSSimpleCommands()
+    //设置权限
+    setPermissions()
 }
 
-private fun regCmd() {
+private fun regMsg() {
     miraiBot?.subscribeMessages {
         (contains("老子不会")) end@{
             val id = getGroupID(sender)
@@ -54,6 +59,9 @@ private fun regCmd() {
     hour24()
 }
 
+suspend fun setPermissions() {
+    setPermit("console:command.help", "u*")
+}
 
 fun getGroup(sender: User): Group? {
     if (sender is Member)

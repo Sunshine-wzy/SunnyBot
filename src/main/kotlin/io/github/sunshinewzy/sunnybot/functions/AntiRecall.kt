@@ -138,12 +138,12 @@ class AntiRecall {
     /**
      * 检查当前群是否打开防撤回开关
      */
-    private fun checkAntiRecallStatus(groupID: Long) : Boolean{
+    fun checkAntiRecallStatus(groupID: Long) : Boolean{
         return if (openMap.containsKey(groupID)) {
             openMap[groupID]!!
         } else {
-            openMap[groupID] = true
-            true
+            openMap[groupID] = false
+            false
         }
     }
 

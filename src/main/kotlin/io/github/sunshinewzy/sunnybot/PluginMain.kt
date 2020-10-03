@@ -16,7 +16,7 @@ var miraiBot: Bot? = null
 object PluginMain : KotlinPlugin(
     JvmPluginDescription(
         id = "io.github.sunshinewzy.sunnybot",
-        version = "1.0.0"
+        version = "1.0.1"
     )
 ) {
     override fun PluginComponentStorage.onLoad() {

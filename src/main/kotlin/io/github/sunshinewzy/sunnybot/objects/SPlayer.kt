@@ -4,7 +4,7 @@ import io.github.sunshinewzy.sunnybot.objects.SPlayerData.sPlayerMap
 import kotlinx.serialization.Serializable
 import net.mamoe.mirai.console.data.AutoSavePluginData
 import net.mamoe.mirai.console.data.value
-import net.mamoe.mirai.contact.Member
+import net.mamoe.mirai.contact.User
 
 /**
  * @param id Íæ¼ÒQQºÅ
@@ -20,8 +20,8 @@ object SPlayerData: AutoSavePluginData("SPlayerData") {
 }
 
 
-fun regPlayer(member: Member) {
-    val id = member.id
+fun regPlayer(player: User) {
+    val id = player.id
     
     if(!sPlayerMap.containsKey(id)){
         sPlayerMap[id] = SPlayer(id, 0)

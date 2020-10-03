@@ -1,3 +1,5 @@
+import org.gradle.kotlin.dsl.support.compileKotlinScriptModuleTo
+
 plugins {
     val kotlinVersion = "1.4.10"
     kotlin("jvm") version kotlinVersion
@@ -6,8 +8,12 @@ plugins {
     id("net.mamoe.mirai-console") version "1.0-RC-dev-28"
 }
 
+dependencies {
+    compileOnly("com.google.code.gson:gson:2.4")
+}
+
 group = "io.github.sunshinewzy"
-version = "1.0.0"
+version = "1.0.1"
 
 repositories {
     mavenLocal()
