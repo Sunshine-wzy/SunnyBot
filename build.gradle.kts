@@ -9,7 +9,7 @@ plugins {
 }
 
 dependencies {
-    compileOnly("com.google.code.gson:gson:2.4")
+    implementation("com.google.code.gson:gson:2.8.2")
 }
 
 group = "io.github.sunshinewzy"

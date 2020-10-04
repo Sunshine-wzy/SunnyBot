@@ -2,8 +2,8 @@ package io.github.sunshinewzy.sunnybot.functions
 
 import io.github.sunshinewzy.sunnybot.miraiBot
 import io.github.sunshinewzy.sunnybot.objects.SGroup
+import io.github.sunshinewzy.sunnybot.objects.SGroupData.sGroupMap
 import io.github.sunshinewzy.sunnybot.objects.SPlayerData
-import io.github.sunshinewzy.sunnybot.objects.groups
 import io.github.sunshinewzy.sunnybot.objects.regPlayer
 import net.mamoe.mirai.contact.Group
 import net.mamoe.mirai.contact.Member
@@ -28,9 +28,9 @@ fun hour24() {
             val member = sender as Member
             val group = member.group
             val id = group.id
-            if(!groups.containsKey(id))
-                groups[id] = SGroup(group)
-            val sGroup = groups[id]!!
+            if(!sGroupMap.containsKey(id))
+                sGroupMap[id] = SGroup(id)
+            val sGroup = sGroupMap[id]!!
             var msg = this.message[PlainText.Key]?.contentToString()
             
             regPlayer(member)
@@ -152,9 +152,9 @@ fun hour24() {
 suspend fun startHour24(group: Group) {
     val id = group.id
 
-    if (!groups.containsKey(id))
-        groups[id] = SGroup(group)
-    val sGroup = groups[id] ?: return
+    if (!sGroupMap.containsKey(id))
+        sGroupMap[id] = SGroup(id)
+    val sGroup = sGroupMap[id] ?: return
 
     sGroup.runningState = "24µã"
     for (i in 0..4) {

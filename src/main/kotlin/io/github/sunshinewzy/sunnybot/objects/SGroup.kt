@@ -1,13 +1,20 @@
 package io.github.sunshinewzy.sunnybot.objects
 
-import net.mamoe.mirai.contact.Group
+import io.github.sunshinewzy.sunnybot.commands.SCServerInfo
+import kotlinx.serialization.Serializable
+import net.mamoe.mirai.console.data.AutoSavePluginData
+import net.mamoe.mirai.console.data.value
 
-val groups = HashMap<Long, SGroup>()
+//val sGroupData = HashMap<Long, SGroup>()
 
-class SGroup(private val group: Group) {
-    private val id: Long = group.id
-
+@Serializable
+class SGroup(private val groupID: Long) {
     var runningState = ""
     var hour24 = IntArray(5) { -1 }
+    var serverIp: String = SCServerInfo.happylandIp
 
+}
+
+object SGroupData: AutoSavePluginData("SGroupData") {
+    var sGroupMap: MutableMap<Long, SGroup> by value(mutableMapOf())
 }

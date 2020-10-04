@@ -1,5 +1,7 @@
 package io.github.sunshinewzy.sunnybot.objects
 
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import java.io.BufferedReader
 import java.io.InputStream
 import java.io.InputStreamReader
@@ -14,7 +16,7 @@ import java.net.URLEncoder
  */
 
 class SRequest(private val url: String) {
-    fun result(serverAddr: String, showFavicon: Int): String {
+    fun result(serverAddr: String, showFavicon: Int): RosellemcServerInfo {
         //params用于存储要请求的参数
         val params = java.util.HashMap<String, Any>()
         params["server_addr"] = serverAddr
@@ -22,9 +24,8 @@ class SRequest(private val url: String) {
         //调用httpRequest方法，这个方法主要用于请求地址，并加上请求参数
         val strRequest = httpRequest(params)
         //处理返回的JSON数据并返回
-//        Gson().fromJson<>(strRequest, )
-        
-        return strRequest
+//        val resultType = object : TypeToken<RosellemcServerInfo>() {}.type
+        return Gson().fromJson(strRequest, RosellemcServerInfo::class.java)
     }
     
     private fun httpRequest(params: Map<String, Any>): String {

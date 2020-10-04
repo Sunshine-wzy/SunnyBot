@@ -3,6 +3,7 @@ package io.github.sunshinewzy.sunnybot
 import io.github.sunshinewzy.sunnybot.functions.AntiRecall
 import io.github.sunshinewzy.sunnybot.listeners.listenBot
 import io.github.sunshinewzy.sunnybot.listeners.listenMessage
+import io.github.sunshinewzy.sunnybot.objects.SGroupData
 import io.github.sunshinewzy.sunnybot.objects.SPlayerData
 import net.mamoe.mirai.Bot
 import net.mamoe.mirai.console.extension.PluginComponentStorage
@@ -42,5 +43,6 @@ object PluginMain : KotlinPlugin(
     
     private fun reloadData() {
         SPlayerData.reload()
+        SGroupData.reload()
     }
 }

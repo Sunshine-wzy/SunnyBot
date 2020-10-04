@@ -11,9 +11,7 @@ import net.mamoe.mirai.contact.User
  * @param std Sunshine Technology Dollar
  */
 @Serializable
-class SPlayer(private val id: Long, var std: Long = 0) {
-    
-}
+data class SPlayer(private val id: Long, var std: Long = 0)
 
 object SPlayerData: AutoSavePluginData("SPlayerData") {
     var sPlayerMap: MutableMap<Long, SPlayer> by value(mutableMapOf())
