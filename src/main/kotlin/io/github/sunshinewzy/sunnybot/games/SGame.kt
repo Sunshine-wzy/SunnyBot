@@ -1,15 +1,9 @@
 package io.github.sunshinewzy.sunnybot.games
 
-import io.github.sunshinewzy.sunnybot.objects.SGroup
-import net.mamoe.mirai.contact.Group
-import net.mamoe.mirai.contact.Member
+import io.github.sunshinewzy.sunnybot.events.game.SGameEvent
 
-interface SGame {
-    suspend fun run(
-        member: Member,
-        group: Group,
-        groupId: Long,
-        sGroup: SGroup,
-        msg: String
-    )
+abstract class SGame<T: SGameEvent>(val name: String) {
+    abstract suspend fun runGame(event: T)
+    
+    abstract suspend fun startGame(event: T)
 }

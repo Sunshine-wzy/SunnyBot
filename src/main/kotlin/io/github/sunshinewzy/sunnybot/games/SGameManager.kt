@@ -1,8 +1,7 @@
 package io.github.sunshinewzy.sunnybot.games
 
-import io.github.sunshinewzy.sunnybot.objects.SGroup
-import io.github.sunshinewzy.sunnybot.objects.SGroupData
-import io.github.sunshinewzy.sunnybot.objects.regPlayer
+import io.github.sunshinewzy.sunnybot.events.game.SGroupGameEvent
+import io.github.sunshinewzy.sunnybot.objects.*
 import io.github.sunshinewzy.sunnybot.sunnyScope
 import kotlinx.coroutines.launch
 import net.mamoe.mirai.Bot
@@ -12,7 +11,7 @@ import net.mamoe.mirai.event.subscribeMessages
 import net.mamoe.mirai.message.data.PlainText
 
 object SGameManager {
-    private val sGameHandlers = ArrayList<SGame>()
+    val sGroupGameHandlers = ArrayList<SGroupGame>()
     
     
     fun gameInit(bot: Bot) {
@@ -28,21 +27,26 @@ object SGameManager {
                 if(!SGroupData.sGroupMap.containsKey(groupId))
                     SGroupData.sGroupMap[groupId] = SGroup(groupId)
                 val sGroup = SGroupData.sGroupMap[groupId]!!
+                if(!sDataGroup.containsKey(groupId))
+                    sDataGroup[groupId] = SDataGroup()
+                val sDataGroup = sDataGroup[groupId]!!
                 val msg = message[PlainText.Key]?.contentToString() ?: return@game
                 
                 regPlayer(member)
-                callGame(member, group, groupId, sGroup, msg)
+                callGame(member, group, groupId, sGroup, sDataGroup, msg)
             }
+            
+            
         }
     }
     
     private fun regGame() {
-        registerGame(SGHour24)
-        registerGame(SGTicTacToe)
+        registerGroupGame(SGHour24)
+        registerGroupGame(SGTicTacToe)
     }
     
-    fun registerGame(sGame: SGame) {
-        sGameHandlers.add(sGame)
+    fun registerGroupGame(sGroupGame: SGroupGame) {
+        sGroupGameHandlers.add(sGroupGame)
     }
     
     private fun callGame(
@@ -50,11 +54,21 @@ object SGameManager {
         group: Group,
         groupId: Long,
         sGroup: SGroup,
+        sDataGroup: SDataGroup,
         msg: String
     ) {
+        val sGroupGameEvent = SGroupGameEvent(member, group, groupId, sGroup, sDataGroup, msg)
+        val state = sGroup.runningState
+        
         sunnyScope.launch {
-            sGameHandlers.forEach {
-                it.run(member, group, groupId, sGroup, msg)
+            sGroupGameHandlers.forEach {
+                if((state == "" || state.contains(it.name)) && msg.contains(it.name)){
+                    it.startGame(sGroupGameEvent)
+                    return@forEach
+                }
+                
+                if(state == it.name)
+                   it.runGame(sGroupGameEvent)
             }
         }
     }

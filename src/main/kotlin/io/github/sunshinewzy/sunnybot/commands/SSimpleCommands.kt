@@ -37,12 +37,17 @@ object SCMenu: SimpleCommand(
 ) {
     @Handler
     suspend fun CommandSender.handle() {
-        sendMessage("\t『 SunnyBot 』\n" +
-            "===============\n" +
-            "◆ 24点" +
-            "\n\n===============\n" +
-            "请输入  #功能名称  以开始\n" +
-            "[例] #24点")
+        sendMessage("""
+            『 SunnyBot 』
+            ===============
+            ◆ 24点
+            ◆ 井字棋
+
+            ===============
+            请输入  #功能名称  以开始
+            [例] #24点
+        """.trimIndent()
+        )
     }
 }
 

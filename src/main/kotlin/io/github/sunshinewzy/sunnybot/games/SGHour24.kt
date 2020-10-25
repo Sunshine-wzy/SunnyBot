@@ -1,149 +1,136 @@
 package io.github.sunshinewzy.sunnybot.games
 
+import io.github.sunshinewzy.sunnybot.events.game.SGroupGameEvent
 import io.github.sunshinewzy.sunnybot.objects.SGroup
 import io.github.sunshinewzy.sunnybot.objects.SGroupData
 import io.github.sunshinewzy.sunnybot.objects.SPlayerData
-import net.mamoe.mirai.contact.Group
-import net.mamoe.mirai.contact.Member
 import java.util.*
 import java.util.stream.Collectors
 
 /**
  * 24点
  */
-object SGHour24: SGame {
+object SGHour24 : SGroupGame("24点") {
     private val hour24characters = listOf(
         '+', '-', '*', '/', '(', ')'
     )
 
-    override suspend fun run(
-        member: Member,
-        group: Group,
-        groupId: Long,
-        sGroup: SGroup,
-        msg: String
-    ) {
-        var str = msg
-        
-        if (str.contains("24点")) {
-            startHour24(group)
-            return
-        }
-
-        if (str.startsWith("#")) str = str.substring(1)
+    override suspend fun runGame(event: SGroupGameEvent) {
+        var str = event.msg
+        if(str.startsWith("#")) str = str.substring(1)
         str = str.replace(" ", "")
 
-        if (sGroup.runningState == "24点") {
-            var tmp = 0
-            while(tmp < str.length) {
-                val ch = str[tmp]
-                if(!hour24characters.contains(ch) && ch !in '0'..'9') {
-                    group.sendMessage(
-                        "输入的文本错误 只能含有符号+ - * / ( )以及数字" +
-                            sGroup.hour24[1] + " " + sGroup.hour24[2] + " " + sGroup.hour24[3] + " " + sGroup.hour24[4]
-                    )
-                    return
-                }
-                tmp++
+        var tmp = 0
+        while(tmp < str.length) {
+            val ch = str[tmp]
+            if(!hour24characters.contains(ch) && ch !in '0'..'9') {
+                event.group.sendMessage(
+                    "输入的文本错误 只能含有符号+ - * / ( )以及数字" +
+                        event.sGroup.hour24[1] + " " + event.sGroup.hour24[2] + " " + event.sGroup.hour24[3] + " " + event.sGroup.hour24[4]
+                )
+                return
             }
-            str = "($str)"
+            tmp++
+        }
+        str = "($str)"
 
-            //栈算法
-            val number = Stack<Int>()
-            val operator = Stack<Char>()
-            var i = 0
-            var cnt = 0
-            while(i < str.length) {
-                //左括号处理
-                while(str[i] == '(') {
-                    operator.push(str[i])
-                    i++
-                }
+        //栈算法
+        val number = Stack<Int>()
+        val operator = Stack<Char>()
+        var i = 0
+        var cnt = 0
+        while(i < str.length) {
+            //左括号处理
+            while(str[i] == '(') {
+                operator.push(str[i])
+                i++
+            }
 
-                //操作数入栈
-                var x = 0
-                while(str[i] in '0'..'9')
-                    x = x * 10 + (str[i++].toInt() - '0'.toInt())
-                if(!isHour24(x, sGroup)) {
-                    //表达式合法性二次检查
-                    group.sendMessage(
-                        "输入的文本错误 只能含有符号+ - * / ( )以及数字" +
-                            sGroup.hour24[1] + "  " + sGroup.hour24[2] + "  " + sGroup.hour24[3] + "  " + sGroup.hour24[4]
+            //操作数入栈
+            var x = 0
+            while(str[i] in '0'..'9')
+                x = x * 10 + (str[i++].toInt() - '0'.toInt())
+            if(!isHour24(x, event.sGroup)) {
+                //表达式合法性二次检查
+                event.group.sendMessage(
+                    "输入的文本错误 只能含有符号+ - * / ( )以及数字" +
+                        event.sGroup.hour24[1] + "  " + event.sGroup.hour24[2] + "  " + event.sGroup.hour24[3] + "  " + event.sGroup.hour24[4]
+                )
+                return
+            }
+            if(number.contains(x)) {
+                event.group.sendMessage("请勿重复使用数字")
+                return
+            }
+            cnt++
+            number.push(x)
+            do {
+                //右括号处理
+                if(str[i] == ')') {
+                    while(operator.peek() != '(') popHour24(
+                        number,
+                        operator
                     )
-                    return
-                }
-                if(number.contains(x)) {
-                    group.sendMessage("请勿重复使用数字")
-                    return
-                }
-                cnt++
-                number.push(x)
-                do {
-                    //右括号处理
-                    if(str[i] == ')') {
-                        while(operator.peek() != '(') popHour24(
+                    operator.pop()
+                } else {
+                    //根据标志函数值作运算符入栈或出栈运算处理
+                    while(canHour24(
+                            str,
+                            i,
+                            operator
+                        )
+                    ) if(!popHour24(
                             number,
                             operator
                         )
-                        operator.pop()
-                    } else {
-                        //根据标志函数值作运算符入栈或出栈运算处理
-                        while(canHour24(
-                                str,
-                                i,
-                                operator
-                            )
-                        ) if(!popHour24(
-                                number,
-                                operator
-                            )
-                        ) {
-                            group.sendMessage("0不能作除数！请检查您的表达式是否正确")
-                            return
-                        }
-                        operator.push(str[i])
+                    ) {
+                        event.group.sendMessage("0不能作除数！请检查您的表达式是否正确")
+                        return
                     }
-                    i++
-                } while(i < str.length && str[i - 1] == ')')
-            }
-            if(cnt != 4) {
-                group.sendMessage("请将4个数全部用上 且每个数只能用一次")
-                return
-            }
-            group.sendMessage(member.nameCard + "的表达式计算结果为: " + number[0])
-            if(number[0] == 24) {
-                val rewardSTD = Random().nextInt(5) + 6
-                SPlayerData.sPlayerMap[member.id]!!.std += rewardSTD
-                group.sendMessage(
-                    "恭喜玩家 ${member.nameCard} 获得胜利！\n"
-                        + "获得奖励: $rewardSTD STD"
-                )
-                sGroup.runningState = ""
-            } else {
-                group.sendMessage("${member.nameCard} 答案错误")
-            }
-            
+                    operator.push(str[i])
+                }
+                i++
+            } while(i < str.length && str[i - 1] == ')')
+        }
+
+        if(cnt != 4) {
+            event.group.sendMessage("请将4个数全部用上 且每个数只能用一次")
+            return
+        }
+
+        event.group.sendMessage(event.member.nameCard + "的表达式计算结果为: " + number[0])
+        if(number[0] == 24) {
+            val rewardSTD = Random().nextInt(5) + 6
+            SPlayerData.sPlayerMap[event.member.id]!!.std += rewardSTD
+            event.group.sendMessage(
+                "恭喜玩家 ${event.member.nameCard} 获得胜利！\n"
+                    + "获得奖励: $rewardSTD STD"
+            )
+            event.sGroup.runningState = ""
+        } else {
+            event.group.sendMessage("${event.member.nameCard} 答案错误")
         }
     }
 
-    suspend fun startHour24(group: Group) {
+    override suspend fun startGame(event: SGroupGameEvent) {
+        val group = event.group
         val id = group.id
 
-        if (!SGroupData.sGroupMap.containsKey(id))
+        if(!SGroupData.sGroupMap.containsKey(id))
             SGroupData.sGroupMap[id] = SGroup(id)
         val sGroup = SGroupData.sGroupMap[id] ?: return
 
-        sGroup.runningState = "24点"
-        for (i in 0..4) {
+        sGroup.runningState = name
+        for(i in 0..4) {
             sGroup.hour24[i] = -1
         }
 
         val rand = Random()
-        for (i in 1..4) {
+        for(i in 1..4) {
             var temp: Int
             do {
                 temp = rand.nextInt(13) + 1
-            } while (isHour24(temp, sGroup))
+            } while(isHour24(temp, sGroup))
             sGroup.hour24[i] = temp
         }
 
@@ -175,7 +162,7 @@ object SGHour24: SGame {
         operator: Stack<Char>
     ): Boolean {
         val ch = s[i]
-        if ((ch == '+' || ch == '-') && operator.peek() != '(') return true
+        if((ch == '+' || ch == '-') && operator.peek() != '(') return true
         return (ch == '*' || ch == '/') && (operator.peek() == '*' || operator.peek() == '/')
     }
 
@@ -187,7 +174,7 @@ object SGHour24: SGame {
             '-' -> number[number.size - 1] = number.peek() - num
             '*' -> number[number.size - 1] = number.peek() * num
             '/' -> {
-                if (num == 0) return false
+                if(num == 0) return false
                 number[number.size - 1] = number.peek() / num
             }
         }

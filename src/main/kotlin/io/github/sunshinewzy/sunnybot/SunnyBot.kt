@@ -2,6 +2,7 @@ package io.github.sunshinewzy.sunnybot
 
 import io.github.sunshinewzy.sunnybot.commands.regSSimpleCommands
 import io.github.sunshinewzy.sunnybot.commands.setPermit
+import io.github.sunshinewzy.sunnybot.events.game.SGroupGameEvent
 import io.github.sunshinewzy.sunnybot.functions.AntiRecall
 import io.github.sunshinewzy.sunnybot.games.SGHour24
 import io.github.sunshinewzy.sunnybot.games.SGameManager
@@ -49,13 +50,20 @@ private fun regMsg() {
         }
 
         (contains("再来亿把")) startAgain@{
-            val group = getGroup(sender) ?: return@startAgain
+            if(sender !is Member)
+                return@startAgain
+            val member = sender as Member
+            val group = getGroup(member) ?: return@startAgain
+            val sGroupGameEvent = member.toSGroupGameEvent()
 
-            when (sGroupMap[getGroupID(sender)]?.runningState) {
-                "24点" -> SGHour24.startHour24(group)
-
-                else -> reply("当前没有游戏正在进行。")
+            val state = sGroupMap[getGroupID(sender)]?.runningState ?: return@startAgain
+            SGameManager.sGroupGameHandlers.forEach { 
+                if(state == it.name) {
+                    it.startGame(sGroupGameEvent)
+                    return@startAgain
+                }
             }
+            reply("当前没有游戏正在进行。")
         }
         
     }
