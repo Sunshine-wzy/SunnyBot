@@ -3,8 +3,8 @@ package io.github.sunshinewzy.sunnybot
 import io.github.sunshinewzy.sunnybot.commands.regSSimpleCommands
 import io.github.sunshinewzy.sunnybot.commands.setPermit
 import io.github.sunshinewzy.sunnybot.functions.AntiRecall
-import io.github.sunshinewzy.sunnybot.functions.hour24
-import io.github.sunshinewzy.sunnybot.functions.startHour24
+import io.github.sunshinewzy.sunnybot.games.SGHour24
+import io.github.sunshinewzy.sunnybot.games.SGameManager
 import io.github.sunshinewzy.sunnybot.objects.SGroupData.sGroupMap
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
@@ -13,16 +13,22 @@ import net.mamoe.mirai.contact.Member
 import net.mamoe.mirai.contact.User
 import net.mamoe.mirai.event.subscribeMessages
 
-val miraiScope = CoroutineScope(SupervisorJob())
+val sunnyScope = CoroutineScope(SupervisorJob())
 var antiRecall: AntiRecall? = null
+//超级管理员
+val sunnyAdmins = listOf("1123574549")
 
 suspend fun sunnyInit() {
     //全局消息监听
     regMsg()
     //注册简单指令
     regSSimpleCommands()
+    //设置超级管理员 (权限:"*:*")
+    setAdministrator()
     //设置权限
     setPermissions()
+    //游戏功能初始化
+    SGameManager.gameInit(miraiBot!!)
 }
 
 private fun regMsg() {
@@ -32,7 +38,13 @@ private fun regMsg() {
             if (id == 0L)
                 return@end
 
-            reply("游戏结束")
+            val state = sGroupMap[id]?.runningState
+            if(state == null || state == ""){
+                reply("当前没有没有正在进行。")
+                return@end
+            }
+            
+            reply("$state 游戏结束")
             sGroupMap[id]?.runningState = ""
         }
 
@@ -40,23 +52,13 @@ private fun regMsg() {
             val group = getGroup(sender) ?: return@startAgain
 
             when (sGroupMap[getGroupID(sender)]?.runningState) {
-                "24点" -> startHour24(group)
+                "24点" -> SGHour24.startHour24(group)
 
                 else -> reply("当前没有游戏正在进行。")
             }
         }
-
-
-//        (contains("sunshine") or contains("阳光") or startsWith("#")) game@{
-//            if (sender !is Member)
-//                return@game
-//            val member = sender as Member
-//            val group = member.group
-//            val msg = this.message[PlainText.Key]?.contentToString()
-//        }
+        
     }
-
-    hour24()
 }
 
 /**
@@ -80,7 +82,12 @@ private fun regMsg() {
 
 suspend fun setPermissions() {
     setPermit("console:command.help", "u*")
-    setPermit("*:*", "u1123574549")
+}
+
+suspend fun setAdministrator() {
+    sunnyAdmins.forEach { 
+        setPermit("*:*", "u$it")
+    }
 }
 
 fun getGroup(sender: User): Group? {

@@ -1,2 +1,2 @@
-# mirai-console-plugin-template
-Template for Mirai Console plugins
+# Sunny Bot
+A bot for Mirai Console plugins

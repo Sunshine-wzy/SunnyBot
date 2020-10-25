@@ -2,9 +2,12 @@ package io.github.sunshinewzy.sunnybot.commands
 
 import io.github.sunshinewzy.sunnybot.PluginMain
 import io.github.sunshinewzy.sunnybot.antiRecall
-import io.github.sunshinewzy.sunnybot.objects.*
+import io.github.sunshinewzy.sunnybot.objects.SGroup
 import io.github.sunshinewzy.sunnybot.objects.SGroupData.sGroupMap
 import io.github.sunshinewzy.sunnybot.objects.SPlayerData.sPlayerMap
+import io.github.sunshinewzy.sunnybot.objects.SRequest
+import io.github.sunshinewzy.sunnybot.objects.regPlayer
+import io.github.sunshinewzy.sunnybot.sunnyAdmins
 import net.mamoe.mirai.console.command.CommandSender
 import net.mamoe.mirai.console.command.SimpleCommand
 import net.mamoe.mirai.contact.Member
@@ -62,10 +65,12 @@ object SCInfo: SimpleCommand(
         
         if(user is Member){
             val member = user as Member
-            sendMessage(At(member.group[id]).plus(PlainText("您的STD为: ${sPlayer.std}")))
+            sendMessage(PlainText("[Sunshine Technology Dollar]\n") + At(member.group[id]) + 
+                PlainText("您的STD余额为: ${sPlayer.std}"))
             return
         }
-        sendMessage("您的STD为: ${sPlayer.std}")
+        sendMessage("[Sunshine Technology Dollar]\n" +
+            "您的STD余额为: ${sPlayer.std}")
     }
 }
 
@@ -81,7 +86,7 @@ object SCAntiRecall: SimpleCommand(
         val member = user as Member
         val group = member.group
         
-        if(member.isOperator()){
+        if(member.isOperator() || sunnyAdmins.contains(member.id.toString())){
             val msg = str.toLowerCase()
             if(msg.contains("开") || msg.contains("t"))
                 antiRecall?.setAntiRecallStatus(group.id, true)

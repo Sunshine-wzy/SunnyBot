@@ -1,11 +1,10 @@
-import org.gradle.kotlin.dsl.support.compileKotlinScriptModuleTo
-
 plugins {
     val kotlinVersion = "1.4.10"
     kotlin("jvm") version kotlinVersion
     kotlin("plugin.serialization") version kotlinVersion
 
     id("net.mamoe.mirai-console") version "1.0-RC-dev-28"
+    id("com.github.johnrengelman.shadow") version "2.0.4"
 }
 
 dependencies {
@@ -13,7 +12,7 @@ dependencies {
 }
 
 group = "io.github.sunshinewzy"
-version = "1.0.1"
+version = "1.0.4"
 
 repositories {
     mavenLocal()

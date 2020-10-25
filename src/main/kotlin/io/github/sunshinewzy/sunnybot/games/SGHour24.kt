@@ -1,0 +1,196 @@
+package io.github.sunshinewzy.sunnybot.games
+
+import io.github.sunshinewzy.sunnybot.objects.SGroup
+import io.github.sunshinewzy.sunnybot.objects.SGroupData
+import io.github.sunshinewzy.sunnybot.objects.SPlayerData
+import net.mamoe.mirai.contact.Group
+import net.mamoe.mirai.contact.Member
+import java.util.*
+import java.util.stream.Collectors
+
+/**
+ * 24点
+ */
+object SGHour24: SGame {
+    private val hour24characters = listOf(
+        '+', '-', '*', '/', '(', ')'
+    )
+
+    override suspend fun run(
+        member: Member,
+        group: Group,
+        groupId: Long,
+        sGroup: SGroup,
+        msg: String
+    ) {
+        var str = msg
+        
+        if (str.contains("24点")) {
+            startHour24(group)
+            return
+        }
+
+        if (str.startsWith("#")) str = str.substring(1)
+        str = str.replace(" ", "")
+
+        if (sGroup.runningState == "24点") {
+            var tmp = 0
+            while(tmp < str.length) {
+                val ch = str[tmp]
+                if(!hour24characters.contains(ch) && ch !in '0'..'9') {
+                    group.sendMessage(
+                        "输入的文本错误 只能含有符号+ - * / ( )以及数字" +
+                            sGroup.hour24[1] + " " + sGroup.hour24[2] + " " + sGroup.hour24[3] + " " + sGroup.hour24[4]
+                    )
+                    return
+                }
+                tmp++
+            }
+            str = "($str)"
+
+            //栈算法
+            val number = Stack<Int>()
+            val operator = Stack<Char>()
+            var i = 0
+            var cnt = 0
+            while(i < str.length) {
+                //左括号处理
+                while(str[i] == '(') {
+                    operator.push(str[i])
+                    i++
+                }
+
+                //操作数入栈
+                var x = 0
+                while(str[i] in '0'..'9')
+                    x = x * 10 + (str[i++].toInt() - '0'.toInt())
+                if(!isHour24(x, sGroup)) {
+                    //表达式合法性二次检查
+                    group.sendMessage(
+                        "输入的文本错误 只能含有符号+ - * / ( )以及数字" +
+                            sGroup.hour24[1] + "  " + sGroup.hour24[2] + "  " + sGroup.hour24[3] + "  " + sGroup.hour24[4]
+                    )
+                    return
+                }
+                if(number.contains(x)) {
+                    group.sendMessage("请勿重复使用数字")
+                    return
+                }
+                cnt++
+                number.push(x)
+                do {
+                    //右括号处理
+                    if(str[i] == ')') {
+                        while(operator.peek() != '(') popHour24(
+                            number,
+                            operator
+                        )
+                        operator.pop()
+                    } else {
+                        //根据标志函数值作运算符入栈或出栈运算处理
+                        while(canHour24(
+                                str,
+                                i,
+                                operator
+                            )
+                        ) if(!popHour24(
+                                number,
+                                operator
+                            )
+                        ) {
+                            group.sendMessage("0不能作除数！请检查您的表达式是否正确")
+                            return
+                        }
+                        operator.push(str[i])
+                    }
+                    i++
+                } while(i < str.length && str[i - 1] == ')')
+            }
+            if(cnt != 4) {
+                group.sendMessage("请将4个数全部用上 且每个数只能用一次")
+                return
+            }
+            group.sendMessage(member.nameCard + "的表达式计算结果为: " + number[0])
+            if(number[0] == 24) {
+                val rewardSTD = Random().nextInt(5) + 6
+                SPlayerData.sPlayerMap[member.id]!!.std += rewardSTD
+                group.sendMessage(
+                    "恭喜玩家 ${member.nameCard} 获得胜利！\n"
+                        + "获得奖励: $rewardSTD STD"
+                )
+                sGroup.runningState = ""
+            } else {
+                group.sendMessage("${member.nameCard} 答案错误")
+            }
+            
+        }
+    }
+
+    suspend fun startHour24(group: Group) {
+        val id = group.id
+
+        if (!SGroupData.sGroupMap.containsKey(id))
+            SGroupData.sGroupMap[id] = SGroup(id)
+        val sGroup = SGroupData.sGroupMap[id] ?: return
+
+        sGroup.runningState = "24点"
+        for (i in 0..4) {
+            sGroup.hour24[i] = -1
+        }
+
+        val rand = Random()
+        for (i in 1..4) {
+            var temp: Int
+            do {
+                temp = rand.nextInt(13) + 1
+            } while (isHour24(temp, sGroup))
+            sGroup.hour24[i] = temp
+        }
+
+        group.sendMessage(
+            "=====24点-游戏开始=====\n"
+                + "输入\"再来亿把\"以重新开始\n"
+                + "输入\"老子不会\"以结束游戏\n"
+                + "请用下面给出的4个数通过+ - * /四种运算\n"
+                + "以及()求出24即为胜利\n"
+                + "输入#后接你的答案\n\n"
+                + sGroup.hour24[1] + "  " + sGroup.hour24[2] + "  " + sGroup.hour24[3] + "  " + sGroup.hour24[4]
+                + "\n==============="
+        )
+    }
+
+    private fun isHour24(num: Int, sGroup: SGroup): Boolean {
+        val listHour24: List<Int> =
+            Arrays.stream(sGroup.hour24).boxed()
+                .collect(
+                    Collectors.toList()
+                )
+        return listHour24.contains(num)
+    }
+
+    //判断运算符的优先级别，建立标志函数
+    private fun canHour24(
+        s: String,
+        i: Int,
+        operator: Stack<Char>
+    ): Boolean {
+        val ch = s[i]
+        if ((ch == '+' || ch == '-') && operator.peek() != '(') return true
+        return (ch == '*' || ch == '/') && (operator.peek() == '*' || operator.peek() == '/')
+    }
+
+    //运算符栈顶元素出栈，并取出操作数栈元素完成相应的运算
+    private fun popHour24(number: Stack<Int>, operator: Stack<Char>): Boolean {
+        val num = number.pop()
+        when (operator.pop()) {
+            '+' -> number[number.size - 1] = number.peek() + num
+            '-' -> number[number.size - 1] = number.peek() - num
+            '*' -> number[number.size - 1] = number.peek() * num
+            '/' -> {
+                if (num == 0) return false
+                number[number.size - 1] = number.peek() / num
+            }
+        }
+        return true
+    }
+}

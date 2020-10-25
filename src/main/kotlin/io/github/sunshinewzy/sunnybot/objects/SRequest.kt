@@ -1,7 +1,6 @@
 package io.github.sunshinewzy.sunnybot.objects
 
 import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
 import java.io.BufferedReader
 import java.io.InputStream
 import java.io.InputStreamReader
