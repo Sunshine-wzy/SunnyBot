@@ -4,7 +4,6 @@ import io.github.sunshinewzy.sunnybot.events.game.SGroupGameEvent
 import io.github.sunshinewzy.sunnybot.objects.DataTicTacToe
 import io.github.sunshinewzy.sunnybot.objects.sDataGroup
 import io.github.sunshinewzy.sunnybot.sendMsg
-import io.github.sunshinewzy.sunnybot.setDigit
 import net.mamoe.mirai.message.data.At
 import net.mamoe.mirai.message.data.PlainText
 
@@ -63,11 +62,17 @@ object SGTicTacToe : SGroupGame("井字棋") {
         val order = coordToOrder(x, y)
         
         if(id == p1.id){
-            updateData(dataTicTacToe, 1, x, y, order)
+            if(!updateData(dataTicTacToe, 1, x, y, order))
+                group.sendMessage("棋盘更新失败！")
         }
         else if(id == p2.id){
-            updateData(dataTicTacToe, 2, x, y, order)
+            if(!updateData(dataTicTacToe, 2, x, y, order))
+                group.sendMessage("棋盘更新失败！")
         }
+        group.sendMsg(name, printBoard(dataTicTacToe))
+        
+        judge(dataTicTacToe)
+        
     }
 
     override suspend fun startGame(event: SGroupGameEvent) {
@@ -100,6 +105,7 @@ object SGTicTacToe : SGroupGame("井字棋") {
                 At(dataTicTacToe.p1!!) + PlainText(" ") +
                     At(dataTicTacToe.p2!!) + PlainText(
                     """
+                        
                         玩家1、2均已就位
                         游戏开始！
                         请输入 "#x,y" 以落子
@@ -117,16 +123,56 @@ object SGTicTacToe : SGroupGame("井字棋") {
         }
     }
 
+    /**
+     * 胜利判定
+     */
+    private fun judge(dataTicTacToe: DataTicTacToe): Boolean {
+        val slot = dataTicTacToe.slot
+        //行
+        for(i in 1..3){
+            if(slot[i] != 0 && slot[i] == slot[i+3] && slot[i] == slot[i+6]){
+                win(dataTicTacToe, slot[i])
+                return true
+            }
+        }
+        //列
+        for(i in 1..7 step 3){
+            if(slot[i] != 0 && slot[i] == slot[i+1] && slot[i] == slot[i+2]){
+                win(dataTicTacToe, slot[i])
+                return true
+            }
+        }
+        //斜
+        if(slot[1] != 0 && slot[1] == slot[5] && slot[1] == slot[9]){
+            win(dataTicTacToe, slot[1])
+            return true
+        }
+        if(slot[3] != 0 && slot[3] == slot[5] && slot[3] == slot[7]){
+            win(dataTicTacToe, slot[3])
+            return true
+        }
+        
+        return false
+    }
+    
+    private fun win(dataTicTacToe: DataTicTacToe, p: Int) {
+        
+    }
+    
+    /**
+     * <NPC落子>
+     * 
+     * 对抗搜索 极大极小搜索算法 alpha-beta剪枝
+     */
+    private fun npcChess() {
+        
+        
+    }
+    
     private fun init(dataTicTacToe: DataTicTacToe) {
         for(i in 0..9) {
             dataTicTacToe.slot[i] = 0
         }
-        for(i in 0..3) {
-            dataTicTacToe.line[i] = 0
-            dataTicTacToe.row[i] = 0
-        }
-        dataTicTacToe.ldil = 0
-        dataTicTacToe.rdil = 0
     }
 
     private fun printBoard(dataTicTacToe: DataTicTacToe): String {
@@ -140,13 +186,13 @@ object SGTicTacToe : SGroupGame("井字棋") {
         }
 
         return """
-          ╲ x 1\t2\t3
+          ╲ x 1   2   3
           y ┌───┬───┬───┐
-          1 │\t${args[1]}\t│\t${args[2]}\t│\t${args[3]}\t│
+          1 │${args[1]}│${args[2]}│${args[3]}│
           - ├───┼───┼───┤
-          2 │\t${args[4]}\t│\t${args[5]}\t│\t${args[6]}\t│
+          2 │${args[4]}│${args[5]}│${args[6]}│
           - ├───┼───┼───┤
-          3 │\t${args[7]}\t│\t${args[8]}\t│\t${args[9]}\t│
+          3 │${args[7]}│${args[8]}│${args[9]}│
           - └───┴───┴───┘
         """.trimIndent()
     }
@@ -155,13 +201,11 @@ object SGTicTacToe : SGroupGame("井字棋") {
         return (y-1) * 3 + x
     }
     
-    private fun updateData(dataTicTacToe: DataTicTacToe, p: Int, x: Int, y: Int, order: Int) {
+    private fun updateData(dataTicTacToe: DataTicTacToe, p: Int, x: Int, y: Int, order: Int): Boolean {
+        if(p !in 1..2 || x !in 1..3 || y !in 1..3 || order !in 1..9)
+            return false
+        
         dataTicTacToe.slot[order] = p
-//        dataTicTacToe.line[y] = dataTicTacToe.line[y].setDigit(x, p)
-//        dataTicTacToe.row[x] = dataTicTacToe.row[x].setDigit(y, p)
-        if(order == 1 || order == 5 || order == 9)
-            dataTicTacToe.ldil = p
-        if(order == 3 || order == 5 || order == 7)
-            dataTicTacToe.rdil = p
+        return true
     }
 }

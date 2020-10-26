@@ -10,7 +10,8 @@ import net.mamoe.mirai.contact.Member
 class SGroup(private val groupID: Long) {
     var runningState = ""
     var hour24 = IntArray(5) { -1 }
-    var serverIp: String = SCServerInfo.happylandIp
+    var roselleServerIp = ""
+    var serverIp = ""
     
 }
 
@@ -23,13 +24,7 @@ val sDataGroup = HashMap<Long, SDataGroup>()
 
 data class SDataGroup(val ticTacToe: DataTicTacToe = DataTicTacToe())
 
-data class DataTicTacToe(
-    var slot: IntArray = IntArray(10),
-    var line: IntArray = IntArray(4),
-    var row: IntArray = IntArray(4),
-    var ldil: Int = 0,
-    var rdil: Int = 0
-) {
+data class DataTicTacToe(var slot: IntArray = IntArray(10)) {
     var p1: Member? = null
     var p2: Member? = null
 }

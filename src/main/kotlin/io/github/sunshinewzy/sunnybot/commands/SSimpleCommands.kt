@@ -110,40 +110,51 @@ object SCServerInfo: SimpleCommand(
     "serverinfo", "server", "zt", "服务器状态", "状态", "服务器",
     description = "服务器状态查询"
 ) {
-    const val url = "https://mc.iroselle.com/api/data/getServerInfo"
-    const val happylandIp = "happylandmc.cc"
+    const val url = "https://motd.52craft.cc/api.php"
+    const val roselleUrl = "https://mc.iroselle.com/api/data/getServerInfo"
     
     @Handler
     suspend fun CommandSender.handle() {
-        var ip = happylandIp
         if(user == null)
             return
-        if(user is Member){
-            val member = user as Member
-            val groupId = member.group.id
-            if(sGroupMap.containsKey(groupId))
-                ip = sGroupMap[groupId]!!.serverIp
-        }
+        if(user !is Member)
+            return
+        val member = user as Member
+        val groupId = member.group.id
+        if(sGroupMap.containsKey(groupId)) {
+            val sGroup = sGroupMap[groupId]!!
             
-        val result = SRequest(url).result(ip, 0)
-        val res = result.res
+            if(sGroup.roselleServerIp != "") {
+                val ip = sGroup.roselleServerIp
+                val result = SRequest(roselleUrl).roselleResult(ip, 0)
+                val res = result.res
 
-        var serverStatus = "离线"
-        if(res.server_status == 1)
-            serverStatus = "在线"
+                var serverStatus = "离线"
+                if(res.server_status == 1)
+                    serverStatus = "在线"
 
-        sendMessage(
-            "\t『 SunnyBot 』\n" +
-            "服务器IP: $ip\n" +
-            "服务器状态: $serverStatus\n" +
-            "当前在线玩家数: ${res.server_player_online}\n" +
-            "在线玩家上限: ${res.server_player_max}\n" +
-            "日均在线人数: ${res.server_player_average}\n" +
-            "历史最高同时在线人数: ${res.server_player_history_max}\n" +
-            "昨日平均在线人数: ${res.server_player_yesterday_average}\n" +
-            "昨日最高同时在线人数: ${res.server_player_yesterday_max}\n" +
-            "更新时间: ${res.update_time}\n" +
-            "查询用时: ${result.run_time}s")
+                sendMessage(
+                    "\t『 SunnyBot 』\n" +
+                        "服务器IP: $ip\n" +
+                        "服务器状态: $serverStatus\n" +
+                        "当前在线玩家数: ${res.server_player_online}\n" +
+                        "在线玩家上限: ${res.server_player_max}\n" +
+                        "日均在线人数: ${res.server_player_average}\n" +
+                        "历史最高同时在线人数: ${res.server_player_history_max}\n" +
+                        "昨日平均在线人数: ${res.server_player_yesterday_average}\n" +
+                        "昨日最高同时在线人数: ${res.server_player_yesterday_max}\n" +
+                        "更新时间: ${res.update_time}\n" +
+                        "查询用时: ${result.run_time}s"
+                )
+            }
+            
+            else if(sGroup.serverIp != "") {
+                val ip = sGroup.serverIp
+                val result = SRequest(url).result(ip)
+                sendMessage(result)
+            }
+        }
+        
     }
 }
 
@@ -157,15 +168,23 @@ object SCIpBind: SimpleCommand(
         if(user !=null && user is Member){
             val member = user as Member
             val groupId = member.group.id
-            if(sGroupMap.containsKey(groupId)) {
-                val result = SRequest(SCServerInfo.url).result(serverIp, 0)
-                if(result.code == 1){
-                    sGroupMap[groupId]!!.serverIp = serverIp
-                    sendMessage("$serverIp 绑定成功！")
-                    return
-                }
+            if(!sGroupMap.containsKey(groupId)) {
+                sGroupMap[groupId] = SGroup(groupId)
             }
-            else sGroupMap[groupId] = SGroup(groupId)
+            
+            val roselleResult = SRequest(SCServerInfo.roselleUrl).roselleResult(serverIp, 0)
+            if(roselleResult.code == 1){
+                sGroupMap[groupId]!!.roselleServerIp = serverIp
+                sendMessage("$serverIp 绑定成功！")
+                return
+            }
+            
+            val result = SRequest(SCServerInfo.url).result(serverIp)
+            if(!result.contains("无法连接该服务器")){
+                sGroupMap[groupId]!!.serverIp = serverIp
+                sendMessage("$serverIp 绑定成功！")
+                return
+            }
         }
         
         sendMessage("绑定失败= =\n" +

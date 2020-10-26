@@ -15,16 +15,23 @@ import java.net.URLEncoder
  */
 
 class SRequest(private val url: String) {
-    fun result(serverAddr: String, showFavicon: Int): RosellemcServerInfo {
+    fun roselleResult(serverAddr: String, showFavicon: Int): RosellemcServerInfo {
         //params用于存储要请求的参数
-        val params = java.util.HashMap<String, Any>()
+        val params = HashMap<String, Any>()
         params["server_addr"] = serverAddr
         params["show_favicon"] = showFavicon
         //调用httpRequest方法，这个方法主要用于请求地址，并加上请求参数
         val strRequest = httpRequest(params)
         //处理返回的JSON数据并返回
-//        val resultType = object : TypeToken<RosellemcServerInfo>() {}.type
         return Gson().fromJson(strRequest, RosellemcServerInfo::class.java)
+    }
+    
+    fun result(ip: String): String {
+        //params用于存储要请求的参数
+        val params = HashMap<String, Any>()
+        params["ip"] = ip
+        //调用httpRequest方法，这个方法主要用于请求地址，并加上请求参数
+        return httpRequest(params)
     }
     
     private fun httpRequest(params: Map<String, Any>): String {

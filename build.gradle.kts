@@ -9,6 +9,7 @@ plugins {
 
 dependencies {
     implementation("com.google.code.gson:gson:2.8.2")
+    
 }
 
 group = "io.github.sunshinewzy"
@@ -19,4 +20,8 @@ repositories {
     mavenCentral()
     jcenter()
     maven("https://dl.bintray.com/kotlin/kotlin-eap")
+    maven { 
+        url = uri("http://maven.imagej.net/content/groups/public")
+        name = "imagej.public"
+    }
 }
