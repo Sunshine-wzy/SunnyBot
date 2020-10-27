@@ -29,7 +29,7 @@ class SRequest(private val url: String) {
     fun result(ip: String): String {
         //params用于存储要请求的参数
         val params = HashMap<String, Any>()
-        params["ip"] = ip
+        params["server"] = ip
         //调用httpRequest方法，这个方法主要用于请求地址，并加上请求参数
         return httpRequest(params)
     }

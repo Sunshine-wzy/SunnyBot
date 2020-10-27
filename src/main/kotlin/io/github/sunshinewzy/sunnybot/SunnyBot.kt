@@ -1,10 +1,9 @@
 package io.github.sunshinewzy.sunnybot
 
+import io.github.sunshinewzy.sunnybot.commands.regSCompositeCommands
 import io.github.sunshinewzy.sunnybot.commands.regSSimpleCommands
 import io.github.sunshinewzy.sunnybot.commands.setPermit
-import io.github.sunshinewzy.sunnybot.events.game.SGroupGameEvent
 import io.github.sunshinewzy.sunnybot.functions.AntiRecall
-import io.github.sunshinewzy.sunnybot.games.SGHour24
 import io.github.sunshinewzy.sunnybot.games.SGameManager
 import io.github.sunshinewzy.sunnybot.objects.SGroupData.sGroupMap
 import kotlinx.coroutines.CoroutineScope
@@ -24,6 +23,8 @@ suspend fun sunnyInit() {
     regMsg()
     //注册简单指令
     regSSimpleCommands()
+    //注册复合指令
+    regSCompositeCommands()
     //设置超级管理员 (权限:"*:*")
     setAdministrator()
     //设置权限

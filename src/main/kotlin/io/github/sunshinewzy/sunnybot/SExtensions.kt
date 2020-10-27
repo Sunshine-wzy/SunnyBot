@@ -10,7 +10,6 @@ import net.mamoe.mirai.contact.Member
 import net.mamoe.mirai.message.data.Message
 import net.mamoe.mirai.message.data.MessageChain
 import net.mamoe.mirai.message.data.PlainText
-import java.lang.StringBuilder
 import kotlin.math.pow
 
 //region 发送含标题文本
