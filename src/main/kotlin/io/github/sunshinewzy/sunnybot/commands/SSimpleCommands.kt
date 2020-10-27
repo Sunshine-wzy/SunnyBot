@@ -159,6 +159,11 @@ object SCServerInfo: SimpleCommand(
             val ip = sGroup.serverIp
             val result = SRequest(url).result(ip)
             val args = result.split("<br>")
+            if(args.size < 8){
+                sendMessage("查询失败，服务器可能不在线。")
+                return
+            }
+            
             var str = args[1]
             for(i in 2..7){
                 str += "\n"
