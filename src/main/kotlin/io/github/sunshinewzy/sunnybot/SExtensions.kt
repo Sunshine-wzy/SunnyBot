@@ -3,8 +3,8 @@ package io.github.sunshinewzy.sunnybot
 import io.github.sunshinewzy.sunnybot.events.game.SGroupGameEvent
 import io.github.sunshinewzy.sunnybot.objects.SDataGroup
 import io.github.sunshinewzy.sunnybot.objects.SGroup
-import io.github.sunshinewzy.sunnybot.objects.SGroupData
-import io.github.sunshinewzy.sunnybot.objects.sDataGroup
+import io.github.sunshinewzy.sunnybot.objects.SSaveGroup
+import io.github.sunshinewzy.sunnybot.objects.sDataGroupMap
 import net.mamoe.mirai.contact.Contact
 import net.mamoe.mirai.contact.Member
 import net.mamoe.mirai.message.data.Message
@@ -41,12 +41,12 @@ suspend fun Contact.sendMsg(title: Message, text: String) {
 fun Member.toSGroupGameEvent(message: MessageChain): SGroupGameEvent {
     val group = this.group
     val groupId = group.id
-    if(!SGroupData.sGroupMap.containsKey(groupId))
-        SGroupData.sGroupMap[groupId] = SGroup(groupId)
-    val sGroup = SGroupData.sGroupMap[groupId]!!
-    if(!sDataGroup.containsKey(groupId))
-        sDataGroup[groupId] = SDataGroup()
-    val sDataGroup = sDataGroup[groupId]!!
+    if(!SSaveGroup.sGroupMap.containsKey(groupId))
+        SSaveGroup.sGroupMap[groupId] = SGroup(groupId)
+    val sGroup = SSaveGroup.sGroupMap[groupId]!!
+    if(!sDataGroupMap.containsKey(groupId))
+        sDataGroupMap[groupId] = SDataGroup()
+    val sDataGroup = sDataGroupMap[groupId]!!
     val msg = message[PlainText.Key]?.contentToString() ?: ""
     
     return SGroupGameEvent(this, group, groupId, sGroup, sDataGroup, msg)

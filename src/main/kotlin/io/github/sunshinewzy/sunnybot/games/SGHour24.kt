@@ -1,16 +1,15 @@
 package io.github.sunshinewzy.sunnybot.games
 
+import io.github.sunshinewzy.sunnybot.enums.RunningState
 import io.github.sunshinewzy.sunnybot.events.game.SGroupGameEvent
-import io.github.sunshinewzy.sunnybot.objects.SGroup
-import io.github.sunshinewzy.sunnybot.objects.SGroupData
-import io.github.sunshinewzy.sunnybot.objects.SPlayerData
+import io.github.sunshinewzy.sunnybot.objects.*
 import java.util.*
 import java.util.stream.Collectors
 
 /**
  * 24点
  */
-object SGHour24 : SGroupGame("24点") {
+object SGHour24 : SGroupGame("24点", RunningState.HOUR24) {
     private val hour24characters = listOf(
         '+', '-', '*', '/', '(', ')'
     )
@@ -26,7 +25,7 @@ object SGHour24 : SGroupGame("24点") {
             if(!hour24characters.contains(ch) && ch !in '0'..'9') {
                 event.group.sendMessage(
                     "输入的文本错误 只能含有符号+ - * / ( )以及数字" +
-                        event.sGroup.hour24[1] + " " + event.sGroup.hour24[2] + " " + event.sGroup.hour24[3] + " " + event.sGroup.hour24[4]
+                        event.sDataGroup.hour24[1] + " " + event.sDataGroup.hour24[2] + " " + event.sDataGroup.hour24[3] + " " + event.sDataGroup.hour24[4]
                 )
                 return
             }
@@ -50,11 +49,11 @@ object SGHour24 : SGroupGame("24点") {
             var x = 0
             while(str[i] in '0'..'9')
                 x = x * 10 + (str[i++].toInt() - '0'.toInt())
-            if(!isHour24(x, event.sGroup)) {
+            if(!isHour24(x, event.sDataGroup)) {
                 //表达式合法性二次检查
                 event.group.sendMessage(
                     "输入的文本错误 只能含有符号+ - * / ( )以及数字" +
-                        event.sGroup.hour24[1] + "  " + event.sGroup.hour24[2] + "  " + event.sGroup.hour24[3] + "  " + event.sGroup.hour24[4]
+                        event.sDataGroup.hour24[1] + "  " + event.sDataGroup.hour24[2] + "  " + event.sDataGroup.hour24[3] + "  " + event.sDataGroup.hour24[4]
                 )
                 return
             }
@@ -100,13 +99,13 @@ object SGHour24 : SGroupGame("24点") {
 
         event.group.sendMessage(event.member.nameCard + "的表达式计算结果为: " + number[0])
         if(number[0] == 24) {
-            val rewardSTD = Random().nextInt(5) + 6
-            SPlayerData.sPlayerMap[event.member.id]!!.std += rewardSTD
+            val rewardSTD = kotlin.random.Random.nextInt(5) + 6
+            event.member.addPlayerSTD(rewardSTD)
             event.group.sendMessage(
                 "恭喜玩家 ${event.member.nameCard} 获得胜利！\n"
                     + "获得奖励: $rewardSTD STD"
             )
-            event.sGroup.runningState = ""
+            event.sDataGroup.runningState = RunningState.FREE
         } else {
             event.group.sendMessage("${event.member.nameCard} 答案错误")
         }
@@ -116,13 +115,14 @@ object SGHour24 : SGroupGame("24点") {
         val group = event.group
         val id = group.id
 
-        if(!SGroupData.sGroupMap.containsKey(id))
-            SGroupData.sGroupMap[id] = SGroup(id)
-        val sGroup = SGroupData.sGroupMap[id] ?: return
+        if(!SSaveGroup.sGroupMap.containsKey(id))
+            SSaveGroup.sGroupMap[id] = SGroup(id)
+        val sGroup = SSaveGroup.sGroupMap[id] ?: return
+        val sDataGroup = event.sDataGroup
 
-        sGroup.runningState = name
+        sDataGroup.runningState = RunningState.HOUR24
         for(i in 0..4) {
-            sGroup.hour24[i] = -1
+            sDataGroup.hour24[i] = -1
         }
 
         val rand = Random()
@@ -130,8 +130,8 @@ object SGHour24 : SGroupGame("24点") {
             var temp: Int
             do {
                 temp = rand.nextInt(13) + 1
-            } while(isHour24(temp, sGroup))
-            sGroup.hour24[i] = temp
+            } while(isHour24(temp, sDataGroup))
+            sDataGroup.hour24[i] = temp
         }
 
         group.sendMessage(
@@ -141,14 +141,14 @@ object SGHour24 : SGroupGame("24点") {
                 + "请用下面给出的4个数通过+ - * /四种运算\n"
                 + "以及()求出24即为胜利\n"
                 + "输入#后接你的答案\n\n"
-                + sGroup.hour24[1] + "  " + sGroup.hour24[2] + "  " + sGroup.hour24[3] + "  " + sGroup.hour24[4]
+                + sDataGroup.hour24[1] + "  " + sDataGroup.hour24[2] + "  " + sDataGroup.hour24[3] + "  " + sDataGroup.hour24[4]
                 + "\n==============="
         )
     }
 
-    private fun isHour24(num: Int, sGroup: SGroup): Boolean {
+    private fun isHour24(num: Int, sDataGroup: SDataGroup): Boolean {
         val listHour24: List<Int> =
-            Arrays.stream(sGroup.hour24).boxed()
+            Arrays.stream(sDataGroup.hour24).boxed()
                 .collect(
                     Collectors.toList()
                 )

@@ -3,8 +3,8 @@ package io.github.sunshinewzy.sunnybot
 import io.github.sunshinewzy.sunnybot.functions.AntiRecall
 import io.github.sunshinewzy.sunnybot.listeners.listenBot
 import io.github.sunshinewzy.sunnybot.listeners.listenMessage
-import io.github.sunshinewzy.sunnybot.objects.SGroupData
-import io.github.sunshinewzy.sunnybot.objects.SPlayerData
+import io.github.sunshinewzy.sunnybot.objects.SSaveGroup
+import io.github.sunshinewzy.sunnybot.objects.SSavePlayer
 import net.mamoe.mirai.Bot
 import net.mamoe.mirai.console.extension.PluginComponentStorage
 import net.mamoe.mirai.console.plugin.jvm.JvmPluginDescription
@@ -17,7 +17,7 @@ var miraiBot: Bot? = null
 object PluginMain : KotlinPlugin(
     JvmPluginDescription(
         id = "io.github.sunshinewzy.sunnybot",
-        version = "1.0.5"
+        version = "1.0.6"
     )
 ) {
     override fun PluginComponentStorage.onLoad() {
@@ -42,7 +42,7 @@ object PluginMain : KotlinPlugin(
     }
     
     private fun reloadData() {
-        SPlayerData.reload()
-        SGroupData.reload()
+        SSavePlayer.reload()
+        SSaveGroup.reload()
     }
 }

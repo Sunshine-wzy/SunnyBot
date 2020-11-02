@@ -1,25 +1,20 @@
 package io.github.sunshinewzy.sunnybot.commands
 
-import io.github.sunshinewzy.sunnybot.PluginMain
-import io.github.sunshinewzy.sunnybot.antiRecall
-import io.github.sunshinewzy.sunnybot.objects.SGroup
-import io.github.sunshinewzy.sunnybot.objects.SGroupData.sGroupMap
-import io.github.sunshinewzy.sunnybot.objects.SPlayerData.sPlayerMap
+import io.github.sunshinewzy.sunnybot.*
+import io.github.sunshinewzy.sunnybot.objects.SSaveGroup.sGroupMap
+import io.github.sunshinewzy.sunnybot.objects.SSavePlayer.sPlayerMap
 import io.github.sunshinewzy.sunnybot.objects.SRequest
 import io.github.sunshinewzy.sunnybot.objects.regPlayer
-import io.github.sunshinewzy.sunnybot.sendMsg
-import io.github.sunshinewzy.sunnybot.sunnyAdmins
-import io.github.sunshinewzy.sunnybot.utils.SLaTeX
+import io.github.sunshinewzy.sunnybot.utils.SServerPing
 import net.mamoe.mirai.console.command.CommandSender
 import net.mamoe.mirai.console.command.SimpleCommand
 import net.mamoe.mirai.contact.Member
 import net.mamoe.mirai.contact.isOperator
 import net.mamoe.mirai.message.data.At
 import net.mamoe.mirai.message.data.PlainText
-import net.mamoe.mirai.message.upload
 
 /**
- * Sunny Commands
+ * Sunny Simple Commands
  */
 
 suspend fun regSSimpleCommands() {
@@ -30,7 +25,10 @@ suspend fun regSSimpleCommands() {
     SCAntiRecall.reg()
     SCServerInfo.reg("u*")
     SCIpBind.reg()
-    SCLaTeX.reg("u*")
+    SCJavaDoc.reg("u*")
+    
+    //Debug
+    SCDebugServerInfo.reg("console")
 }
 
 
@@ -119,17 +117,12 @@ object SCServerInfo: SimpleCommand(
     
     @Handler
     suspend fun CommandSender.handle() {
-        if(user == null)
-            return
-        if(user !is Member)
+        if(user == null || user !is Member)
             return
         val member = user as Member
         val group = member.group
         val groupId = group.id
-        if(!sGroupMap.containsKey(groupId)) {
-            sGroupMap[groupId] = SGroup(groupId)
-        }
-        val sGroup = sGroupMap[groupId]!!
+        val sGroup = sGroupMap[groupId] ?: return
 
         if(sGroup.roselleServerIp != "") {
             val ip = sGroup.roselleServerIp
@@ -157,20 +150,9 @@ object SCServerInfo: SimpleCommand(
 
         else if(sGroup.serverIp != "") {
             val ip = sGroup.serverIp
-            val result = SRequest(url).result(ip)
-            val args = result.split("<br>")
-            if(args.size < 8){
-                sendMessage("查询失败，服务器可能不在线。")
-                return
-            }
             
-            var str = args[1]
-            for(i in 2..7){
-                str += "\n"
-                str += args[i]
-            }
+            group.sendMsg("服务器状态查询", SServerPing.pingServer(ip))
             
-            group.sendMsg("服务器状态查询", str)
         }
 
         else sendMessage("""
@@ -178,6 +160,42 @@ object SCServerInfo: SimpleCommand(
                 请输入 "/ip 服务器IP" 以绑定服务器
             """.trimIndent())
         
+    }
+}
+
+object SCDebugServerInfo: SimpleCommand(
+    PluginMain,
+    "DebugServerInfo", "dServer", "dzt",
+    description = "Debug 服务器状态查询"
+) {
+    @Handler
+    suspend fun CommandSender.handle(serverIp: String) {
+        val contact = miraiBot?.getGroup(423179929L) ?: return
+        
+        val roselleResult = SRequest(SCServerInfo.roselleUrl).roselleResult(serverIp, 0)
+        if(roselleResult.code == 1){
+            val res = roselleResult.res
+            var serverStatus = "离线"
+            if(res.server_status == 1)
+                serverStatus = "在线"
+
+            sendMessage(
+                "\t『 SunnyBot 』\n" +
+                    "服务器IP: $serverIp\n" +
+                    "服务器状态: $serverStatus\n" +
+                    "当前在线玩家数: ${res.server_player_online}\n" +
+                    "在线玩家上限: ${res.server_player_max}\n" +
+                    "日均在线人数: ${res.server_player_average}\n" +
+                    "历史最高同时在线人数: ${res.server_player_history_max}\n" +
+                    "昨日平均在线人数: ${res.server_player_yesterday_average}\n" +
+                    "昨日最高同时在线人数: ${res.server_player_yesterday_max}\n" +
+                    "更新时间: ${res.update_time}\n" +
+                    "查询用时: ${roselleResult.run_time}s"
+            )
+            return
+        }
+
+        sendMessage(SServerPing.pingServer(serverIp))
     }
 }
 
@@ -190,11 +208,9 @@ object SCIpBind: SimpleCommand(
     suspend fun CommandSender.handle(serverIp: String) {
         if(user !=null && user is Member){
             val member = user as Member
-            val groupId = member.group.id
-            if(!sGroupMap.containsKey(groupId)) {
-                sGroupMap[groupId] = SGroup(groupId)
-            }
-            val sGroup = sGroupMap[groupId]!!
+            val group = member.group
+            val groupId = group.id
+            val sGroup = sGroupMap[groupId] ?: return
             
             val roselleResult = SRequest(SCServerInfo.roselleUrl).roselleResult(serverIp, 0)
             if(roselleResult.code == 1){
@@ -204,8 +220,7 @@ object SCIpBind: SimpleCommand(
                 return
             }
             
-            val result = SRequest(SCServerInfo.url).result(serverIp)
-            if(!result.contains("无法连接该服务器")){
+            if(SServerPing.checkServer(serverIp)){
                 sGroup.serverIp = serverIp
                 sGroup.roselleServerIp = ""
                 sendMessage("$serverIp 绑定成功！")
@@ -214,20 +229,42 @@ object SCIpBind: SimpleCommand(
         }
         
         sendMessage("绑定失败= =\n" +
-            "请确保服务器IP正确！")
+            "请确保服务器IP正确且当前服务器在线！")
     }
 }
 
-object SCLaTeX: SimpleCommand(
+object SCJavaDoc: SimpleCommand(
     PluginMain,
-    "LaTeX", "lx",
-    description = "LaTeX渲染"
+    "JavaDoc", "jd",
+    description = "查看常用JavaDoc"
 ) {
+    private val javaDocs = """
+        Java8: https://docs.oracle.com/javase/8/docs/api/overview-summary.html 
+        
+        Bukkit教程:
+        基础 https://alpha.tdiant.net/
+        进阶 https://bdn.tdiant.net/
+        
+        BukkitAPI - Javadoc: 
+        1.7.10版(已过时):https://jd.bukkit.org/ 
+        Chinese_Bukkit: 
+        1.12.2版:http://docs.zoyn.top/bukkitapi/1.12.2/ 
+        1.13+版:https://bukkit.windit.net/javadoc/ 
+        Spigot: https://hub.spigotmc.org/javadocs/spigot/ 
+        Paper: https://papermc.io/javadocs/paper/
+        
+        Sponge: https://docs.spongepowered.org/stable/zh-CN/
+        BungeeCord:
+        API: https://ci.md-5.net/job/BungeeCord/ws/api/target/apidocs/overview-summary.html
+        API-Chat: https://ci.md-5.net/job/BungeeCord/ws/chat/target/apidocs/overview-summary.html
+        MCP Query: https://mcp.exz.me/
+        Vault: https://pluginwiki.github.io/VaultAPI/
+        ProtocolLib: https://ci.dmulloy2.net/job/ProtocolLib/javadoc/
+    """.trimIndent()
+    
     @Handler
-    suspend fun CommandSender.group(text: String) {
-        val contact = this.subject ?: return
-        val bimg = SLaTeX.generate(text)
-        val image = bimg.upload(contact)
-        contact.sendMsg("LaTeX", image)
+    suspend fun CommandSender.handle() {
+        val contact = subject ?: return
+        contact.sendMsg("JavaDoc", javaDocs)
     }
 }

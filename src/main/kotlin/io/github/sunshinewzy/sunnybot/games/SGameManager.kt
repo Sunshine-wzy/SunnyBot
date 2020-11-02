@@ -1,5 +1,6 @@
 package io.github.sunshinewzy.sunnybot.games
 
+import io.github.sunshinewzy.sunnybot.enums.RunningState
 import io.github.sunshinewzy.sunnybot.events.game.SGroupGameEvent
 import io.github.sunshinewzy.sunnybot.objects.*
 import io.github.sunshinewzy.sunnybot.sunnyScope
@@ -24,12 +25,10 @@ object SGameManager {
                 val member = sender as Member
                 val group = member.group
                 val groupId = group.id
-                if(!SGroupData.sGroupMap.containsKey(groupId))
-                    SGroupData.sGroupMap[groupId] = SGroup(groupId)
-                val sGroup = SGroupData.sGroupMap[groupId]!!
-                if(!sDataGroup.containsKey(groupId))
-                    sDataGroup[groupId] = SDataGroup()
-                val sDataGroup = sDataGroup[groupId]!!
+                if(!SSaveGroup.sGroupMap.containsKey(groupId))
+                    SSaveGroup.sGroupMap[groupId] = SGroup(groupId)
+                val sGroup = SSaveGroup.sGroupMap[groupId]!!
+                val sDataGroup = sDataGroupMap[groupId] ?: return@game
                 val msg = message[PlainText.Key]?.contentToString() ?: return@game
                 
                 regPlayer(member)
@@ -58,16 +57,16 @@ object SGameManager {
         msg: String
     ) {
         val sGroupGameEvent = SGroupGameEvent(member, group, groupId, sGroup, sDataGroup, msg)
-        val state = sGroup.runningState
+        val state = sDataGroup.runningState
         
         sunnyScope.launch {
             sGroupGameHandlers.forEach {
-                if((state == "" || state.contains(it.name)) && msg.contains(it.name)){
+                if((state == RunningState.FREE || !state.isMain) && msg.contains(it.name)){
                     it.startGame(sGroupGameEvent)
                     return@forEach
                 }
                 
-                if(state == it.name)
+                if(it.gameStates.contains(state))
                    it.runGame(sGroupGameEvent)
             }
         }

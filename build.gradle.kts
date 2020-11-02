@@ -10,10 +10,13 @@ plugins {
 dependencies {
     implementation("com.google.code.gson:gson:2.8.2")
     implementation("org.scilab.forge:jlatexmath:1.0.7")
+    implementation("io.netty:netty-all:4.1.48.Final")
+    
+    implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar"))))
 }
 
 group = "io.github.sunshinewzy"
-version = "1.0.5"
+version = "1.0.6"
 
 repositories {
     mavenLocal()

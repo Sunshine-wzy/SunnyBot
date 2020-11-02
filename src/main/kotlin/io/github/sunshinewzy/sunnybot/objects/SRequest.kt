@@ -2,7 +2,6 @@ package io.github.sunshinewzy.sunnybot.objects
 
 import com.google.gson.Gson
 import java.io.BufferedReader
-import java.io.InputStream
 import java.io.InputStreamReader
 import java.io.UnsupportedEncodingException
 import java.net.HttpURLConnection
@@ -47,10 +46,10 @@ class SRequest(private val url: String) {
             httpUrlConn.connect()
 
             //获得输入
-            val inputStream: InputStream? = httpUrlConn.inputStream
-            val inputStreamReader = InputStreamReader(inputStream!!, "utf-8")
+            val inputStream= httpUrlConn.inputStream ?: return ""
+            val inputStreamReader = InputStreamReader(inputStream, "UTF-8")
             val bufferedReader = BufferedReader(inputStreamReader)
-
+            
             //将bufferReader的值给放到buffer里
             var str: String?
             while ((bufferedReader.readLine().also { str = it }) != null){

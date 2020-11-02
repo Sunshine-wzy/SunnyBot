@@ -1,5 +1,8 @@
 package io.github.sunshinewzy.sunnybot.utils
 
+import net.mamoe.mirai.contact.Contact
+import net.mamoe.mirai.message.data.Image
+import net.mamoe.mirai.message.upload
 import org.scilab.forge.jlatexmath.TeXConstants
 import org.scilab.forge.jlatexmath.TeXFormula
 import java.awt.Color
@@ -20,5 +23,9 @@ object SLaTeX {
         ti.paintIcon(jl, g2d, 0, 0)
         
         return bimg
+    }
+    
+    suspend fun Contact.laTeXImage(formula: String): Image {
+        return generate(formula).upload(this)
     }
 }
