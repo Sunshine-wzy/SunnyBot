@@ -4,7 +4,7 @@ import studio.trc.minecraft.serverpinglib.API.MCServerSocket
 import studio.trc.minecraft.serverpinglib.Protocol.ProtocolVersion
 
 object SServerPing {
-    suspend fun pingServer(serverIp: String): String {
+    fun pingServer(serverIp: String, isDisplayMod: Boolean = false): String {
         val args = serverIp.split(":")
         if(args.isEmpty() || args.size > 2)
             return ""
@@ -32,11 +32,18 @@ object SServerPing {
             
         """.trimIndent()
 
-        if(status.modInfo.hasModInfo()){
-            if(status.modInfo.hasMod()){
-                res += "\n>>Mod:\n"
-                status.modInfo.modList.forEach { 
-                    res += "[ " + it.modId + " ] 版本: v" + it.version + "\n"
+        val info = status.modInfo
+        if(info.hasModInfo()){
+            if(info.hasMod()){
+                if(isDisplayMod){
+                    res += "\n>> ${info.modList.size} Mods:\n"
+                    info.modList.forEach {
+                        res += "[ " + it.modId + " ] 版本: v" + it.version + "\n"
+                    }
+                }
+                else{
+                    res += "\n>> ${info.modList.size} Mods\n" +
+                        "(Tip: 输入 /zt m 以显示详细mod信息)"
                 }
             }
         }
@@ -44,7 +51,7 @@ object SServerPing {
         return res
     }
     
-    suspend fun checkServer(serverIp: String): Boolean {
+    fun checkServer(serverIp: String): Boolean {
         val args = serverIp.split(":")
         if(args.isEmpty() || args.size > 2)
             return false

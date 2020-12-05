@@ -6,17 +6,20 @@ import io.github.sunshinewzy.sunnybot.commands.regSSimpleCommands
 import io.github.sunshinewzy.sunnybot.commands.setPermit
 import io.github.sunshinewzy.sunnybot.enums.RunningState
 import io.github.sunshinewzy.sunnybot.functions.AntiRecall
+import io.github.sunshinewzy.sunnybot.functions.Repeater
 import io.github.sunshinewzy.sunnybot.games.SGameManager
 import io.github.sunshinewzy.sunnybot.objects.SDataGroup
 import io.github.sunshinewzy.sunnybot.objects.SGroup
 import io.github.sunshinewzy.sunnybot.objects.SSaveGroup.sGroupMap
 import io.github.sunshinewzy.sunnybot.objects.sDataGroupMap
+import io.github.sunshinewzy.sunnybot.runnable.STimerTask
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import net.mamoe.mirai.contact.Group
 import net.mamoe.mirai.contact.Member
 import net.mamoe.mirai.contact.User
 import net.mamoe.mirai.event.subscribeMessages
+import java.util.*
 
 val sunnyScope = CoroutineScope(SupervisorJob())
 var antiRecall: AntiRecall? = null
@@ -40,6 +43,10 @@ suspend fun sunnyInit() {
     setPermissions()
     //游戏功能初始化
     SGameManager.gameInit(miraiBot!!)
+    //定时任务初始化
+    Timer().schedule(STimerTask, Date(), 86400_000L)       //24h = 1440min =  86400s = 86400_000ms
+    //复读
+    Repeater.repeat()
 }
 
 private fun groupInit() {

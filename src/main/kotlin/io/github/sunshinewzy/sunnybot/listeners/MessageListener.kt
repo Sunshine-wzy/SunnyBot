@@ -9,10 +9,10 @@ import net.mamoe.mirai.message.GroupMessageEvent
 
 fun listenMessage() {
     sunnyScope.subscribeAlways<GroupMessageEvent> {
-        antiRecall!!.saveMessage(group.id, message)
+        antiRecall?.saveMessage(group.id, message)
     }
     
     sunnyScope.subscribeAlways<MessageRecallEvent.GroupRecall> {
-        antiRecall!!.antiRecallByGroupEvent(this)
+        antiRecall?.antiRecallByGroupEvent(this)
     }
 }

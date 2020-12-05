@@ -11,7 +11,11 @@ import net.mamoe.mirai.contact.User
  * @param std Sunshine Technology Dollar
  */
 @Serializable
-data class SPlayer(private val id: Long, var std: Long = 0)
+data class SPlayer(
+    private val id: Long,
+    var std: Long = 0,
+    var isDailySignIn: Boolean = false
+)
 
 object SSavePlayer: AutoSavePluginData("SPlayerData") {
     var sPlayerMap: MutableMap<Long, SPlayer> by value(mutableMapOf())
@@ -34,11 +38,17 @@ fun regPlayer(player: User) {
     }
 }
 
-fun User.addPlayerSTD(num: Long) {
+fun User.addSTD(num: Long) {
     val sPlayer = SSavePlayer.getSPlayer(id)
     sPlayer.std += num
 }
 
-fun User.addPlayerSTD(num: Int) {
-    addPlayerSTD(num.toLong())
+fun User.addSTD(num: Int) {
+    addSTD(num.toLong())
+}
+
+fun User.getSPlayer(): SPlayer {
+    if(!sPlayerMap.containsKey(id))
+        sPlayerMap[id] = SPlayer(id)
+    return sPlayerMap[id]!!
 }

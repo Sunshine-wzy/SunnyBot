@@ -6,11 +6,15 @@ import net.mamoe.mirai.console.data.AutoSavePluginData
 import net.mamoe.mirai.console.data.value
 import net.mamoe.mirai.contact.Group
 import net.mamoe.mirai.contact.Member
+import net.mamoe.mirai.message.data.Message
 
 @Serializable
 class SGroup(private val groupID: Long) {
     var roselleServerIp = ""
     var serverIp = ""
+    var isRepeat = true
+    
+    val dailySignIns = ArrayList<Pair<Long, String>>()
 }
 
 object SSaveGroup: AutoSavePluginData("SGroupData") {
@@ -23,7 +27,6 @@ object SSaveGroup: AutoSavePluginData("SGroupData") {
         return sGroupMap[groupId]!!
     }
 }
-
 
 val sDataGroupMap = HashMap<Long, SDataGroup>()
 
@@ -53,4 +56,12 @@ data class DataTicTacToe(
 fun Group.setRunningState(state: RunningState) {
     val sDataGroup = SDataGroup.getSDataGroup(id)
     sDataGroup.runningState = state
+}
+
+fun Group.getSGroup(): SGroup {
+    val groupId = id
+    
+    if(!SSaveGroup.sGroupMap.containsKey(groupId))
+        SSaveGroup.sGroupMap[groupId] = SGroup(groupId)
+    return SSaveGroup.sGroupMap[groupId]!!
 }

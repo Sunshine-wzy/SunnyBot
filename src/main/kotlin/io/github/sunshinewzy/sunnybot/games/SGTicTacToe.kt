@@ -10,6 +10,7 @@ import net.mamoe.mirai.message.data.At
 import net.mamoe.mirai.message.data.PlainText
 import kotlin.random.Random
 
+
 /**
  * 井字棋
  */
@@ -105,13 +106,18 @@ object SGTicTacToe : SGroupGame("井字棋", RunningState.TICTACTOE, RunningState.T
         }
         group.sendMsg(name, group.laTeXImage(printBoard(dataTicTacToe)))
         
-        judge(group, dataTicTacToe)
+        if(judge(group, dataTicTacToe))
+            return
         
         //回合更替
         if(dataTicTacToe.round == 1)
             dataTicTacToe.round = 2
         else if(dataTicTacToe.round == 2)
             dataTicTacToe.round = 1
+
+        group.sendMsg(name, At(dataTicTacToe.player[dataTicTacToe.round]!!) +
+            PlainText("\n到您的回合了，请输入 #x,y (x和y均为1-3之间的整数) 以落子")
+        )
     }
 
     override suspend fun startGame(event: SGroupGameEvent) {
@@ -164,48 +170,51 @@ object SGTicTacToe : SGroupGame("井字棋", RunningState.TICTACTOE, RunningState.T
                         
                         Tips:
                         ① x为横坐标, y为纵坐标
-                        ② x和y均为1-3之间的数字
+                        ② x和y均为1-3之间的整数
                         ③ ,为英文逗号
                     """.trimIndent()
                 )
             )
             
-            init(dataTicTacToe)
+            val round = init(dataTicTacToe)
             group.sendMsg(name, group.laTeXImage(printBoard(dataTicTacToe)))
+            group.sendMsg(name, At(dataTicTacToe.player[round]!!) +
+                PlainText("\n您是先手，请输入 #x,y (x和y均为1-3之间的整数) 以落子")
+            )
         }
     }
 
     /**
      * 胜利判定
      */
-    private suspend fun judge(group: Group, dataTicTacToe: DataTicTacToe) {
+    private suspend fun judge(group: Group, dataTicTacToe: DataTicTacToe): Boolean {
         val slot = dataTicTacToe.slot
         //行
         for(i in 1..3){
             if(slot[i] != 0 && slot[i] == slot[i+3] && slot[i] == slot[i+6]){
                 win(group, slot[i], dataTicTacToe)
-                return
+                return true
             }
         }
         //列
         for(i in 1..7 step 3){
             if(slot[i] != 0 && slot[i] == slot[i+1] && slot[i] == slot[i+2]){
                 win(group, slot[i], dataTicTacToe)
-                return
+                return true
             }
         }
         //斜
         if(slot[1] != 0 && slot[1] == slot[5] && slot[1] == slot[9]){
             win(group, slot[1], dataTicTacToe)
-            return
+            return true
         }
         if(slot[3] != 0 && slot[3] == slot[5] && slot[3] == slot[7]){
             win(group, slot[3], dataTicTacToe)
-            return
+            return true
         }
         
-        val p1 = dataTicTacToe.player[1] ?: return
-        val p2 = dataTicTacToe.player[2] ?: return
+        val p1 = dataTicTacToe.player[1] ?: return false
+        val p2 = dataTicTacToe.player[2] ?: return false
         
         //平局判定
         var isDraw = true
@@ -218,8 +227,8 @@ object SGTicTacToe : SGroupGame("井字棋", RunningState.TICTACTOE, RunningState.T
         if(isDraw){
             group.setRunningState(RunningState.FREE)
             val reward = Random.nextInt(3) + 3
-            p1.addPlayerSTD(reward)
-            p2.addPlayerSTD(reward)
+            p1.addSTD(reward)
+            p2.addSTD(reward)
             
             group.sendMsg(name, At(p1) + " 与 " + At(p2) +
                 """
@@ -228,8 +237,10 @@ object SGTicTacToe : SGroupGame("井字棋", RunningState.TICTACTOE, RunningState.T
                     游戏奖励: $reward STD
                 """.trimIndent()
             )
-            return
+            return true
         }
+        
+        return false
     }
     
     private suspend fun win(group: Group, p: Int, dataTicTacToe: DataTicTacToe) {
@@ -241,7 +252,7 @@ object SGTicTacToe : SGroupGame("井字棋", RunningState.TICTACTOE, RunningState.T
 
         group.setRunningState(RunningState.FREE)
         val reward = Random.nextInt(5) + 6
-        winner.addPlayerSTD(reward)
+        winner.addSTD(reward)
         
         group.sendMsg(name, PlainText("恭喜玩家 ") + At(winner) +
             PlainText("""
@@ -262,11 +273,14 @@ object SGTicTacToe : SGroupGame("井字棋", RunningState.TICTACTOE, RunningState.T
         
     }
     
-    private fun init(dataTicTacToe: DataTicTacToe) {
+    private fun init(dataTicTacToe: DataTicTacToe): Int {
         for(i in 0..9) {
             dataTicTacToe.slot[i] = 0
         }
-        dataTicTacToe.round = 1
+        
+        val round = Random.nextInt(2) + 1
+        dataTicTacToe.round = round
+        return round
     }
 
     private fun printBoard(dataTicTacToe: DataTicTacToe): String {

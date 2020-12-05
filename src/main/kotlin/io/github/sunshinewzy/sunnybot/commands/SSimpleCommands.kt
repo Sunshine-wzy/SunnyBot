@@ -4,10 +4,13 @@ import io.github.sunshinewzy.sunnybot.*
 import io.github.sunshinewzy.sunnybot.objects.SSaveGroup.sGroupMap
 import io.github.sunshinewzy.sunnybot.objects.SSavePlayer.sPlayerMap
 import io.github.sunshinewzy.sunnybot.objects.SRequest
+import io.github.sunshinewzy.sunnybot.objects.getSGroup
 import io.github.sunshinewzy.sunnybot.objects.regPlayer
 import io.github.sunshinewzy.sunnybot.utils.SServerPing
 import net.mamoe.mirai.console.command.CommandSender
+import net.mamoe.mirai.console.command.MemberCommandSender
 import net.mamoe.mirai.console.command.SimpleCommand
+import net.mamoe.mirai.console.command.description.CommandArgumentContext
 import net.mamoe.mirai.contact.Member
 import net.mamoe.mirai.contact.isOperator
 import net.mamoe.mirai.message.data.At
@@ -23,9 +26,10 @@ suspend fun regSSimpleCommands() {
     SCMenu.reg()
     SCInfo.reg("u*")
     SCAntiRecall.reg()
-    SCServerInfo.reg("u*")
     SCIpBind.reg()
+    SCIpBindPing.reg()
     SCJavaDoc.reg("u*")
+    SCRepeater.reg()
     
     //Debug
     SCDebugServerInfo.reg("console")
@@ -107,62 +111,6 @@ object SCAntiRecall: SimpleCommand(
     }
 }
 
-object SCServerInfo: SimpleCommand(
-    PluginMain,
-    "serverInfo", "server", "zt", "服务器状态", "状态", "服务器",
-    description = "服务器状态查询"
-) {
-    const val url = "http://manghui.cc/tools/r-get.php"
-    const val roselleUrl = "https://mc.iroselle.com/api/data/getServerInfo"
-    
-    @Handler
-    suspend fun CommandSender.handle() {
-        if(user == null || user !is Member)
-            return
-        val member = user as Member
-        val group = member.group
-        val groupId = group.id
-        val sGroup = sGroupMap[groupId] ?: return
-
-        if(sGroup.roselleServerIp != "") {
-            val ip = sGroup.roselleServerIp
-            val result = SRequest(roselleUrl).roselleResult(ip, 0)
-            val res = result.res
-
-            var serverStatus = "离线"
-            if(res.server_status == 1)
-                serverStatus = "在线"
-
-            sendMessage(
-                "\t『 SunnyBot 』\n" +
-                    "服务器IP: $ip\n" +
-                    "服务器状态: $serverStatus\n" +
-                    "当前在线玩家数: ${res.server_player_online}\n" +
-                    "在线玩家上限: ${res.server_player_max}\n" +
-                    "日均在线人数: ${res.server_player_average}\n" +
-                    "历史最高同时在线人数: ${res.server_player_history_max}\n" +
-                    "昨日平均在线人数: ${res.server_player_yesterday_average}\n" +
-                    "昨日最高同时在线人数: ${res.server_player_yesterday_max}\n" +
-                    "更新时间: ${res.update_time}\n" +
-                    "查询用时: ${result.run_time}s"
-            )
-        }
-
-        else if(sGroup.serverIp != "") {
-            val ip = sGroup.serverIp
-            
-            group.sendMsg("服务器状态查询", SServerPing.pingServer(ip))
-            
-        }
-
-        else sendMessage("""
-                本群还未绑定服务器
-                请输入 "/ip 服务器IP" 以绑定服务器
-            """.trimIndent())
-        
-    }
-}
-
 object SCDebugServerInfo: SimpleCommand(
     PluginMain,
     "DebugServerInfo", "dServer", "dzt",
@@ -233,12 +181,39 @@ object SCIpBind: SimpleCommand(
     }
 }
 
+object SCIpBindPing: SimpleCommand(
+    PluginMain,
+    "ipBindPing", "ipp", "服务器绑定Ping", "绑定P",
+    description = "服务器状态查询ServerPing IP绑定"
+) {
+    @Handler
+    suspend fun CommandSender.handle(serverIp: String) {
+        if(user !=null && user is Member){
+            val member = user as Member
+            val group = member.group
+            val groupId = group.id
+            val sGroup = sGroupMap[groupId] ?: return
+
+            if(SServerPing.checkServer(serverIp)){
+                sGroup.serverIp = serverIp
+                sGroup.roselleServerIp = ""
+                sendMessage("$serverIp 绑定成功！")
+                return
+            }
+        }
+
+        sendMessage("绑定失败= =\n" +
+            "请确保服务器IP正确且当前服务器在线！")
+    }
+}
+
 object SCJavaDoc: SimpleCommand(
     PluginMain,
     "JavaDoc", "jd",
     description = "查看常用JavaDoc"
 ) {
     private val javaDocs = """
+        OI Wiki: https://oi-wiki.org/
         Java8: https://docs.oracle.com/javase/8/docs/api/overview-summary.html 
         
         Bukkit教程:
@@ -266,5 +241,35 @@ object SCJavaDoc: SimpleCommand(
     suspend fun CommandSender.handle() {
         val contact = subject ?: return
         contact.sendMsg("JavaDoc", javaDocs)
+    }
+}
+
+object SCRepeater : SimpleCommand(
+    PluginMain,
+    "Repeater", "rep", "复读",
+    description = "开启/关闭 复读"
+) {
+    @Handler
+    suspend fun MemberCommandSender.handle(isRepeat: String) {
+        val rep = isRepeat.toLowerCase()
+        val sGroup = group.getSGroup()
+        
+        if(!user.isOperator()){
+            sendMessage(At(user).plus(PlainText("您不是群主或管理员，没有启用/关闭复读功能的权限！")))
+            group.sendMsg("复读", "群复读状态: ${sGroup.isRepeat}")
+            return
+        }
+        
+        if(rep.contains("t") || rep.contains("开")){
+            sGroup.isRepeat = true
+            group.sendMsg("复读", "复读已开启！")
+        }
+        else if(rep.contains("f") || rep.contains("关")){
+            sGroup.isRepeat = false
+            group.sendMsg("复读", "复读已关闭！")
+        }
+        else{
+            group.sendMsg("复读", "群复读状态: ${sGroup.isRepeat}")
+        }
     }
 }

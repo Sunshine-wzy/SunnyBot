@@ -5,6 +5,7 @@ import io.github.sunshinewzy.sunnybot.listeners.listenBot
 import io.github.sunshinewzy.sunnybot.listeners.listenMessage
 import io.github.sunshinewzy.sunnybot.objects.SSaveGroup
 import io.github.sunshinewzy.sunnybot.objects.SSavePlayer
+import io.github.sunshinewzy.sunnybot.objects.SSaveSunny
 import net.mamoe.mirai.Bot
 import net.mamoe.mirai.console.extension.PluginComponentStorage
 import net.mamoe.mirai.console.plugin.jvm.JvmPluginDescription
@@ -17,7 +18,7 @@ var miraiBot: Bot? = null
 object PluginMain : KotlinPlugin(
     JvmPluginDescription(
         id = "io.github.sunshinewzy.sunnybot",
-        version = "1.0.6"
+        version = "1.0.7"
     )
 ) {
     override fun PluginComponentStorage.onLoad() {
@@ -44,5 +45,6 @@ object PluginMain : KotlinPlugin(
     private fun reloadData() {
         SSavePlayer.reload()
         SSaveGroup.reload()
+        SSaveSunny.reload()
     }
 }

@@ -17,7 +17,7 @@ import kotlin.math.abs
 
 class AntiRecall {
 
-    private var groupMap = mutableMapOf<Long, Pair<Mutex, MutableList<Triple<Int,Int,MessageChain>>>>()
+    var groupMap = mutableMapOf<Long, Pair<Mutex, MutableList<Triple<Int,Int,MessageChain>>>>()
     private var openMap = mutableMapOf<Long, Boolean>()
 
     init{
@@ -98,9 +98,10 @@ class AntiRecall {
      *  保存聊天记录
      */
     suspend fun saveMessage(groupId: Long, message: MessageChain) {
-        if(!checkAntiRecallStatus(groupId)){
-            return
-        }
+        //因Repeater需要，始终保存聊天记录
+//        if(!checkAntiRecallStatus(groupId)){
+//            return
+//        }
         // 存聊天记录
         if (!groupMap.containsKey(groupId)) {
             // 创建新的mutex和list
