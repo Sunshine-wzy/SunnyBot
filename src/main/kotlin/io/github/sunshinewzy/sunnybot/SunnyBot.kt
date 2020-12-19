@@ -24,7 +24,7 @@ import java.util.*
 val sunnyScope = CoroutineScope(SupervisorJob())
 var antiRecall: AntiRecall? = null
 //超级管理员
-val sunnyAdmins = listOf("1123574549")
+val sunnyAdmins = listOf(1123574549L)
 
 suspend fun sunnyInit() {
     //群初始化
@@ -116,7 +116,7 @@ private fun regMsg() {
  */
 
 suspend fun setPermissions() {
-    setPermit("console:command.help", "u*")
+    
 }
 
 suspend fun setAdministrator() {

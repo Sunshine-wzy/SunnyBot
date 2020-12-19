@@ -1,19 +1,20 @@
 package io.github.sunshinewzy.sunnybot.commands
 
 import io.github.sunshinewzy.sunnybot.*
+import io.github.sunshinewzy.sunnybot.objects.SRequest
 import io.github.sunshinewzy.sunnybot.objects.SSaveGroup.sGroupMap
 import io.github.sunshinewzy.sunnybot.objects.SSavePlayer.sPlayerMap
-import io.github.sunshinewzy.sunnybot.objects.SRequest
 import io.github.sunshinewzy.sunnybot.objects.getSGroup
 import io.github.sunshinewzy.sunnybot.objects.regPlayer
 import io.github.sunshinewzy.sunnybot.utils.SServerPing
+import net.mamoe.mirai.console.command.CommandManager.INSTANCE.registeredCommands
 import net.mamoe.mirai.console.command.CommandSender
 import net.mamoe.mirai.console.command.MemberCommandSender
 import net.mamoe.mirai.console.command.SimpleCommand
-import net.mamoe.mirai.console.command.description.CommandArgumentContext
 import net.mamoe.mirai.contact.Member
 import net.mamoe.mirai.contact.isOperator
 import net.mamoe.mirai.message.data.At
+import net.mamoe.mirai.message.data.Image
 import net.mamoe.mirai.message.data.PlainText
 
 /**
@@ -23,13 +24,15 @@ import net.mamoe.mirai.message.data.PlainText
 suspend fun regSSimpleCommands() {
     //指令注册
     //默认m*为任意群员 u*为任意用户
-    SCMenu.reg()
+    SCMenu.reg("u*")
+    SCGameMenu.reg()
     SCInfo.reg("u*")
     SCAntiRecall.reg()
     SCIpBind.reg()
     SCIpBindPing.reg()
     SCJavaDoc.reg("u*")
     SCRepeater.reg()
+    SCBingPicture.reg()
     
     //Debug
     SCDebugServerInfo.reg("console")
@@ -39,12 +42,30 @@ suspend fun regSSimpleCommands() {
 object SCMenu: SimpleCommand(
     PluginMain,
     "menu", "cd", "菜单", "功能",
-    description = "菜单"
+    description = "菜单|功能列表"
 ) {
     @Handler
     suspend fun CommandSender.handle() {
-        sendMessage("""
-            『 SunnyBot 』
+        var text = "===============\n"
+        PluginMain.registeredCommands.forEach { 
+            if(it.usage.contains("Debug")) return@forEach
+            
+            text += "◆ ${it.usage.replaceFirst("\n", "")}\n\n"
+        }
+        text += "===============\n"
+        
+        subject?.sendMsg("菜单 | 功能列表", text)
+    }
+}
+
+object SCGameMenu: SimpleCommand(
+    PluginMain,
+    "GameMenu", "game", "游戏", "游戏菜单",
+    description = "游戏菜单"
+) {
+    @Handler
+    suspend fun CommandSender.handle() {
+        subject?.sendMsg("游戏菜单", """
             ===============
             ◆ 24点
             ◆ 井字棋
@@ -59,7 +80,7 @@ object SCMenu: SimpleCommand(
 
 object SCInfo: SimpleCommand(
     PluginMain,
-    "info", "信息",
+    "信息", "info",
     description = "查询个人信息"
 ) {
     @Handler
@@ -97,7 +118,7 @@ object SCAntiRecall: SimpleCommand(
         val member = user as Member
         val group = member.group
         
-        if(member.isOperator() || sunnyAdmins.contains(member.id.toString())){
+        if(member.isOperator() || member.isSunnyAdmin()){
             val msg = str.toLowerCase()
             if(msg.contains("开") || msg.contains("t"))
                 antiRecall?.setAntiRecallStatus(group.id, true)
@@ -120,7 +141,7 @@ object SCDebugServerInfo: SimpleCommand(
     suspend fun CommandSender.handle(serverIp: String) {
         val contact = miraiBot?.getGroup(423179929L) ?: return
         
-        val roselleResult = SRequest(SCServerInfo.roselleUrl).roselleResult(serverIp, 0)
+        val roselleResult = SRequest(SCServerInfo.roselleUrl).resultRoselle(serverIp, 0)
         if(roselleResult.code == 1){
             val res = roselleResult.res
             var serverStatus = "离线"
@@ -160,7 +181,7 @@ object SCIpBind: SimpleCommand(
             val groupId = group.id
             val sGroup = sGroupMap[groupId] ?: return
             
-            val roselleResult = SRequest(SCServerInfo.roselleUrl).roselleResult(serverIp, 0)
+            val roselleResult = SRequest(SCServerInfo.roselleUrl).resultRoselle(serverIp, 0)
             if(roselleResult.code == 1){
                 sGroup.roselleServerIp = serverIp
                 sGroup.serverIp = ""
@@ -254,7 +275,7 @@ object SCRepeater : SimpleCommand(
         val rep = isRepeat.toLowerCase()
         val sGroup = group.getSGroup()
         
-        if(!user.isOperator()){
+        if(!user.isOperator() && !user.isSunnyAdmin()){
             sendMessage(At(user).plus(PlainText("您不是群主或管理员，没有启用/关闭复读功能的权限！")))
             group.sendMsg("复读", "群复读状态: ${sGroup.isRepeat}")
             return
@@ -271,5 +292,17 @@ object SCRepeater : SimpleCommand(
         else{
             group.sendMsg("复读", "群复读状态: ${sGroup.isRepeat}")
         }
+    }
+}
+
+object SCBingPicture : SimpleCommand(
+    PluginMain,
+    "BingPicture", "bp", "每日一图",
+    description = "Bing必应每日一图"
+) {
+    @Handler
+    suspend fun CommandSender.handle() {
+        subject?.sendMsg(description, SRequest("https://api.565.ink/bing").result())
+        
     }
 }

@@ -1,5 +1,6 @@
 package io.github.sunshinewzy.sunnybot
 
+import io.github.sunshinewzy.sunnybot.enums.SunSTSymbol
 import io.github.sunshinewzy.sunnybot.events.game.SGroupGameEvent
 import io.github.sunshinewzy.sunnybot.objects.SDataGroup
 import io.github.sunshinewzy.sunnybot.objects.SGroup
@@ -7,6 +8,7 @@ import io.github.sunshinewzy.sunnybot.objects.SSaveGroup
 import io.github.sunshinewzy.sunnybot.objects.sDataGroupMap
 import net.mamoe.mirai.contact.Contact
 import net.mamoe.mirai.contact.Member
+import net.mamoe.mirai.contact.User
 import net.mamoe.mirai.message.data.Message
 import net.mamoe.mirai.message.data.MessageChain
 import net.mamoe.mirai.message.data.PlainText
@@ -121,5 +123,28 @@ fun Int.zeroEnd(digit: Int): Int {
         return this
     return this - getEnd(digit)
 }
+
+//endregion
+
+
+//region SunSTSymbol
+
+fun String.newSunSTSymbol(symbol: SunSTSymbol): String = replace(symbol.oldContent, symbol.newContent)
+
+fun String.oldSunSTSymbol(symbol: SunSTSymbol): String = replace(symbol.newContent, symbol.oldContent)
+
+//endregion
+
+
+//region SunnyAdmin
+
+fun User.isSunnyAdmin(): Boolean = sunnyAdmins.contains(id)
+
+//endregion
+
+
+//region Usage
+
+infix fun String.usageWith(usage: String): String = "$this\n\n$usage"
 
 //endregion

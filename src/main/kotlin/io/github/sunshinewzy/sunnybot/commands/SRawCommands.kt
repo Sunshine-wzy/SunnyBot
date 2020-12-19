@@ -1,18 +1,17 @@
 package io.github.sunshinewzy.sunnybot.commands
 
-import io.github.sunshinewzy.sunnybot.PluginMain
-import io.github.sunshinewzy.sunnybot.miraiBot
+import io.github.sunshinewzy.sunnybot.*
+import io.github.sunshinewzy.sunnybot.enums.SunSTSymbol
 import io.github.sunshinewzy.sunnybot.objects.*
-import io.github.sunshinewzy.sunnybot.sendMsg
 import io.github.sunshinewzy.sunnybot.utils.SLaTeX.laTeXImage
 import io.github.sunshinewzy.sunnybot.utils.SServerPing
 import net.mamoe.mirai.console.command.CommandSender
 import net.mamoe.mirai.console.command.RawCommand
-import net.mamoe.mirai.console.command.SimpleCommand
 import net.mamoe.mirai.contact.Member
 import net.mamoe.mirai.message.data.At
 import net.mamoe.mirai.message.data.MessageChain
 import net.mamoe.mirai.message.data.PlainText
+import net.mamoe.mirai.message.data.buildXmlMessage
 
 /**
  * Sunny Raw Commands
@@ -24,6 +23,7 @@ suspend fun regSRawCommands() {
     SCLaTeX.reg("u*")
     SCDailySignIn.reg("u*")
     SCServerInfo.reg("u*")
+    SCXmlMessage.reg("u*")
 
     //Debug
     SCDebugLaTeX.reg("console")
@@ -33,8 +33,7 @@ suspend fun regSRawCommands() {
 object SCLaTeX: RawCommand(
     PluginMain,
     "LaTeX", "lx",
-    description = "LaTeX渲染",
-    usage = "/lx LaTeX文本(可以有空格)"
+    usage = "LaTeX渲染" usageWith "/lx LaTeX文本(可以有空格)"
 ) {
     override suspend fun CommandSender.onCommand(args: MessageChain) {
         val contact = subject ?: return
@@ -48,8 +47,7 @@ object SCLaTeX: RawCommand(
 object SCDebugLaTeX: RawCommand(
     PluginMain,
     "debugLaTeX", "dlx",
-    description = "Debug LaTeX",
-    usage = "/dlx [g 群号] LaTeX文本(可以有空格)"
+    usage = "Debug LaTeX" usageWith "/dlx [g 群号] LaTeX文本(可以有空格)"
 ) {
     private const val groupIdSunST = 423179929L
 
@@ -76,8 +74,7 @@ object SCDebugLaTeX: RawCommand(
 object SCDailySignIn: RawCommand(
     PluginMain,
     "dailySignIn", "qd", "签到", "打卡",
-    description = "每日签到",
-    usage = "/签到 <您的今日赠言>"
+    usage = "每日签到" usageWith "/签到 <您的今日赠言>"
 ) {
     override suspend fun CommandSender.onCommand(args: MessageChain) {
         val member = user ?: return
@@ -111,7 +108,9 @@ object SCDailySignIn: RawCommand(
             return
         }
         
-        val arg = args.contentToString().replace("[|]".toRegex(), "").replace(" ", "_").replace("\n", "__")
+        val arg = args.contentToString().replace("[|]".toRegex(), "")
+            .replace("\'", "")
+            .newSunSTSymbol(SunSTSymbol.ENTER)
         dailySignIns.add(member.id to arg)
         
         if(dailySignIns.size < 5)
@@ -131,7 +130,7 @@ object SCDailySignIn: RawCommand(
         """.trimIndent()
         for(i in 0 until dailySignIns.size){
             val signIn = dailySignIns[i]
-            msg += "${i + 1}. ${group[signIn.first].nameCard}: " + signIn.second + "\n"
+            msg += "${i + 1}. ${group[signIn.first].nameCard}: " + signIn.second.oldSunSTSymbol(SunSTSymbol.ENTER) + "\n"
         }
         group.sendMsg("每日签到", At(member) + " $msg")
     }
@@ -140,8 +139,7 @@ object SCDailySignIn: RawCommand(
 object SCServerInfo: RawCommand(
     PluginMain,
     "serverInfo", "server", "zt", "服务器状态", "状态", "服务器",
-    description = "服务器状态查询",
-    usage = """
+    usage = "服务器状态查询" usageWith """
         /zt         默认查询方式
         /zt 1       强制使用Ping查询
         /zt 2       强制使用洛神云查询
@@ -162,7 +160,7 @@ object SCServerInfo: RawCommand(
 
         if(str == "2" || sGroup.roselleServerIp != "") {
             val ip = if(sGroup.roselleServerIp != "") sGroup.roselleServerIp else sGroup.serverIp
-            val result = SRequest(roselleUrl).roselleResult(ip, 0)
+            val result = SRequest(roselleUrl).resultRoselle(ip, 0)
             val res = result.res
 
             var serverStatus = "离线"
@@ -193,5 +191,31 @@ object SCServerInfo: RawCommand(
                 本群还未绑定服务器
                 请输入 "/ip 服务器IP" 以绑定服务器
             """.trimIndent())
+    }
+}
+
+object SCXmlMessage: RawCommand(
+    PluginMain,
+    "xmlMessage", "xml",
+    usage = "发送一条Xml消息" usageWith "/xml <消息内容>"
+) {
+    override suspend fun CommandSender.onCommand(args: MessageChain) {
+        val contact = subject ?: return
+        
+        val str = args.contentToString()
+        
+        val msg = buildXmlMessage(1) {
+            item { 
+                title(str)
+//                picture("https://ss1.bdstatic.com/70cFuXSh_Q1YnxGkpoWK1HF6hhy/it/u=3078106429,1249965398&fm=26&gp=0.jpg")
+            }
+                
+//            source("SunST", "https://www.mcbbs.net/thread-1015897-1-1.html")
+//            
+//            actionData = "https://www.mcbbs.net/thread-1015897-1-1.html"
+        }
+        
+        contact.sendMessage(msg.contentToString())
+        contact.sendMessage(msg)
     }
 }

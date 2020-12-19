@@ -2,7 +2,10 @@ package io.github.sunshinewzy.sunnybot.games
 
 import io.github.sunshinewzy.sunnybot.enums.RunningState
 import io.github.sunshinewzy.sunnybot.events.game.SGroupGameEvent
-import io.github.sunshinewzy.sunnybot.objects.*
+import io.github.sunshinewzy.sunnybot.objects.DataTicTacToe
+import io.github.sunshinewzy.sunnybot.objects.addSTD
+import io.github.sunshinewzy.sunnybot.objects.sDataGroupMap
+import io.github.sunshinewzy.sunnybot.objects.setRunningState
 import io.github.sunshinewzy.sunnybot.sendMsg
 import io.github.sunshinewzy.sunnybot.utils.SLaTeX.laTeXImage
 import net.mamoe.mirai.contact.Group

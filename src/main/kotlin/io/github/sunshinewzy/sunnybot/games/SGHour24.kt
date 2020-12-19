@@ -2,7 +2,10 @@ package io.github.sunshinewzy.sunnybot.games
 
 import io.github.sunshinewzy.sunnybot.enums.RunningState
 import io.github.sunshinewzy.sunnybot.events.game.SGroupGameEvent
-import io.github.sunshinewzy.sunnybot.objects.*
+import io.github.sunshinewzy.sunnybot.objects.SDataGroup
+import io.github.sunshinewzy.sunnybot.objects.SGroup
+import io.github.sunshinewzy.sunnybot.objects.SSaveGroup
+import io.github.sunshinewzy.sunnybot.objects.addSTD
 import java.util.*
 import java.util.stream.Collectors
 

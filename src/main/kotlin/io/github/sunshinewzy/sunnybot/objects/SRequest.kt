@@ -1,6 +1,7 @@
 package io.github.sunshinewzy.sunnybot.objects
 
 import com.google.gson.Gson
+import java.awt.image.BufferedImage
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.io.UnsupportedEncodingException
@@ -14,7 +15,11 @@ import java.net.URLEncoder
  */
 
 class SRequest(private val url: String) {
-    fun roselleResult(serverAddr: String, showFavicon: Int): RosellemcServerInfo {
+    fun result(): String {
+        return httpRequest()
+    }
+    
+    fun resultRoselle(serverAddr: String, showFavicon: Int): RosellemcServerInfo {
         //params用于存储要请求的参数
         val params = HashMap<String, Any>()
         params["server_addr"] = serverAddr
@@ -24,14 +29,12 @@ class SRequest(private val url: String) {
         //处理返回的JSON数据并返回
         return Gson().fromJson(strRequest, RosellemcServerInfo::class.java)
     }
+
+//    fun resultImage(): BufferedImage {
+//        val buffer = BufferedImage()
+//    }
     
-    fun result(ip: String): String {
-        //params用于存储要请求的参数
-        val params = HashMap<String, Any>()
-        params["server"] = ip
-        //调用httpRequest方法，这个方法主要用于请求地址，并加上请求参数
-        return httpRequest(params)
-    }
+    
     
     private fun httpRequest(params: Map<String, Any>): String {
         //buffer 用于接收返回的字符
@@ -50,6 +53,41 @@ class SRequest(private val url: String) {
             val inputStreamReader = InputStreamReader(inputStream, "UTF-8")
             val bufferedReader = BufferedReader(inputStreamReader)
             
+            //将bufferReader的值给放到buffer里
+            var str: String?
+            while ((bufferedReader.readLine().also { str = it }) != null){
+                buffer.append(str)
+            }
+            //关闭bufferReader和输入流
+            bufferedReader.close()
+            inputStreamReader.close()
+            inputStream.close()
+            //断开连接
+            httpUrlConn.disconnect()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        //返回字符串
+        return buffer.toString()
+    }
+
+    private fun httpRequest(): String {
+        //buffer 用于接收返回的字符
+        val buffer = StringBuffer()
+        try {
+            //建立URL，把请求地址给补全，其中urlEncode()方法用于把params里的参数给取出来
+            val theURL = URL(url)
+            //打开http连接
+            val httpUrlConn: HttpURLConnection = theURL.openConnection() as HttpURLConnection
+            httpUrlConn.doInput = true
+            httpUrlConn.requestMethod = "GET"
+            httpUrlConn.connect()
+
+            //获得输入
+            val inputStream= httpUrlConn.inputStream ?: return ""
+            val inputStreamReader = InputStreamReader(inputStream, "UTF-8")
+            val bufferedReader = BufferedReader(inputStreamReader)
+
             //将bufferReader的值给放到buffer里
             var str: String?
             while ((bufferedReader.readLine().also { str = it }) != null){

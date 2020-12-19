@@ -20,9 +20,3 @@ data class RSIRes(
     val server_status: Int,
     val update_time: String
 ): SBean
-
-data class ServerInfo(
-    val status: String,
-    val ip: String,
-    val port: Int
-)
