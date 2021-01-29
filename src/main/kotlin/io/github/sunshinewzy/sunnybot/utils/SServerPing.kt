@@ -15,16 +15,35 @@ object SServerPing {
             port = args[1].toInt()
         
         val socket = MCServerSocket.getInstance(ip, port) ?: return "无法连接到服务器"
-
-        val status = socket.getStatus(ProtocolVersion.v1_8_X) ?: return "无法获取服务器状态"
+        
+        var protocolVersion = ProtocolVersion.v1_8_X
+        var status = socket.getStatus(protocolVersion) ?: return "无法获取服务器状态"
         if(!status.isMCServer)
             return "这不是一个MineCraft服务器"
+        
+        val version = status.version.split(".")
+        if(version.size >= 2){
+            val ver = version[1]
+
+            when {
+                ver.contains("11") -> protocolVersion = ProtocolVersion.v1_11
+                ver.contains("12") -> protocolVersion = ProtocolVersion.v1_12_2
+                ver.contains("13") -> protocolVersion = ProtocolVersion.v1_13
+                ver.contains("14") -> protocolVersion = ProtocolVersion.v1_14
+                ver.contains("15") -> protocolVersion = ProtocolVersion.v1_15
+                ver.contains("16") -> protocolVersion = ProtocolVersion.v1_15_2
+            }
+        }
+        
+        val exactStatus = socket.getStatus(protocolVersion)
+        if(exactStatus != null && exactStatus.isMCServer && exactStatus.version != null) status = exactStatus
         
         var res =  """
             服务器IP: ${socket.ip}:${socket.port}
             服务器版本: ${status.version}
             当前在线人数: ${status.onlinePlayers}
             最大在线人数: ${status.maxPlayers}
+            协议版本: ${status.protocolVersion}
             
             MOTD:
             ${status.motd.line1MotdText}

@@ -1,7 +1,7 @@
 package io.github.sunshinewzy.sunnybot.functions
 
 import io.github.sunshinewzy.sunnybot.antiRecall
-import io.github.sunshinewzy.sunnybot.miraiBot
+import io.github.sunshinewzy.sunnybot.sunnyBot
 import io.github.sunshinewzy.sunnybot.objects.addSTD
 import io.github.sunshinewzy.sunnybot.objects.getSGroup
 import net.mamoe.mirai.event.subscribeGroupMessages
@@ -13,7 +13,7 @@ object Repeater {
     
     
     fun repeat() {
-        miraiBot?.subscribeGroupMessages {
+        sunnyBot?.subscribeGroupMessages {
             always { 
                 if(!group.getSGroup().isRepeat) return@always
                 val groupMap = antiRecall?.groupMap ?: return@always

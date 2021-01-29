@@ -1,6 +1,6 @@
 package io.github.sunshinewzy.sunnybot.functions
 
-import io.github.sunshinewzy.sunnybot.miraiBot
+import io.github.sunshinewzy.sunnybot.sunnyBot
 import io.github.sunshinewzy.sunnybot.objects.SSavePlayer
 import io.github.sunshinewzy.sunnybot.objects.getSGroup
 
@@ -11,7 +11,7 @@ object DailySignIn {
 //        if(SSaveSunny.dailySignInUpdate == day)
 //            return
 
-        miraiBot?.groups?.forEach { 
+        sunnyBot?.groups?.forEach { 
             it.getSGroup().dailySignIns.clear()
             
 //            it.sendMessage("""

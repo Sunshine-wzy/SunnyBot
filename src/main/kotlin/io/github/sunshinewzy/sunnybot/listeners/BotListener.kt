@@ -1,6 +1,6 @@
 package io.github.sunshinewzy.sunnybot.listeners
 
-import io.github.sunshinewzy.sunnybot.miraiBot
+import io.github.sunshinewzy.sunnybot.sunnyBot
 import io.github.sunshinewzy.sunnybot.sunnyInit
 import io.github.sunshinewzy.sunnybot.sunnyScope
 import net.mamoe.mirai.event.events.BotInvitedJoinGroupRequestEvent
@@ -12,7 +12,7 @@ var cnt = 0
 
 fun listenBot() {
     sunnyScope.subscribeAlways<BotOnlineEvent> {
-        miraiBot = bot
+        sunnyBot = bot
         cnt++
 
         if (cnt == 1)

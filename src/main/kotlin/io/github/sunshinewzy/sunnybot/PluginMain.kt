@@ -13,12 +13,12 @@ import net.mamoe.mirai.console.plugin.jvm.KotlinPlugin
 import net.mamoe.mirai.utils.info
 
 const val NAMESPACE = "Sunny"
-var miraiBot: Bot? = null
+var sunnyBot: Bot? = null
 
 object PluginMain : KotlinPlugin(
     JvmPluginDescription(
         id = "io.github.sunshinewzy.sunnybot",
-        version = "1.0.7"
+        version = "1.0.8"
     )
 ) {
     override fun PluginComponentStorage.onLoad() {

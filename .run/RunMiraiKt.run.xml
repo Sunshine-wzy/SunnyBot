@@ -10,7 +10,7 @@
     <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/../../Debug/Mirai-console" />
     <method v="2">
       <option name="Gradle.BeforeRunTask" enabled="false" tasks="jar" externalProjectPath="$PROJECT_DIR$" vmOptions="" scriptParameters="" />
-      <option name="ToolBeforeRunTask" enabled="true" actionId="Tool_External Tools_copy-plugin" />
+      <option name="ToolBeforeRunTask" enabled="true" actionId="Tool_External Tools_[copy-plugin]SunnyBot-to-MiraiConsole" />
     </method>
   </configuration>
 </component>

@@ -19,6 +19,7 @@ import net.mamoe.mirai.contact.Group
 import net.mamoe.mirai.contact.Member
 import net.mamoe.mirai.contact.User
 import net.mamoe.mirai.event.subscribeMessages
+import net.mamoe.mirai.message.data.At
 import java.util.*
 
 val sunnyScope = CoroutineScope(SupervisorJob())
@@ -42,7 +43,7 @@ suspend fun sunnyInit() {
     //设置权限
     setPermissions()
     //游戏功能初始化
-    SGameManager.gameInit(miraiBot!!)
+    SGameManager.gameInit(sunnyBot!!)
     //定时任务初始化
     Timer().schedule(STimerTask, Date(), 86400_000L)       //24h = 1440min =  86400s = 86400_000ms
     //复读
@@ -50,7 +51,7 @@ suspend fun sunnyInit() {
 }
 
 private fun groupInit() {
-    miraiBot?.groups?.forEach {
+    sunnyBot?.groups?.forEach {
         val groupId = it.id
         if(!sGroupMap.containsKey(groupId))
             sGroupMap[groupId] = SGroup(groupId)
@@ -60,7 +61,7 @@ private fun groupInit() {
 }
 
 private fun regMsg() {
-    miraiBot?.subscribeMessages {
+    sunnyBot?.subscribeMessages {
         (contains("老子不会")) end@{
             val id = getGroupID(sender)
             if (id == 0L)
@@ -91,6 +92,11 @@ private fun regMsg() {
                 }
             }
             reply("当前没有游戏正在进行。")
+        }
+        
+        atBot {
+            val member = sender as Member
+            member.group.sendIntroduction()
         }
         
     }
@@ -137,4 +143,15 @@ fun getGroupID(sender: User): Long {
         return sender.group.id
 
     return 0
+}
+
+suspend fun Group.sendIntroduction() {
+    val text = listOf(
+        "输入/cd 就能知道我能干什么了~",
+        "输入/cd 展示功能列表~",
+        "你知道吗: 输入/cd /menu /菜单 /功能  都可以展示功能列表哦~",
+        "输入/cd 开启新世界~"
+    )
+
+    sendMessage(text.random())
 }

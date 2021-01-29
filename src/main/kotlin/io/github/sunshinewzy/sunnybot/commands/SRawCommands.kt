@@ -65,7 +65,7 @@ object SCDebugLaTeX: RawCommand(
         }
         else text = args.contentToString()
 
-        val group = miraiBot?.getGroup(groupId) ?: return
+        val group = sunnyBot?.getGroup(groupId) ?: return
         val image = group.laTeXImage(text)
         group.sendMsg("LaTeX", image)
     }
@@ -202,20 +202,38 @@ object SCXmlMessage: RawCommand(
     override suspend fun CommandSender.onCommand(args: MessageChain) {
         val contact = subject ?: return
         
-        val str = args.contentToString()
+        val text = args.contentToString()
         
         val msg = buildXmlMessage(1) {
             item { 
-                title(str)
-//                picture("https://ss1.bdstatic.com/70cFuXSh_Q1YnxGkpoWK1HF6hhy/it/u=3078106429,1249965398&fm=26&gp=0.jpg")
-            }
+                layout = 2
                 
-//            source("SunST", "https://www.mcbbs.net/thread-1015897-1-1.html")
-//            
-//            actionData = "https://www.mcbbs.net/thread-1015897-1-1.html"
+                title("[SkyDream]天之梦")
+                summary(text)
+                
+                picture("https://s3.ax1x.com/2021/01/30/yFFwod.png")
+            }
+            
+            source("Sunshine Technology")
+            
+            serviceId = 1
+            action = "web"
+            url = "https://www.mcbbs.net/thread-1015897-1-1.html"
+            brief = "Sky Dream"
+        
+            templateId = 123
         }
         
-        contact.sendMessage(msg.contentToString())
+//        contact.sendMessage(msg.contentToString())
         contact.sendMessage(msg)
     }
 }
+
+/*
+<?xml version='1.0' encoding='UTF-8' standalone='yes' ?>
+<msg serviceID="60" templateID="123" action="web" brief="您已被移出本群" sourceMsgId="0" url="" flag="0" adverSign="0" multiMsgFlag="0">
+<item layout="1" advertiser_id="0" aid="0" />
+<item layout="1" advertiser_id="0" aid="0">
+<summary size="×FF0000">群友召唤术？</summary></item>
+<source name="" icon="" action="" appid="-1" /></msg>
+*/

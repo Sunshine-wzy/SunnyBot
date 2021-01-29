@@ -9,13 +9,15 @@ import io.github.sunshinewzy.sunnybot.objects.regPlayer
 import io.github.sunshinewzy.sunnybot.utils.SServerPing
 import net.mamoe.mirai.console.command.CommandManager.INSTANCE.registeredCommands
 import net.mamoe.mirai.console.command.CommandSender
+import net.mamoe.mirai.console.command.ConsoleCommandSender
 import net.mamoe.mirai.console.command.MemberCommandSender
 import net.mamoe.mirai.console.command.SimpleCommand
 import net.mamoe.mirai.contact.Member
 import net.mamoe.mirai.contact.isOperator
-import net.mamoe.mirai.message.data.At
-import net.mamoe.mirai.message.data.Image
-import net.mamoe.mirai.message.data.PlainText
+import net.mamoe.mirai.message.code.parseMiraiCode
+import net.mamoe.mirai.message.data.*
+import java.text.SimpleDateFormat
+import java.util.*
 
 /**
  * Sunny Simple Commands
@@ -33,9 +35,11 @@ suspend fun regSSimpleCommands() {
     SCJavaDoc.reg("u*")
     SCRepeater.reg()
     SCBingPicture.reg()
+    SCWeather.reg("u*")
     
     //Debug
     SCDebugServerInfo.reg("console")
+    SCDebugIntroduction.reg("console")
 }
 
 
@@ -139,7 +143,7 @@ object SCDebugServerInfo: SimpleCommand(
 ) {
     @Handler
     suspend fun CommandSender.handle(serverIp: String) {
-        val contact = miraiBot?.getGroup(423179929L) ?: return
+        val contact = sunnyBot?.getGroup(423179929L) ?: return
         
         val roselleResult = SRequest(SCServerInfo.roselleUrl).resultRoselle(serverIp, 0)
         if(roselleResult.code == 1){
@@ -302,7 +306,57 @@ object SCBingPicture : SimpleCommand(
 ) {
     @Handler
     suspend fun CommandSender.handle() {
-        subject?.sendMsg(description, SRequest("https://api.565.ink/bing").result())
+        val contact = subject ?: return
+        val image = SRequest("https://api.565.ink/bing").resultImage(contact) ?: kotlin.run { 
+            contact.sendMsg(description, "图片获取失败...")
+            return
+        }
         
+        contact.sendMsg(description, image)
     }
 }
+
+object SCDebugIntroduction : SimpleCommand(
+    PluginMain,
+    "DebugIntroduction", "di", "自我介绍",
+    description = "Debug 发送自我介绍"
+) {
+    @Handler
+    suspend fun CommandSender.handle(groupId: Long) {
+        val group = sunnyBot?.getGroup(groupId) ?: kotlin.run { 
+            PluginMain.logger.warning("群$groupId 获取失败")
+            return
+        }
+        
+        group.sendIntroduction()
+    }
+}
+
+object SCWeather : SimpleCommand(
+    PluginMain,
+    "Weather", "天气",
+    description = "查询天气"
+) {
+    @Handler
+    suspend fun CommandSender.handle() {
+        val formatter = SimpleDateFormat("yyyy年MM月dd日")
+        val date = formatter.format(Date(System.currentTimeMillis()))
+        
+        val msg = LightApp("""
+            {"app":"com.tencent.weather","desc":"天气","view":"RichInfoView","ver":"0.0.0.1","prompt":"[应用]天气"}
+        """.trimIndent())
+//        {"app":"com.tencent.weather","desc":"天气","view":"RichInfoView","ver":"0.0.0.1","prompt":"[应用]天气","meta":{"richinfo":{"adcode":"","air":"126","city":"$city","date":"$date","max":"13","min":"2","ts":"15158613","type":"201","wind":""}}}
+        
+//        val msg = """
+//            mirai:app:{"app":"com.tencent.weather","desc":"天气","view":"RichInfoView","ver":"0.0.0.1","prompt":"[应用]天气","meta":{"richinfo":{"adcode":"","air":"126","city":"济南","date":"1月30日 周六","max":"13","min":"2","ts":"15158613","type":"201","wind":""}}}
+//        """.trimIndent().parseMiraiCode()
+        
+        sendMessage(msg)
+    }
+}
+
+/*
+[mirai:source:51993,803246295][[应用]天气]请使用最新版本手机QQ查看
+[mirai:app:{"app":"com.tencent.weather","desc":"天气","view":"RichInfoView","ver":"0.0.0.1",
+"prompt":"[应用]天气","meta":{"richinfo":{"adcode":"","air":"126","city":"济南","date":"1月30日 周六","max":"13","min":"2","ts":"15158613","type":"201","wind":""}}}]
+*/

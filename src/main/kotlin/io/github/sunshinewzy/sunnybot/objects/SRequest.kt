@@ -1,7 +1,10 @@
 package io.github.sunshinewzy.sunnybot.objects
 
 import com.google.gson.Gson
-import java.awt.image.BufferedImage
+import kotlinx.coroutines.runBlocking
+import net.mamoe.mirai.contact.Contact
+import net.mamoe.mirai.message.data.Image
+import net.mamoe.mirai.message.uploadAsImage
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.io.UnsupportedEncodingException
@@ -30,9 +33,31 @@ class SRequest(private val url: String) {
         return Gson().fromJson(strRequest, RosellemcServerInfo::class.java)
     }
 
-//    fun resultImage(): BufferedImage {
-//        val buffer = BufferedImage()
-//    }
+    fun resultImage(contact: Contact): Image? {
+        var image: Image? = null
+        try {
+            val theURL = URL(url)
+            val httpUrlConn = theURL.openConnection() as HttpURLConnection
+            
+            httpUrlConn.doInput = true
+            httpUrlConn.requestMethod = "GET"
+            httpUrlConn.connect()
+            
+            val inputStream = httpUrlConn.inputStream
+            
+            runBlocking {
+                image = inputStream.uploadAsImage(contact)
+            }
+            
+            inputStream.close()
+            httpUrlConn.disconnect()
+            
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        
+        return image
+    }
     
     
     
@@ -49,7 +74,7 @@ class SRequest(private val url: String) {
             httpUrlConn.connect()
 
             //ªÒµ√ ‰»Î
-            val inputStream= httpUrlConn.inputStream ?: return ""
+            val inputStream = httpUrlConn.inputStream ?: return ""
             val inputStreamReader = InputStreamReader(inputStream, "UTF-8")
             val bufferedReader = BufferedReader(inputStreamReader)
             
