@@ -60,7 +60,7 @@ class AntiRecall {
         if(!checkAntiRecallStatus(groupId)){
             return
         }
-        val messageId = event.messageId
+        val messageId = event.messageIds
         val pair = groupMap[groupId] ?: return
         val mutex = pair.first
         val list = pair.second

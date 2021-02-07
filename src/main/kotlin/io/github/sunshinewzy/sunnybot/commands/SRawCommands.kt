@@ -12,6 +12,7 @@ import net.mamoe.mirai.message.data.At
 import net.mamoe.mirai.message.data.MessageChain
 import net.mamoe.mirai.message.data.PlainText
 import net.mamoe.mirai.message.data.buildXmlMessage
+import net.mamoe.mirai.utils.MiraiExperimentalApi
 
 /**
  * Sunny Raw Commands
@@ -111,6 +112,12 @@ object SCDailySignIn: RawCommand(
         val arg = args.contentToString().replace("[|]".toRegex(), "")
             .replace("\'", "")
             .newSunSTSymbol(SunSTSymbol.ENTER)
+        if(arg.length > 20){
+            sendMessage(At(member) + " 您的赠言太长了，请限制在20字以内")
+            return
+        }
+        
+        
         dailySignIns.add(member.id to arg)
         
         if(dailySignIns.size < 5)
@@ -128,9 +135,9 @@ object SCDailySignIn: RawCommand(
             <今日本群签到前5>
             
         """.trimIndent()
-        for(i in 0 until dailySignIns.size){
+        for(i in 0 until 5){
             val signIn = dailySignIns[i]
-            msg += "${i + 1}. ${group[signIn.first].nameCard}: " + signIn.second.oldSunSTSymbol(SunSTSymbol.ENTER) + "\n"
+            msg += "${i + 1}. ${group[signIn.first]?.nameCard}: " + signIn.second.oldSunSTSymbol(SunSTSymbol.ENTER) + "\n"
         }
         group.sendMsg("每日签到", At(member) + " $msg")
     }
@@ -199,6 +206,7 @@ object SCXmlMessage: RawCommand(
     "xmlMessage", "xml",
     usage = "发送一条Xml消息" usageWith "/xml <消息内容>"
 ) {
+    @MiraiExperimentalApi
     override suspend fun CommandSender.onCommand(args: MessageChain) {
         val contact = subject ?: return
         
