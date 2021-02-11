@@ -8,16 +8,15 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import net.mamoe.mirai.contact.nameCardOrNick
 import net.mamoe.mirai.event.events.MessageRecallEvent
-import net.mamoe.mirai.event.events.author
 import net.mamoe.mirai.message.data.MessageChain
 import net.mamoe.mirai.message.data.PlainText
-import net.mamoe.mirai.message.data.id
+import net.mamoe.mirai.message.data.ids
 import java.util.*
 import kotlin.math.abs
 
 class AntiRecall {
 
-    var groupMap = mutableMapOf<Long, Pair<Mutex, MutableList<Triple<Int,Int,MessageChain>>>>()
+    var groupMap = mutableMapOf<Long, Pair<Mutex, MutableList<Triple<IntArray,Int,MessageChain>>>>()
     private var openMap = mutableMapOf<Long, Boolean>()
 
     init{
@@ -69,11 +68,11 @@ class AntiRecall {
             updateMap(list,minute)
             PluginMain.logger.info("群${groupId} 聊天记录缓存数为${list.size}")
             // 检查list是否存在撤回messageId,如果存在 则发送撤回消息
-            var triple : Triple<Int, Int, MessageChain>? = null
+            var triple : Triple<IntArray, Int, MessageChain>? = null
             var flagFindSuccess = false
             list.forEach {
                 val id = it.first
-                if(messageId==id){
+                if(messageId.contentEquals(id)){
                     event.group.sendMessage(
                         PlainText("${event.author.nameCardOrNick} 撤回了:\n") +
                         it.third
@@ -110,7 +109,7 @@ class AntiRecall {
         val mutex = groupMap[groupId]!!.first
         val list = groupMap[groupId]!!.second
         val minute = Calendar.getInstance().get(Calendar.MINUTE)
-        val messageId = message.id
+        val messageId = message.ids
         // 协程安全
         mutex.withLock {
             //updateMap(list, minute)
@@ -122,7 +121,7 @@ class AntiRecall {
     /**
      * 更新聊天缓存，删除3分钟后的聊天记录
      */
-    private fun updateMap(list: MutableList<Triple<Int,Int,MessageChain>>, min: Int) {
+    private fun updateMap(list: MutableList<Triple<IntArray,Int,MessageChain>>, min: Int) {
         list.removeIf {
             abs(min - it.second) > 3
         }

@@ -13,6 +13,12 @@ import net.mamoe.mirai.message.data.Message
 import net.mamoe.mirai.message.data.MessageChain
 import net.mamoe.mirai.message.data.PlainText
 import net.mamoe.mirai.message.data.findIsInstance
+import java.awt.image.BufferedImage
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
+import java.io.IOException
+import java.io.InputStream
+import javax.imageio.ImageIO
 import kotlin.math.pow
 
 //region 发送含标题文本
@@ -147,5 +153,21 @@ fun User.isSunnyAdmin(): Boolean = sunnyAdmins.contains(id)
 //region Usage
 
 infix fun String.usageWith(usage: String): String = "$this\n\n$usage"
+
+//endregion
+
+//region Image
+
+fun BufferedImage.toInputStream(): InputStream? {
+    val os = ByteArrayOutputStream()
+    try {
+        ImageIO.write(this, "png", os)
+        return ByteArrayInputStream(os.toByteArray())
+    } catch (e: IOException) {
+        e.printStackTrace()
+    }
+    
+    return null
+}
 
 //endregion

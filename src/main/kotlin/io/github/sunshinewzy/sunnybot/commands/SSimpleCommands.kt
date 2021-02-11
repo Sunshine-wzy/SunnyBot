@@ -7,14 +7,15 @@ import io.github.sunshinewzy.sunnybot.objects.SSavePlayer.sPlayerMap
 import io.github.sunshinewzy.sunnybot.objects.getSGroup
 import io.github.sunshinewzy.sunnybot.objects.regPlayer
 import io.github.sunshinewzy.sunnybot.utils.SServerPing
+import io.github.sunshinewzy.sunnybot.utils.SServerPing.pingServer
 import net.mamoe.mirai.console.command.CommandManager.INSTANCE.registeredCommands
 import net.mamoe.mirai.console.command.CommandSender
-import net.mamoe.mirai.console.command.ConsoleCommandSender
 import net.mamoe.mirai.console.command.MemberCommandSender
 import net.mamoe.mirai.console.command.SimpleCommand
+import net.mamoe.mirai.console.command.descriptor.ExperimentalCommandDescriptors
+import net.mamoe.mirai.console.util.ConsoleExperimentalApi
 import net.mamoe.mirai.contact.Member
 import net.mamoe.mirai.contact.isOperator
-import net.mamoe.mirai.message.code.parseMiraiCode
 import net.mamoe.mirai.message.data.*
 import java.text.SimpleDateFormat
 import java.util.*
@@ -23,6 +24,8 @@ import java.util.*
  * Sunny Simple Commands
  */
 
+@ConsoleExperimentalApi
+@ExperimentalCommandDescriptors
 suspend fun regSSimpleCommands() {
     //指令注册
     //默认m*为任意群员 u*为任意用户
@@ -45,7 +48,7 @@ suspend fun regSSimpleCommands() {
 
 object SCMenu: SimpleCommand(
     PluginMain,
-    "menu", "cd", "菜单", "功能",
+    "Menu", "cd", "菜单", "功能",
     description = "菜单|功能列表"
 ) {
     @Handler
@@ -101,7 +104,7 @@ object SCInfo: SimpleCommand(
         
         if(user is Member){
             val member = user as Member
-            sendMessage(PlainText("[Sunshine Technology Dollar]\n") + At(member.group[id]) + 
+            sendMessage(PlainText("[Sunshine Technology Dollar]\n") + At(member) + 
                 PlainText("您的STD余额为: ${sPlayer.std}"))
             return
         }
@@ -112,7 +115,7 @@ object SCInfo: SimpleCommand(
 
 object SCAntiRecall: SimpleCommand(
     PluginMain,
-    "antiRecall", "atrc", "防撤回",
+    "AntiRecall", "atrc", "防撤回",
     description = "启用/关闭防撤回"
 ) {
     @Handler
@@ -168,13 +171,13 @@ object SCDebugServerInfo: SimpleCommand(
             return
         }
 
-        sendMessage(SServerPing.pingServer(serverIp))
+        sendMessage(contact.pingServer(serverIp))
     }
 }
 
 object SCIpBind: SimpleCommand(
     PluginMain,
-    "ipBind", "ip", "服务器绑定", "绑定",
+    "IpBind", "ip", "服务器绑定", "绑定",
     description = "服务器状态查询IP绑定"
 ) {
     @Handler
@@ -208,7 +211,7 @@ object SCIpBind: SimpleCommand(
 
 object SCIpBindPing: SimpleCommand(
     PluginMain,
-    "ipBindPing", "ipp", "服务器绑定Ping", "绑定P",
+    "IpBindPing", "ipp", "服务器绑定Ping", "绑定P",
     description = "服务器状态查询ServerPing IP绑定"
 ) {
     @Handler

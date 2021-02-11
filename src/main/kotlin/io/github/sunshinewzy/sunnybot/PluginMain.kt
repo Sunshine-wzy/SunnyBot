@@ -18,7 +18,7 @@ var sunnyBot: Bot? = null
 object PluginMain : KotlinPlugin(
     JvmPluginDescription(
         id = "io.github.sunshinewzy.sunnybot",
-        version = "1.0.8"
+        version = "1.1.0"
     )
 ) {
     override fun PluginComponentStorage.onLoad() {

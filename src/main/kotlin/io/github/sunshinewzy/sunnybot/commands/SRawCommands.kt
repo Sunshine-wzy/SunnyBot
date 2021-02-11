@@ -5,19 +5,23 @@ import io.github.sunshinewzy.sunnybot.enums.SunSTSymbol
 import io.github.sunshinewzy.sunnybot.objects.*
 import io.github.sunshinewzy.sunnybot.utils.SLaTeX.laTeXImage
 import io.github.sunshinewzy.sunnybot.utils.SServerPing
+import io.github.sunshinewzy.sunnybot.utils.SServerPing.pingServer
 import net.mamoe.mirai.console.command.CommandSender
 import net.mamoe.mirai.console.command.RawCommand
+import net.mamoe.mirai.console.command.descriptor.ExperimentalCommandDescriptors
+import net.mamoe.mirai.console.util.ConsoleExperimentalApi
 import net.mamoe.mirai.contact.Member
-import net.mamoe.mirai.message.data.At
-import net.mamoe.mirai.message.data.MessageChain
-import net.mamoe.mirai.message.data.PlainText
-import net.mamoe.mirai.message.data.buildXmlMessage
+import net.mamoe.mirai.contact.isOperator
+import net.mamoe.mirai.message.code.MiraiCode.deserializeMiraiCode
+import net.mamoe.mirai.message.data.*
 import net.mamoe.mirai.utils.MiraiExperimentalApi
 
 /**
  * Sunny Raw Commands
  */
 
+@ExperimentalCommandDescriptors
+@ConsoleExperimentalApi
 suspend fun regSRawCommands() {
     //指令注册
     //默认m*为任意群员 u*为任意用户
@@ -25,6 +29,7 @@ suspend fun regSRawCommands() {
     SCDailySignIn.reg("u*")
     SCServerInfo.reg("u*")
     SCXmlMessage.reg("u*")
+    SCRedEnvelopes.reg()
 
     //Debug
     SCDebugLaTeX.reg("console")
@@ -40,7 +45,7 @@ object SCLaTeX: RawCommand(
         val contact = subject ?: return
         
         val text = args.contentToString()
-        val image = contact.laTeXImage(text)
+        val image = contact.laTeXImage(text) ?: return
         contact.sendMsg("LaTeX", image)
     }
 }
@@ -67,14 +72,14 @@ object SCDebugLaTeX: RawCommand(
         else text = args.contentToString()
 
         val group = sunnyBot?.getGroup(groupId) ?: return
-        val image = group.laTeXImage(text)
+        val image = group.laTeXImage(text) ?: return
         group.sendMsg("LaTeX", image)
     }
 }
 
 object SCDailySignIn: RawCommand(
     PluginMain,
-    "dailySignIn", "qd", "签到", "打卡",
+    "DailySignIn", "qd", "签到", "打卡",
     usage = "每日签到" usageWith "/签到 <您的今日赠言>"
 ) {
     override suspend fun CommandSender.onCommand(args: MessageChain) {
@@ -135,7 +140,9 @@ object SCDailySignIn: RawCommand(
             <今日本群签到前5>
             
         """.trimIndent()
-        for(i in 0 until 5){
+        
+        val last = if(dailySignIns.size < 5) dailySignIns.size else 5
+        for(i in 0 until last){
             val signIn = dailySignIns[i]
             msg += "${i + 1}. ${group[signIn.first]?.nameCard}: " + signIn.second.oldSunSTSymbol(SunSTSymbol.ENTER) + "\n"
         }
@@ -145,7 +152,7 @@ object SCDailySignIn: RawCommand(
 
 object SCServerInfo: RawCommand(
     PluginMain,
-    "serverInfo", "server", "zt", "服务器状态", "状态", "服务器",
+    "ServerInfo", "server", "zt", "服务器状态", "状态", "服务器",
     usage = "服务器状态查询" usageWith """
         /zt         默认查询方式
         /zt 1       强制使用Ping查询
@@ -188,10 +195,17 @@ object SCServerInfo: RawCommand(
             )
         }
 
-        else if((str == "1" || str.contains("m") || str == "" || args.isEmpty()) && (sGroup.serverIp != "" || sGroup.roselleServerIp != "")) {
+        else if((str == "1" || str == "m" || str == "" || args.isEmpty()) && (sGroup.serverIp != "" || sGroup.roselleServerIp != "")) {
             val ip = if(sGroup.serverIp != "") sGroup.serverIp else sGroup.roselleServerIp
 
-            group.sendMsg("服务器状态查询 - Ping", SServerPing.pingServer(ip, str.contains("m")))
+            group.sendMsg("服务器状态查询 - Ping", group.pingServer(ip, str.contains("m")))
+        }
+        
+        else if(str != ""){
+            if(SServerPing.checkServer(str))
+                group.sendMsg("服务器状态查询 - Ping", group.pingServer(str, true))
+            else group.sendMsg("服务器状态查询 - Ping", "查询失败= =\n" +
+                "请确保服务器IP正确且当前服务器在线！")
         }
 
         else sendMessage("""
@@ -203,7 +217,7 @@ object SCServerInfo: RawCommand(
 
 object SCXmlMessage: RawCommand(
     PluginMain,
-    "xmlMessage", "xml",
+    "XmlMessage", "xml",
     usage = "发送一条Xml消息" usageWith "/xml <消息内容>"
 ) {
     @MiraiExperimentalApi
@@ -232,7 +246,6 @@ object SCXmlMessage: RawCommand(
             templateId = 123
         }
         
-//        contact.sendMessage(msg.contentToString())
         contact.sendMessage(msg)
     }
 }
@@ -245,3 +258,59 @@ object SCXmlMessage: RawCommand(
 <summary size="×FF0000">群友召唤术？</summary></item>
 <source name="" icon="" action="" appid="-1" /></msg>
 */
+
+object SCRedEnvelopes: RawCommand(
+    PluginMain,
+    "RedEnvelopes", "re", "红包",
+    usage = "发送一个红包消息" usageWith "/红包 <红包内容>"
+) {
+    @MiraiExperimentalApi
+    override suspend fun CommandSender.onCommand(args: MessageChain) {
+        val contact = user ?: return
+        if(contact !is Member) return
+
+        var id = 1
+        var text = args.contentToString()
+        if(contact.isOperator() || contact.isSunnyAdmin()){
+            if(args.size > 1){
+                val firstArg = args[0]
+                if(firstArg is PlainText){
+                    val firstNum = firstArg.contentToString().toInt()
+                    if(firstNum in 1..100){
+                        id = firstNum
+                        text = ""
+                        args.forEach { 
+                            text += it.contentToString()
+                        }
+                    }
+                }
+            }
+        }
+
+        val msg = buildXmlMessage(id) {
+            item {
+                layout = 2
+
+                title("QQ红包")
+                summary(text)
+
+                picture("https://s3.ax1x.com/2021/02/11/yB4uFA.png")
+            }
+
+            source("QQ红包")
+
+            serviceId = id
+            action = "web"
+            url = "https://oi-wiki.org"
+            brief = "[QQ红包]恭喜发财"
+
+            templateId = 123
+        }
+        
+//        val msg = """
+//            [mirai:app:{"app":"com.tencent.miniapp","desc":"","view":"all","ver":"1.0.0.89","prompt":"[QQ红包]恭喜发财","meta":{"all":{"preview":"http://gchat.qpic.cn/gchatpic_new/3584906133/956021029-2885039703-7B5004A5ED0FCF042BF5AF737EA1762B/0?term=2","title":"","buttons":[{"name":"无产阶级红包","action":"http://www.qq.com"}],"jumpUrl":"","summary":"\n发了送一个 <无产阶级红包>  无论使用哪个版本的手机QQ均不能查收红包  因为无产阶级的果实不能靠别人施舍  是靠自己争取的！\n"}},"config":{"forward":true}}]
+//        """.trimIndent().deserializeMiraiCode()
+
+        subject?.sendMessage(msg)
+    }
+}

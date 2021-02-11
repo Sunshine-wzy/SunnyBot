@@ -1,8 +1,9 @@
 package io.github.sunshinewzy.sunnybot.utils
 
+import io.github.sunshinewzy.sunnybot.toInputStream
 import net.mamoe.mirai.contact.Contact
 import net.mamoe.mirai.message.data.Image
-import net.mamoe.mirai.message.upload
+import net.mamoe.mirai.utils.ExternalResource.Companion.uploadAsImage
 import org.scilab.forge.jlatexmath.TeXConstants
 import org.scilab.forge.jlatexmath.TeXFormula
 import java.awt.Color
@@ -25,7 +26,5 @@ object SLaTeX {
         return bimg
     }
     
-    suspend fun Contact.laTeXImage(formula: String): Image {
-        return generate(formula).upload(this)
-    }
+    suspend fun Contact.laTeXImage(formula: String): Image? = generate(formula).toInputStream()?.uploadAsImage(this)
 }

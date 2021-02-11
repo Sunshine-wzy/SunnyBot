@@ -3,6 +3,7 @@ package io.github.sunshinewzy.sunnybot.games
 import io.github.sunshinewzy.sunnybot.enums.RunningState
 import io.github.sunshinewzy.sunnybot.events.game.SGroupGameEvent
 import io.github.sunshinewzy.sunnybot.objects.*
+import io.github.sunshinewzy.sunnybot.sunnyChannel
 import io.github.sunshinewzy.sunnybot.sunnyScope
 import kotlinx.coroutines.launch
 import net.mamoe.mirai.Bot
@@ -10,6 +11,7 @@ import net.mamoe.mirai.contact.Group
 import net.mamoe.mirai.contact.Member
 import net.mamoe.mirai.event.subscribeMessages
 import net.mamoe.mirai.message.data.PlainText
+import net.mamoe.mirai.message.data.findIsInstance
 
 object SGameManager {
     val sGroupGameHandlers = ArrayList<SGroupGame>()
@@ -18,7 +20,7 @@ object SGameManager {
     fun gameInit(bot: Bot) {
         regGame()
         
-        bot.subscribeMessages {
+        sunnyChannel.subscribeMessages {
             (contains("sunny") or contains("ั๔นโ") or startsWith("#")) game@{
                 if (sender !is Member)
                     return@game
@@ -29,12 +31,11 @@ object SGameManager {
                     SSaveGroup.sGroupMap[groupId] = SGroup(groupId)
                 val sGroup = SSaveGroup.sGroupMap[groupId]!!
                 val sDataGroup = sDataGroupMap[groupId] ?: return@game
-                val msg = message[PlainText.Key]?.contentToString() ?: return@game
+                val msg = message.findIsInstance<PlainText>()?.contentToString() ?: return@game
                 
                 regPlayer(member)
                 callGame(member, group, groupId, sGroup, sDataGroup, msg)
             }
-            
             
         }
     }

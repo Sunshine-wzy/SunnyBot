@@ -107,7 +107,9 @@ object SGTicTacToe : SGroupGame("井字棋", RunningState.TICTACTOE, RunningState.T
                 return
             }
         }
-        group.sendMsg(name, group.laTeXImage(printBoard(dataTicTacToe)))
+        
+        val image = group.laTeXImage(printBoard(dataTicTacToe)) ?: return
+        group.sendMsg(name, image)
         
         if(judge(group, dataTicTacToe))
             return
@@ -180,7 +182,8 @@ object SGTicTacToe : SGroupGame("井字棋", RunningState.TICTACTOE, RunningState.T
             )
             
             val round = init(dataTicTacToe)
-            group.sendMsg(name, group.laTeXImage(printBoard(dataTicTacToe)))
+            val image = group.laTeXImage(printBoard(dataTicTacToe)) ?: return
+            group.sendMsg(name, image)
             group.sendMsg(name, At(dataTicTacToe.player[round]!!) +
                 PlainText("\n您是先手，请输入 #x,y (x和y均为1-3之间的整数) 以落子")
             )

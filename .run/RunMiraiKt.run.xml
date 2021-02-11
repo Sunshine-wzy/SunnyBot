@@ -7,10 +7,9 @@
     <option name="ALTERNATIVE_JRE_PATH" value="openjdk-15" />
     <option name="PASS_PARENT_ENVS" value="true" />
     <option name="MAIN_CLASS_NAME" value="io.github.sunshinewzy.test.RunMiraiKt" />
-    <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/../../Debug/Mirai-console" />
+    <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/../../Debug/mirai" />
     <method v="2">
-      <option name="Gradle.BeforeRunTask" enabled="false" tasks="jar" externalProjectPath="$PROJECT_DIR$" vmOptions="" scriptParameters="" />
-      <option name="ToolBeforeRunTask" enabled="true" actionId="Tool_External Tools_[copy-plugin]SunnyBot-to-MiraiConsole" />
+      <option name="Gradle.BeforeRunTask" enabled="true" tasks="jar" externalProjectPath="$PROJECT_DIR$" vmOptions="" scriptParameters="" />
     </method>
   </configuration>
 </component>

@@ -1,8 +1,8 @@
 package io.github.sunshinewzy.sunnybot.functions
 
-import io.github.sunshinewzy.sunnybot.sunnyBot
 import io.github.sunshinewzy.sunnybot.objects.SSavePlayer
 import io.github.sunshinewzy.sunnybot.objects.getSGroup
+import io.github.sunshinewzy.sunnybot.sunnyBot
 
 object DailySignIn {
     suspend fun runSchedule() {

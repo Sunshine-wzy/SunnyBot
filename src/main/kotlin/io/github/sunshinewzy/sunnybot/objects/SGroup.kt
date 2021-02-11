@@ -31,6 +31,7 @@ val sDataGroupMap = HashMap<Long, SDataGroup>()
 
 data class SDataGroup(
     var runningState: RunningState = RunningState.FREE,
+    var lastRunning: RunningState = RunningState.FREE,
     val hour24:IntArray = IntArray(5) { -1 },
     val ticTacToe: DataTicTacToe = DataTicTacToe()
 ) {

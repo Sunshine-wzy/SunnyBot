@@ -28,3 +28,11 @@ repositories {
         name = "imagej.public"
     }
 }
+
+tasks {
+    jar {
+        archiveBaseName.set("SunnyBot")
+        archiveVersion.set(project.version.toString())
+        destinationDirectory.set(file("F:/Kotlin/Debug/mirai/plugins"))
+    }
+}

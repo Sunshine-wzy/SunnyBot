@@ -15,18 +15,23 @@ import io.github.sunshinewzy.sunnybot.objects.sDataGroupMap
 import io.github.sunshinewzy.sunnybot.runnable.STimerTask
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
+import net.mamoe.mirai.console.command.descriptor.ExperimentalCommandDescriptors
+import net.mamoe.mirai.console.util.ConsoleExperimentalApi
 import net.mamoe.mirai.contact.Group
 import net.mamoe.mirai.contact.Member
 import net.mamoe.mirai.contact.User
+import net.mamoe.mirai.event.globalEventChannel
 import net.mamoe.mirai.event.subscribeMessages
-import net.mamoe.mirai.message.data.At
 import java.util.*
 
 val sunnyScope = CoroutineScope(SupervisorJob())
+val sunnyChannel = sunnyScope.globalEventChannel()
 var antiRecall: AntiRecall? = null
 //超级管理员
 val sunnyAdmins = listOf(1123574549L)
 
+@ExperimentalCommandDescriptors
+@ConsoleExperimentalApi
 suspend fun sunnyInit() {
     //群初始化
     groupInit()
@@ -61,7 +66,7 @@ private fun groupInit() {
 }
 
 private fun regMsg() {
-    sunnyBot?.subscribeMessages {
+    sunnyChannel.subscribeMessages {
         (contains("老子不会")) end@{
             val id = getGroupID(sender)
             if (id == 0L)
@@ -69,11 +74,11 @@ private fun regMsg() {
 
             val state = sDataGroupMap[id]?.runningState
             if(state == null || state == RunningState.FREE){
-                reply("当前没有没有正在进行。")
+                subject.sendMsg("Game", "当前没有游戏正在进行。")
                 return@end
             }
-            
-            reply("${state.gameName} 游戏结束")
+
+            subject.sendMsg("Game", "${state.gameName} 游戏结束")
             sDataGroupMap[id]?.runningState = RunningState.FREE
         }
 
@@ -84,14 +89,14 @@ private fun regMsg() {
             val group = getGroup(member) ?: return@startAgain
             val sGroupGameEvent = member.toSGroupGameEvent()
 
-            val state = sDataGroupMap[getGroupID(sender)]?.runningState ?: return@startAgain
+            val lastRunning = sDataGroupMap[getGroupID(sender)]?.lastRunning ?: return@startAgain
             SGameManager.sGroupGameHandlers.forEach { 
-                if(it.gameStates.contains(state)) {
+                if(it.gameStates.contains(lastRunning)) {
                     it.startGame(sGroupGameEvent)
                     return@startAgain
                 }
             }
-            reply("当前没有游戏正在进行。")
+            group.sendMsg("Game", "当前没有游戏正在进行。")
         }
         
         atBot {
@@ -125,6 +130,8 @@ suspend fun setPermissions() {
     
 }
 
+@ExperimentalCommandDescriptors
+@ConsoleExperimentalApi
 suspend fun setAdministrator() {
     sunnyAdmins.forEach { 
         setPermit("*:*", "u$it")

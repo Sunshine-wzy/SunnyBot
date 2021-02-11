@@ -1,9 +1,10 @@
 package io.github.sunshinewzy.sunnybot.functions
 
 import io.github.sunshinewzy.sunnybot.antiRecall
-import io.github.sunshinewzy.sunnybot.sunnyBot
 import io.github.sunshinewzy.sunnybot.objects.addSTD
 import io.github.sunshinewzy.sunnybot.objects.getSGroup
+import io.github.sunshinewzy.sunnybot.sendMsg
+import io.github.sunshinewzy.sunnybot.sunnyChannel
 import net.mamoe.mirai.event.subscribeGroupMessages
 import net.mamoe.mirai.message.data.At
 import kotlin.random.Random
@@ -13,7 +14,7 @@ object Repeater {
     
     
     fun repeat() {
-        sunnyBot?.subscribeGroupMessages {
+        sunnyChannel.subscribeGroupMessages {
             always { 
                 if(!group.getSGroup().isRepeat) return@always
                 val groupMap = antiRecall?.groupMap ?: return@always
@@ -26,10 +27,10 @@ object Repeater {
                 }
                 
                 if(Random.nextInt(100) + 1 <= 10 * cnt){
-                    reply(message)
+                    subject.sendMessage(message)
                     
                     if(Random.nextInt(100) + 1 <= 10){
-                        reply("人类的本质是——")
+                        subject.sendMsg("复读机", "人类的本质是——")
                         repeatMap[group.id] = true
                     }
                 }
@@ -38,7 +39,7 @@ object Repeater {
             contains("复读机") {
                 if(repeatMap[group.id] == true){
                     sender.addSTD(5)
-                    reply(At(sender) + """
+                    subject.sendMsg("复读机", At(sender) + """
                         
                         没错，人类的本质是复读机
                         奖励你 5 STD~

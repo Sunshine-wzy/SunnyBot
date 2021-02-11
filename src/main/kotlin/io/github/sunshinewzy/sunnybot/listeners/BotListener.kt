@@ -1,17 +1,16 @@
 package io.github.sunshinewzy.sunnybot.listeners
 
 import io.github.sunshinewzy.sunnybot.sunnyBot
+import io.github.sunshinewzy.sunnybot.sunnyChannel
 import io.github.sunshinewzy.sunnybot.sunnyInit
-import io.github.sunshinewzy.sunnybot.sunnyScope
 import net.mamoe.mirai.event.events.BotInvitedJoinGroupRequestEvent
 import net.mamoe.mirai.event.events.BotOnlineEvent
 import net.mamoe.mirai.event.events.NewFriendRequestEvent
-import net.mamoe.mirai.event.subscribeAlways
 
 var cnt = 0
 
 fun listenBot() {
-    sunnyScope.subscribeAlways<BotOnlineEvent> {
+    sunnyChannel.subscribeAlways<BotOnlineEvent> {
         sunnyBot = bot
         cnt++
 
@@ -19,11 +18,11 @@ fun listenBot() {
             sunnyInit()
     }
     
-    sunnyScope.subscribeAlways<BotInvitedJoinGroupRequestEvent> {
+    sunnyChannel.subscribeAlways<BotInvitedJoinGroupRequestEvent> {
         accept()
     }
     
-    sunnyScope.subscribeAlways<NewFriendRequestEvent> { 
+    sunnyChannel.subscribeAlways<NewFriendRequestEvent> { 
         accept()
     }
 }

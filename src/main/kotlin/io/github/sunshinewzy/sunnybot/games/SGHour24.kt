@@ -124,6 +124,7 @@ object SGHour24 : SGroupGame("24µã", RunningState.HOUR24) {
         val sDataGroup = event.sDataGroup
 
         sDataGroup.runningState = RunningState.HOUR24
+        sDataGroup.lastRunning = RunningState.HOUR24
         for(i in 0..4) {
             sDataGroup.hour24[i] = -1
         }
