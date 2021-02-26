@@ -30,8 +30,8 @@ var antiRecall: AntiRecall? = null
 //超级管理员
 val sunnyAdmins = listOf(1123574549L)
 
-@ExperimentalCommandDescriptors
 @ConsoleExperimentalApi
+@ExperimentalCommandDescriptors
 suspend fun sunnyInit() {
     //群初始化
     groupInit()
@@ -126,7 +126,7 @@ private fun regMsg() {
  * |      任意对象      |      *      | 即任何人, 任何群, 控制台                 |
  */
 
-suspend fun setPermissions() {
+fun setPermissions() {
     
 }
 

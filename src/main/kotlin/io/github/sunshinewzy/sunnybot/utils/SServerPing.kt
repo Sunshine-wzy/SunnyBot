@@ -41,10 +41,12 @@ object SServerPing {
         var res =  """
             
             服务器IP: $serverIp
+            解析IP: ${socket.ip}:${socket.port}
             服务器版本: ${status.version}
             当前在线人数: ${status.onlinePlayers}
             最大在线人数: ${status.maxPlayers}
             协议版本: ${status.protocolVersion}
+            延迟: ${status.ping}ms
             
             MOTD:
             ${status.motd.line1MotdText}
@@ -78,7 +80,7 @@ object SServerPing {
 
             return image + text
         } catch (ex: Exception) {
-            ex.printStackTrace()
+            
         }
         
         return text

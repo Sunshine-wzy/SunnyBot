@@ -1,6 +1,8 @@
 package io.github.sunshinewzy.sunnybot.objects
 
 import com.google.gson.Gson
+import io.github.sunshinewzy.sunnybot.sendMsg
+import io.github.sunshinewzy.sunnybot.toInputStream
 import kotlinx.coroutines.runBlocking
 import net.mamoe.mirai.contact.Contact
 import net.mamoe.mirai.message.data.Image
@@ -11,6 +13,7 @@ import java.io.UnsupportedEncodingException
 import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLEncoder
+import javax.imageio.ImageIO
 
 
 /**
@@ -32,34 +35,22 @@ class SRequest(private val url: String) {
         //处理返回的JSON数据并返回
         return Gson().fromJson(strRequest, RosellemcServerInfo::class.java)
     }
-
+    
     fun resultImage(contact: Contact): Image? {
         var image: Image? = null
+        
         try {
-            val theURL = URL(url)
-            val httpUrlConn = theURL.openConnection() as HttpURLConnection
-            
-            httpUrlConn.doInput = true
-            httpUrlConn.requestMethod = "GET"
-            httpUrlConn.connect()
-            
-            val inputStream = httpUrlConn.inputStream
-            
-            runBlocking {
-                image = inputStream.uploadAsImage(contact)
+            val bufImg = ImageIO.read(URL(url))
+            runBlocking { 
+                image = bufImg?.toInputStream()?.uploadAsImage(contact)
             }
+        } catch (ex: Exception) {
             
-            inputStream.close()
-            httpUrlConn.disconnect()
-            
-        } catch (e: Exception) {
-            e.printStackTrace()
         }
         
         return image
     }
-    
-    
+
     
     private fun httpRequest(params: Map<String, Any>): String {
         //buffer 用于接收返回的字符

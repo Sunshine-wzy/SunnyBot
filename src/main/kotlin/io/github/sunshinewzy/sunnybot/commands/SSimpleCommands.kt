@@ -8,6 +8,7 @@ import io.github.sunshinewzy.sunnybot.objects.getSGroup
 import io.github.sunshinewzy.sunnybot.objects.regPlayer
 import io.github.sunshinewzy.sunnybot.utils.SServerPing
 import io.github.sunshinewzy.sunnybot.utils.SServerPing.pingServer
+import kotlinx.coroutines.runBlocking
 import net.mamoe.mirai.console.command.CommandManager.INSTANCE.registeredCommands
 import net.mamoe.mirai.console.command.CommandSender
 import net.mamoe.mirai.console.command.MemberCommandSender
@@ -17,8 +18,10 @@ import net.mamoe.mirai.console.util.ConsoleExperimentalApi
 import net.mamoe.mirai.contact.Member
 import net.mamoe.mirai.contact.isOperator
 import net.mamoe.mirai.message.data.*
+import java.net.URL
 import java.text.SimpleDateFormat
 import java.util.*
+import javax.imageio.ImageIO
 
 /**
  * Sunny Simple Commands
@@ -57,7 +60,12 @@ object SCMenu: SimpleCommand(
         PluginMain.registeredCommands.forEach { 
             if(it.usage.contains("Debug")) return@forEach
             
-            text += "◆ ${it.usage.replaceFirst("\n", "")}\n\n"
+            text += "◆ ${it.usage.replaceFirst("\n", "")}\n"
+            
+            it.secondaryNames.forEach { seName ->
+                text += "/$seName  "
+            }
+            text += "\n\n"
         }
         text += "===============\n"
         
@@ -310,7 +318,7 @@ object SCBingPicture : SimpleCommand(
     @Handler
     suspend fun CommandSender.handle() {
         val contact = subject ?: return
-        val image = SRequest("https://api.565.ink/bing").resultImage(contact) ?: kotlin.run { 
+        val image = SRequest("https://api.yimian.xyz/img?type=wallpaper").resultImage(contact) ?: kotlin.run { 
             contact.sendMsg(description, "图片获取失败...")
             return
         }
@@ -363,3 +371,4 @@ object SCWeather : SimpleCommand(
 [mirai:app:{"app":"com.tencent.weather","desc":"天气","view":"RichInfoView","ver":"0.0.0.1",
 "prompt":"[应用]天气","meta":{"richinfo":{"adcode":"","air":"126","city":"济南","date":"1月30日 周六","max":"13","min":"2","ts":"15158613","type":"201","wind":""}}}]
 */
+

@@ -12,7 +12,6 @@ import net.mamoe.mirai.console.command.descriptor.ExperimentalCommandDescriptors
 import net.mamoe.mirai.console.util.ConsoleExperimentalApi
 import net.mamoe.mirai.contact.Member
 import net.mamoe.mirai.contact.isOperator
-import net.mamoe.mirai.message.code.MiraiCode.deserializeMiraiCode
 import net.mamoe.mirai.message.data.*
 import net.mamoe.mirai.utils.MiraiExperimentalApi
 
@@ -30,6 +29,8 @@ suspend fun regSRawCommands() {
     SCServerInfo.reg("u*")
     SCXmlMessage.reg("u*")
     SCRedEnvelopes.reg()
+    SCRandomImage.reg("u*")
+    SCWords.reg("u*")
 
     //Debug
     SCDebugLaTeX.reg("console")
@@ -313,4 +314,99 @@ object SCRedEnvelopes: RawCommand(
 
         subject?.sendMessage(msg)
     }
+}
+
+object SCRandomImage : RawCommand(
+    PluginMain,
+    "RandomImage", "ri", "随机图片", "图片",
+    description = "随机图片",
+    usage = "随机图片"
+) {
+    private const val url = "https://api.yimian.xyz/img"
+    private val params = hashMapOf(
+        "moe" to "二次元图片",
+        "wallpaper" to "Bing壁纸",
+        "head" to "二次元头像",
+        "imgbed" to "图床图片",
+        "moe&size=1920x1080" to "1920x1080尺寸二次元图片"
+    )
+
+
+    override suspend fun CommandSender.onCommand(args: MessageChain) {
+        val contact = subject ?: return
+        val plainText = args.findIsInstance<PlainText>()
+        
+        var img: Image? = null
+        if(plainText == null || plainText.content == ""){
+            img = SRequest(url).resultImage(contact)
+        }
+        else{
+            val text = plainText.content
+            if(params.containsKey(text)){
+                img = SRequest("$url?type=$text").resultImage(contact)
+            }
+            else{
+                var res = "参数不正确！\n请输入以下参数之一:\n"
+                params.forEach { (key, value) ->
+                    res += "$key  -  $value\n"
+                }
+                contact.sendMsg(description, res)
+            }
+        }
+
+        
+        if(img == null){
+            contact.sendMsg(description, "图片获取失败...")
+            return
+        }
+        
+        contact.sendMsg(description, img)
+    }
+
+}
+
+object SCWords : RawCommand(
+    PluginMain,
+    "Words", "yy", "一言",
+    description = "一言",
+    usage = "一言"
+) {
+    private const val url = "https://api.yimian.xyz/words/"
+    private val params = hashMapOf(
+        "en" to "英语",
+        "zh" to "中文"
+    )
+
+
+    override suspend fun CommandSender.onCommand(args: MessageChain) {
+        val contact = subject ?: return
+        val plainText = args.findIsInstance<PlainText>()
+
+        var words: String? = null
+        if(plainText == null || plainText.content == ""){
+            words = SRequest(url).result()
+        }
+        else{
+            val text = plainText.content
+            if(params.contains(text)){
+                words = SRequest("$url?lang=$text").result()
+            }
+            else{
+                var res = "参数不正确！\n请输入以下参数之一:\n"
+                params.forEach { (key, value) ->
+                    res += "$key  -  $value\n"
+                }
+                contact.sendMsg(description, res)
+            }
+        }
+
+
+        if(words == null){
+            contact.sendMsg(description, "一言获取失败...")
+            return
+        }
+
+        contact.sendMsg(description, words)
+    }
+
 }
