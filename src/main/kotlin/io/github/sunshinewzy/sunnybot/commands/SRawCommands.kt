@@ -10,10 +10,14 @@ import net.mamoe.mirai.console.command.CommandSender
 import net.mamoe.mirai.console.command.RawCommand
 import net.mamoe.mirai.console.command.descriptor.ExperimentalCommandDescriptors
 import net.mamoe.mirai.console.util.ConsoleExperimentalApi
+import net.mamoe.mirai.contact.Group
 import net.mamoe.mirai.contact.Member
 import net.mamoe.mirai.contact.isOperator
 import net.mamoe.mirai.message.data.*
+import net.mamoe.mirai.utils.ExternalResource.Companion.toExternalResource
+import net.mamoe.mirai.utils.ExternalResource.Companion.uploadAsVoice
 import net.mamoe.mirai.utils.MiraiExperimentalApi
+import java.io.File
 
 /**
  * Sunny Raw Commands
@@ -22,8 +26,8 @@ import net.mamoe.mirai.utils.MiraiExperimentalApi
 @ExperimentalCommandDescriptors
 @ConsoleExperimentalApi
 suspend fun regSRawCommands() {
-    //Ö¸Áî×¢²á
-    //Ä¬ÈÏm*ÎªÈÎÒâÈºÔ± u*ÎªÈÎÒâÓÃ»§
+    //æŒ‡ä»¤æ³¨å†Œ
+    //é»˜è®¤m*ä¸ºä»»æ„ç¾¤å‘˜ u*ä¸ºä»»æ„ç”¨æˆ·
     SCLaTeX.reg("u*")
     SCDailySignIn.reg("u*")
     SCServerInfo.reg("u*")
@@ -31,6 +35,8 @@ suspend fun regSRawCommands() {
     SCRedEnvelopes.reg()
     SCRandomImage.reg("u*")
     SCWords.reg("u*")
+    SCSound.reg("u*")
+    SCGroupManager.reg()
 
     //Debug
     SCDebugLaTeX.reg("console")
@@ -40,7 +46,7 @@ suspend fun regSRawCommands() {
 object SCLaTeX: RawCommand(
     PluginMain,
     "LaTeX", "lx",
-    usage = "LaTeXäÖÈ¾" usageWith "/lx LaTeXÎÄ±¾(¿ÉÒÔÓĞ¿Õ¸ñ)"
+    usage = "LaTeXæ¸²æŸ“" usageWith "/lx LaTeXæ–‡æœ¬(å¯ä»¥æœ‰ç©ºæ ¼)"
 ) {
     override suspend fun CommandSender.onCommand(args: MessageChain) {
         val contact = subject ?: return
@@ -54,7 +60,7 @@ object SCLaTeX: RawCommand(
 object SCDebugLaTeX: RawCommand(
     PluginMain,
     "debugLaTeX", "dlx",
-    usage = "Debug LaTeX" usageWith "/dlx [g ÈººÅ] LaTeXÎÄ±¾(¿ÉÒÔÓĞ¿Õ¸ñ)"
+    usage = "Debug LaTeX" usageWith "/dlx [g ç¾¤å·] LaTeXæ–‡æœ¬(å¯ä»¥æœ‰ç©ºæ ¼)"
 ) {
     private const val groupIdSunST = 423179929L
 
@@ -80,14 +86,14 @@ object SCDebugLaTeX: RawCommand(
 
 object SCDailySignIn: RawCommand(
     PluginMain,
-    "DailySignIn", "qd", "Ç©µ½", "´ò¿¨",
-    usage = "Ã¿ÈÕÇ©µ½" usageWith "/Ç©µ½ <ÄúµÄ½ñÈÕÔùÑÔ>"
+    "DailySignIn", "qd", "ç­¾åˆ°", "æ‰“å¡",
+    usage = "æ¯æ—¥ç­¾åˆ°" usageWith "/ç­¾åˆ° <æ‚¨çš„ä»Šæ—¥èµ è¨€>"
 ) {
     override suspend fun CommandSender.onCommand(args: MessageChain) {
         val member = user ?: return
         
         if(member !is Member){
-            sendMessage("ÄúÖ»ÄÜÔÚÈºÖĞÇ©µ½£¡")
+            sendMessage("æ‚¨åªèƒ½åœ¨ç¾¤ä¸­ç­¾åˆ°ï¼")
             return
         }
         
@@ -95,10 +101,10 @@ object SCDailySignIn: RawCommand(
         val group = member.group
         val dailySignIns = group.getSGroup().dailySignIns
         if(sPlayer.isDailySignIn){
-            var ans = " Äú½ñÌìÒÑ¾­Ç©µ½¹ıÁË£¬²»ÄÜÖØ¸´Ç©µ½£¡\n"
+            var ans = " æ‚¨ä»Šå¤©å·²ç»ç­¾åˆ°è¿‡äº†ï¼Œä¸èƒ½é‡å¤ç­¾åˆ°ï¼\n"
             dailySignIns.forEach { 
                 if(it.first == member.id){
-                    ans += "ÄúµÄ½ñÈÕÔùÑÔ:\n" + it.second
+                    ans += "æ‚¨çš„ä»Šæ—¥èµ è¨€:\n" + it.second
                     return@forEach
                 }
             }
@@ -109,8 +115,8 @@ object SCDailySignIn: RawCommand(
         
         if(args.isEmpty() || args[0].contentToString() == ""){
             sendMessage("""
-                $name ÇëÊäÈë "/Ç©µ½ <ÄúµÄ½ñÈÕÔùÑÔ>" ÒÔÇ©µ½
-                (Ã¿ÈÕÇ©µ½Ç°5ºÍTAµÄÔùÑÔ»á±»Õ¹Ê¾Å¶~)
+                $name è¯·è¾“å…¥ "/ç­¾åˆ° <æ‚¨çš„ä»Šæ—¥èµ è¨€>" ä»¥ç­¾åˆ°
+                (æ¯æ—¥ç­¾åˆ°å‰5å’ŒTAçš„èµ è¨€ä¼šè¢«å±•ç¤ºå“¦~)
             """.trimIndent())
             return
         }
@@ -119,7 +125,7 @@ object SCDailySignIn: RawCommand(
             .replace("\'", "")
             .newSunSTSymbol(SunSTSymbol.ENTER)
         if(arg.length > 20){
-            sendMessage(At(member) + " ÄúµÄÔùÑÔÌ«³¤ÁË£¬ÇëÏŞÖÆÔÚ20×ÖÒÔÄÚ")
+            sendMessage(At(member) + " æ‚¨çš„èµ è¨€å¤ªé•¿äº†ï¼Œè¯·é™åˆ¶åœ¨20å­—ä»¥å†…")
             return
         }
         
@@ -127,18 +133,18 @@ object SCDailySignIn: RawCommand(
         dailySignIns.add(member.id to arg)
         
         if(dailySignIns.size < 5)
-            group.sendMessage(At(member) + " ÄúÊÇ±¾Èº½ñÌìµÚ${dailySignIns.size}¸öÇ©µ½µÄ£¬ÄúµÄÔùÑÔÒÑ±»ÁĞÈëÕ¹Ê¾ÁĞ±í£¡")
+            group.sendMessage(At(member) + " æ‚¨æ˜¯æœ¬ç¾¤ä»Šå¤©ç¬¬${dailySignIns.size}ä¸ªç­¾åˆ°çš„ï¼Œæ‚¨çš„èµ è¨€å·²è¢«åˆ—å…¥å±•ç¤ºåˆ—è¡¨ï¼")
         else
-            group.sendMessage(At(member) + " ÄúÊÇ±¾Èº½ñÌìµÚ${dailySignIns.size}¸öÇ©µ½µÄ£¬×£ÄúRP++ £¡")
+            group.sendMessage(At(member) + " æ‚¨æ˜¯æœ¬ç¾¤ä»Šå¤©ç¬¬${dailySignIns.size}ä¸ªç­¾åˆ°çš„ï¼Œç¥æ‚¨RP++ ï¼")
         
         sPlayer.isDailySignIn = true
         
         member.addSTD(5)
         var msg = """
-            Ç©µ½³É¹¦£¬STD +5 !
-            (ÄúÊÇ±¾Èº½ñÌìµÚ${dailySignIns.size}¸öÇ©µ½µÄ)
+            ç­¾åˆ°æˆåŠŸï¼ŒSTD +5 !
+            (æ‚¨æ˜¯æœ¬ç¾¤ä»Šå¤©ç¬¬${dailySignIns.size}ä¸ªç­¾åˆ°çš„)
             
-            <½ñÈÕ±¾ÈºÇ©µ½Ç°5>
+            <ä»Šæ—¥æœ¬ç¾¤ç­¾åˆ°å‰5>
             
         """.trimIndent()
         
@@ -147,18 +153,18 @@ object SCDailySignIn: RawCommand(
             val signIn = dailySignIns[i]
             msg += "${i + 1}. ${group[signIn.first]?.nameCard}: " + signIn.second.oldSunSTSymbol(SunSTSymbol.ENTER) + "\n"
         }
-        group.sendMsg("Ã¿ÈÕÇ©µ½", At(member) + " $msg")
+        group.sendMsg("æ¯æ—¥ç­¾åˆ°", At(member) + " $msg")
     }
 }
 
 object SCServerInfo: RawCommand(
     PluginMain,
-    "ServerInfo", "server", "zt", "·şÎñÆ÷×´Ì¬", "×´Ì¬", "·şÎñÆ÷",
-    usage = "·şÎñÆ÷×´Ì¬²éÑ¯" usageWith """
-        /zt         Ä¬ÈÏ²éÑ¯·½Ê½
-        /zt 1       Ç¿ÖÆÊ¹ÓÃPing²éÑ¯
-        /zt 2       Ç¿ÖÆÊ¹ÓÃÂåÉñÔÆ²éÑ¯
-        /zt m       ÏÔÊ¾ÏêÏ¸modĞÅÏ¢
+    "ServerInfo", "server", "zt", "æœåŠ¡å™¨çŠ¶æ€", "çŠ¶æ€", "æœåŠ¡å™¨",
+    usage = "æœåŠ¡å™¨çŠ¶æ€æŸ¥è¯¢" usageWith """
+        /zt         é»˜è®¤æŸ¥è¯¢æ–¹å¼
+        /zt 1       å¼ºåˆ¶ä½¿ç”¨PingæŸ¥è¯¢
+        /zt 2       å¼ºåˆ¶ä½¿ç”¨æ´›ç¥äº‘æŸ¥è¯¢
+        /zt m       æ˜¾ç¤ºè¯¦ç»†modä¿¡æ¯
     """.trimIndent()
 ) {
     const val roselleUrl = "https://mc.iroselle.com/api/data/getServerInfo"
@@ -178,40 +184,40 @@ object SCServerInfo: RawCommand(
             val result = SRequest(roselleUrl).resultRoselle(ip, 0)
             val res = result.res
 
-            var serverStatus = "ÀëÏß"
+            var serverStatus = "ç¦»çº¿"
             if(res.server_status == 1)
-                serverStatus = "ÔÚÏß"
+                serverStatus = "åœ¨çº¿"
 
-            group.sendMsg("·şÎñÆ÷×´Ì¬²éÑ¯ - ÂåÉñÔÆ",
-                    "·şÎñÆ÷IP: $ip\n" +
-                    "·şÎñÆ÷×´Ì¬: $serverStatus\n" +
-                    "µ±Ç°ÔÚÏßÍæ¼ÒÊı: ${res.server_player_online}\n" +
-                    "ÔÚÏßÍæ¼ÒÉÏÏŞ: ${res.server_player_max}\n" +
-                    "ÈÕ¾ùÔÚÏßÈËÊı: ${res.server_player_average}\n" +
-                    "ÀúÊ·×î¸ßÍ¬Ê±ÔÚÏßÈËÊı: ${res.server_player_history_max}\n" +
-                    "×òÈÕÆ½¾ùÔÚÏßÈËÊı: ${res.server_player_yesterday_average}\n" +
-                    "×òÈÕ×î¸ßÍ¬Ê±ÔÚÏßÈËÊı: ${res.server_player_yesterday_max}\n" +
-                    "¸üĞÂÊ±¼ä: ${res.update_time}\n" +
-                    "²éÑ¯ÓÃÊ±: ${result.run_time}s"
+            group.sendMsg("æœåŠ¡å™¨çŠ¶æ€æŸ¥è¯¢ - æ´›ç¥äº‘",
+                    "æœåŠ¡å™¨IP: $ip\n" +
+                    "æœåŠ¡å™¨çŠ¶æ€: $serverStatus\n" +
+                    "å½“å‰åœ¨çº¿ç©å®¶æ•°: ${res.server_player_online}\n" +
+                    "åœ¨çº¿ç©å®¶ä¸Šé™: ${res.server_player_max}\n" +
+                    "æ—¥å‡åœ¨çº¿äººæ•°: ${res.server_player_average}\n" +
+                    "å†å²æœ€é«˜åŒæ—¶åœ¨çº¿äººæ•°: ${res.server_player_history_max}\n" +
+                    "æ˜¨æ—¥å¹³å‡åœ¨çº¿äººæ•°: ${res.server_player_yesterday_average}\n" +
+                    "æ˜¨æ—¥æœ€é«˜åŒæ—¶åœ¨çº¿äººæ•°: ${res.server_player_yesterday_max}\n" +
+                    "æ›´æ–°æ—¶é—´: ${res.update_time}\n" +
+                    "æŸ¥è¯¢ç”¨æ—¶: ${result.run_time}s"
             )
         }
 
         else if((str == "1" || str == "m" || str == "" || args.isEmpty()) && (sGroup.serverIp != "" || sGroup.roselleServerIp != "")) {
             val ip = if(sGroup.serverIp != "") sGroup.serverIp else sGroup.roselleServerIp
 
-            group.sendMsg("·şÎñÆ÷×´Ì¬²éÑ¯ - Ping", group.pingServer(ip, str.contains("m")))
+            group.sendMsg("æœåŠ¡å™¨çŠ¶æ€æŸ¥è¯¢ - Ping", group.pingServer(ip, str.contains("m")))
         }
         
         else if(str != ""){
             if(SServerPing.checkServer(str))
-                group.sendMsg("·şÎñÆ÷×´Ì¬²éÑ¯ - Ping", group.pingServer(str, true))
-            else group.sendMsg("·şÎñÆ÷×´Ì¬²éÑ¯ - Ping", "²éÑ¯Ê§°Ü= =\n" +
-                "ÇëÈ·±£·şÎñÆ÷IPÕıÈ·ÇÒµ±Ç°·şÎñÆ÷ÔÚÏß£¡")
+                group.sendMsg("æœåŠ¡å™¨çŠ¶æ€æŸ¥è¯¢ - Ping", group.pingServer(str, true))
+            else group.sendMsg("æœåŠ¡å™¨çŠ¶æ€æŸ¥è¯¢ - Ping", "æŸ¥è¯¢å¤±è´¥= =\n" +
+                "è¯·ç¡®ä¿æœåŠ¡å™¨IPæ­£ç¡®ä¸”å½“å‰æœåŠ¡å™¨åœ¨çº¿ï¼")
         }
 
         else sendMessage("""
-                ±¾Èº»¹Î´°ó¶¨·şÎñÆ÷
-                ÇëÊäÈë "/ip ·şÎñÆ÷IP" ÒÔ°ó¶¨·şÎñÆ÷
+                æœ¬ç¾¤è¿˜æœªç»‘å®šæœåŠ¡å™¨
+                è¯·è¾“å…¥ "/ip æœåŠ¡å™¨IP" ä»¥ç»‘å®šæœåŠ¡å™¨
             """.trimIndent())
     }
 }
@@ -219,7 +225,7 @@ object SCServerInfo: RawCommand(
 object SCXmlMessage: RawCommand(
     PluginMain,
     "XmlMessage", "xml",
-    usage = "·¢ËÍÒ»ÌõXmlÏûÏ¢" usageWith "/xml <ÏûÏ¢ÄÚÈİ>"
+    usage = "å‘é€ä¸€æ¡Xmlæ¶ˆæ¯" usageWith "/xml <æ¶ˆæ¯å†…å®¹>"
 ) {
     @MiraiExperimentalApi
     override suspend fun CommandSender.onCommand(args: MessageChain) {
@@ -231,7 +237,7 @@ object SCXmlMessage: RawCommand(
             item { 
                 layout = 2
                 
-                title("[SkyDream]ÌìÖ®ÃÎ")
+                title("[SkyDream]å¤©ä¹‹æ¢¦")
                 summary(text)
                 
                 picture("https://s3.ax1x.com/2021/01/30/yFFwod.png")
@@ -253,17 +259,17 @@ object SCXmlMessage: RawCommand(
 
 /*
 <?xml version='1.0' encoding='UTF-8' standalone='yes' ?>
-<msg serviceID="60" templateID="123" action="web" brief="ÄúÒÑ±»ÒÆ³ö±¾Èº" sourceMsgId="0" url="" flag="0" adverSign="0" multiMsgFlag="0">
+<msg serviceID="60" templateID="123" action="web" brief="æ‚¨å·²è¢«ç§»å‡ºæœ¬ç¾¤" sourceMsgId="0" url="" flag="0" adverSign="0" multiMsgFlag="0">
 <item layout="1" advertiser_id="0" aid="0" />
 <item layout="1" advertiser_id="0" aid="0">
-<summary size="¡ÁFF0000">ÈºÓÑÕÙ»½Êõ£¿</summary></item>
+<summary size="Ã—FF0000">ç¾¤å‹å¬å”¤æœ¯ï¼Ÿ</summary></item>
 <source name="" icon="" action="" appid="-1" /></msg>
 */
 
 object SCRedEnvelopes: RawCommand(
     PluginMain,
-    "RedEnvelopes", "re", "ºì°ü",
-    usage = "·¢ËÍÒ»¸öºì°üÏûÏ¢" usageWith "/ºì°ü <ºì°üÄÚÈİ>"
+    "RedEnvelopes", "re", "çº¢åŒ…",
+    usage = "å‘é€ä¸€ä¸ªçº¢åŒ…æ¶ˆæ¯" usageWith "/çº¢åŒ… <çº¢åŒ…å†…å®¹>"
 ) {
     @MiraiExperimentalApi
     override suspend fun CommandSender.onCommand(args: MessageChain) {
@@ -292,24 +298,24 @@ object SCRedEnvelopes: RawCommand(
             item {
                 layout = 2
 
-                title("QQºì°ü")
+                title("QQçº¢åŒ…")
                 summary(text)
 
                 picture("https://s3.ax1x.com/2021/02/11/yB4uFA.png")
             }
 
-            source("QQºì°ü")
+            source("QQçº¢åŒ…")
 
             serviceId = id
             action = "web"
             url = "https://oi-wiki.org"
-            brief = "[QQºì°ü]¹§Ï²·¢²Æ"
+            brief = "[QQçº¢åŒ…]æ­å–œå‘è´¢"
 
             templateId = 123
         }
         
 //        val msg = """
-//            [mirai:app:{"app":"com.tencent.miniapp","desc":"","view":"all","ver":"1.0.0.89","prompt":"[QQºì°ü]¹§Ï²·¢²Æ","meta":{"all":{"preview":"http://gchat.qpic.cn/gchatpic_new/3584906133/956021029-2885039703-7B5004A5ED0FCF042BF5AF737EA1762B/0?term=2","title":"","buttons":[{"name":"ÎŞ²ú½×¼¶ºì°ü","action":"http://www.qq.com"}],"jumpUrl":"","summary":"\n·¢ÁËËÍÒ»¸ö <ÎŞ²ú½×¼¶ºì°ü>  ÎŞÂÛÊ¹ÓÃÄÄ¸ö°æ±¾µÄÊÖ»úQQ¾ù²»ÄÜ²éÊÕºì°ü  ÒòÎªÎŞ²ú½×¼¶µÄ¹ûÊµ²»ÄÜ¿¿±ğÈËÊ©Éá  ÊÇ¿¿×Ô¼ºÕùÈ¡µÄ£¡\n"}},"config":{"forward":true}}]
+//            [mirai:app:{"app":"com.tencent.miniapp","desc":"","view":"all","ver":"1.0.0.89","prompt":"[QQçº¢åŒ…]æ­å–œå‘è´¢","meta":{"all":{"preview":"http://gchat.qpic.cn/gchatpic_new/3584906133/956021029-2885039703-7B5004A5ED0FCF042BF5AF737EA1762B/0?term=2","title":"","buttons":[{"name":"æ— äº§é˜¶çº§çº¢åŒ…","action":"http://www.qq.com"}],"jumpUrl":"","summary":"\nå‘äº†é€ä¸€ä¸ª <æ— äº§é˜¶çº§çº¢åŒ…>  æ— è®ºä½¿ç”¨å“ªä¸ªç‰ˆæœ¬çš„æ‰‹æœºQQå‡ä¸èƒ½æŸ¥æ”¶çº¢åŒ…  å› ä¸ºæ— äº§é˜¶çº§çš„æœå®ä¸èƒ½é åˆ«äººæ–½èˆ  æ˜¯é è‡ªå·±äº‰å–çš„ï¼\n"}},"config":{"forward":true}}]
 //        """.trimIndent().deserializeMiraiCode()
 
         subject?.sendMessage(msg)
@@ -318,17 +324,17 @@ object SCRedEnvelopes: RawCommand(
 
 object SCRandomImage : RawCommand(
     PluginMain,
-    "RandomImage", "ri", "Ëæ»úÍ¼Æ¬", "Í¼Æ¬",
-    description = "Ëæ»úÍ¼Æ¬",
-    usage = "Ëæ»úÍ¼Æ¬"
+    "RandomImage", "ri", "éšæœºå›¾ç‰‡", "å›¾ç‰‡",
+    description = "éšæœºå›¾ç‰‡",
+    usage = "éšæœºå›¾ç‰‡"
 ) {
     private const val url = "https://api.yimian.xyz/img"
     private val params = hashMapOf(
-        "moe" to "¶ş´ÎÔªÍ¼Æ¬",
-        "wallpaper" to "Bing±ÚÖ½",
-        "head" to "¶ş´ÎÔªÍ·Ïñ",
-        "imgbed" to "Í¼´²Í¼Æ¬",
-        "moe&size=1920x1080" to "1920x1080³ß´ç¶ş´ÎÔªÍ¼Æ¬"
+        "moe" to "äºŒæ¬¡å…ƒå›¾ç‰‡",
+        "wallpaper" to "Bingå£çº¸",
+        "head" to "äºŒæ¬¡å…ƒå¤´åƒ",
+        "imgbed" to "å›¾åºŠå›¾ç‰‡",
+        "moe&size=1920x1080" to "1920x1080å°ºå¯¸äºŒæ¬¡å…ƒå›¾ç‰‡"
     )
 
 
@@ -346,7 +352,7 @@ object SCRandomImage : RawCommand(
                 img = SRequest("$url?type=$text").resultImage(contact)
             }
             else{
-                var res = "²ÎÊı²»ÕıÈ·£¡\nÇëÊäÈëÒÔÏÂ²ÎÊıÖ®Ò»:\n"
+                var res = "å‚æ•°ä¸æ­£ç¡®ï¼\nè¯·è¾“å…¥ä»¥ä¸‹å‚æ•°ä¹‹ä¸€:\n"
                 params.forEach { (key, value) ->
                     res += "$key  -  $value\n"
                 }
@@ -356,7 +362,7 @@ object SCRandomImage : RawCommand(
 
         
         if(img == null){
-            contact.sendMsg(description, "Í¼Æ¬»ñÈ¡Ê§°Ü...")
+            contact.sendMsg(description, "å›¾ç‰‡è·å–å¤±è´¥...")
             return
         }
         
@@ -367,14 +373,14 @@ object SCRandomImage : RawCommand(
 
 object SCWords : RawCommand(
     PluginMain,
-    "Words", "yy", "Ò»ÑÔ",
-    description = "Ò»ÑÔ",
-    usage = "Ò»ÑÔ"
+    "Words", "yy", "ä¸€è¨€",
+    description = "ä¸€è¨€",
+    usage = "ä¸€è¨€"
 ) {
     private const val url = "https://api.yimian.xyz/words/"
     private val params = hashMapOf(
-        "en" to "Ó¢Óï",
-        "zh" to "ÖĞÎÄ"
+        "en" to "è‹±è¯­",
+        "zh" to "ä¸­æ–‡"
     )
 
 
@@ -392,7 +398,7 @@ object SCWords : RawCommand(
                 words = SRequest("$url?lang=$text").result()
             }
             else{
-                var res = "²ÎÊı²»ÕıÈ·£¡\nÇëÊäÈëÒÔÏÂ²ÎÊıÖ®Ò»:\n"
+                var res = "å‚æ•°ä¸æ­£ç¡®ï¼\nè¯·è¾“å…¥ä»¥ä¸‹å‚æ•°ä¹‹ä¸€:\n"
                 params.forEach { (key, value) ->
                     res += "$key  -  $value\n"
                 }
@@ -402,11 +408,255 @@ object SCWords : RawCommand(
 
 
         if(words == null){
-            contact.sendMsg(description, "Ò»ÑÔ»ñÈ¡Ê§°Ü...")
+            contact.sendMsg(description, "ä¸€è¨€è·å–å¤±è´¥...")
             return
         }
 
         contact.sendMsg(description, words)
     }
 
+}
+
+object SCSound : RawCommand(
+    PluginMain,
+    "Sound", "snd", "è¯­éŸ³",
+    usage = "è¯­éŸ³"
+) {
+    const val popularUrl = "https://api.meowpad.me/v2/sounds/popular?skip=0"
+    const val downloadUrl = "https://api.meowpad.me/v1/download/"
+    
+    
+    override suspend fun CommandSender.onCommand(args: MessageChain) {
+        val contact = subject ?: return
+        val arg = args.findIsInstance<PlainText>()?.content
+        var text = ""
+        
+        val folder = File(PluginMain.dataFolder, "Voice")
+        val files = folder.listFiles() ?: emptyArray()
+        
+        if(arg == null || arg == ""){
+            files.forEachIndexed { i, sound ->
+                val order = i + 1
+                text += "$order. ${sound.nameWithoutExtension}\n"
+            }
+            
+            text += "è¯·è¾“å…¥ \"/snd åºå·\" è·å–å¯¹åº”çš„è¯­éŸ³~"
+        }
+        else{
+            if(arg.isInteger()){
+                val order = arg.toInt()
+                
+                if(order - 1 in files.indices){
+                    val sound = files[order - 1]
+                    
+                    contact.sendMessage(sound.toExternalResource().uploadAsVoice(contact))
+                    text = "${sound.nameWithoutExtension} å¥‰ä¸Š~"
+                }
+                else{
+                    text = "è·å–å¤±è´¥ï¼\nä¸å­˜åœ¨åºå· $order"
+                }
+            }
+            else{
+                text = "è·å–å¤±è´¥ï¼\nå‚æ•°åªèƒ½ä¸ºæ•°å­—"
+            }
+        }
+        
+        contact.sendMsg("è¯­éŸ³", text)
+    }
+    
+}
+
+object SCGroupManager: RawCommand(
+    PluginMain,
+    "GroupManager", "gm", "ç¾¤ç®¡ç†",
+    usage = "ç¾¤ç®¡ç†", description = "ç¾¤ç®¡ç†"
+) {
+    
+    override suspend fun CommandSender.onCommand(args: MessageChain) {
+        val group = subject ?: return
+        val member = user ?: return
+        if(group !is Group || member !is Member){
+            sendMsg(description, "ç¾¤ç®¡ç†åªèƒ½åœ¨ç¾¤ä¸­ä½¿ç”¨ï¼")
+            return
+        }
+        if(!member.isOperator() && !member.isSunnyAdmin()){
+            sendMsg(description, At(member) + " æ‚¨ä¸æ˜¯ç®¡ç†å‘˜ï¼Œä¸èƒ½ä½¿ç”¨ç¾¤ç®¡ç†åŠŸèƒ½ï¼")
+            return
+        }
+        
+        processSCommand(args) {
+            
+            "join" {
+                "set" {
+                    any { list ->
+                        var welcomeMsg = ""
+                        list.forEach { 
+                            welcomeMsg += "$it "
+                        }
+                        
+                        group.getSGroup().welcomeMessage = welcomeMsg
+                        sendMsg(description, "å…¥ç¾¤æ¬¢è¿æˆåŠŸè®¾ç½®ä¸º:\n$welcomeMsg")
+                    }
+                }
+                
+                "remove" {
+                    empty { 
+                        group.getSGroup().welcomeMessage = ""
+                        sendMsg(description, "å…¥ç¾¤æ¬¢è¿ç§»é™¤æˆåŠŸï¼")
+                    }
+                }
+                
+                empty {
+                    sendMsg(description, "è¯·åŠ ä¸Šå‚æ•° [set/remove] ä»¥ è®¾ç½®/ç§»é™¤ å…¥ç¾¤æ¬¢è¿")
+                }
+            }
+            
+            "leave" {
+                "set" {
+                    any { list ->
+                        var leaveMsg = ""
+                        list.forEach { 
+                            leaveMsg += "$it "
+                        }
+                        
+                        group.getSGroup().leaveMessage = leaveMsg
+                        sendMsg(description, "é€€ç¾¤æç¤ºæˆåŠŸè®¾ç½®ä¸º:\n$leaveMsg")
+                    }
+                }
+
+                "remove" {
+                    empty {
+                        group.getSGroup().leaveMessage = ""
+                        sendMsg(description, "é€€ç¾¤æç¤ºç§»é™¤æˆåŠŸï¼")
+                    }
+                }
+
+                empty {
+                    sendMsg(description, "è¯·åŠ ä¸Šå‚æ•° [set/remove] ä»¥ è®¾ç½®/ç§»é™¤ é€€ç¾¤æç¤º")
+                }
+            }
+            
+            
+            "apply" {
+                "acc" {
+                    "add" {
+                        any { list ->
+                            var str = ""
+                            list.forEach { str += it }
+                            group.getSGroup().autoApplyAcc += str
+                            sendMsg(description, "ç²¾ç¡®åŠ ç¾¤å®¡æ‰¹å…³é”®å­—æ·»åŠ æˆåŠŸ:\n$str")
+                        }
+                    }
+                    
+                    "remove" {
+                        any { list ->
+                            val first = list.first
+                            if(first.isInteger()){
+                                val order = first.toInt()
+                                val accList = group.getSGroup().autoApplyAcc
+                                
+                                if((order - 1) in accList.indices){
+                                    sendMsg(description, "å…³é”®å­— $order: ${accList[order - 1]}\nç§»é™¤æˆåŠŸï¼")
+                                    accList.removeAt(order - 1)
+                                }
+                                else{
+                                    sendMsg(description, "ç§»é™¤å¤±è´¥ï¼Œä¸å­˜åœ¨åºå·ä¸º $order çš„å…³é”®å­—ï¼")
+                                }
+                            }
+                            else sendMsg(description, "åºå·åªèƒ½ä¸ºæ•°å­—ï¼")
+                        }
+                        
+                        empty {
+                            var msg = """
+                                è¯·è¾“å…¥å…³é”®å­—çš„åºå·ä»¥ç§»é™¤è¯¥å…³é”®å­—
+                                
+                                ç²¾ç¡®åŠ ç¾¤å®¡æ‰¹å…³é”®å­—åˆ—è¡¨:
+                            """.trimIndent()
+                            group.getSGroup().autoApplyAcc.forEachIndexed { i, str ->
+                                msg += "\n${i + 1}. $str"
+                            }
+                            sendMsg(description, msg)
+                        }
+                    }
+                    
+                    "clear" {
+                        group.getSGroup().autoApplyAcc.clear()
+                        sendMsg(description, "ç²¾ç¡®åŠ ç¾¤å®¡æ‰¹å…³é”®å­—å·²æ¸…ç©º~")
+                    } 
+                    
+                    empty {
+                        sendMsg(description, "è¯·åŠ ä¸Šå‚æ•° [add/remove/clear] ä»¥ æ·»åŠ /ç§»é™¤/æ¸…ç©º ç²¾ç¡®åŠ ç¾¤å®¡æ‰¹å…³é”®å­—")
+                    }
+                    
+                }
+                
+                "fuz" {
+                    "add" {
+                        any { list ->
+                            var str = ""
+                            list.forEach { str += it }
+                            group.getSGroup().autoApplyFuz += str
+                            sendMsg(description, "æ¨¡ç³ŠåŠ ç¾¤å®¡æ‰¹å…³é”®å­—æ·»åŠ æˆåŠŸ:\n$str")
+                        }
+                    }
+
+                    "remove" {
+                        any { list ->
+                            val first = list.first
+                            if(first.isInteger()){
+                                val order = first.toInt()
+                                val accList = group.getSGroup().autoApplyFuz
+
+                                if((order - 1) in accList.indices){
+                                    sendMsg(description, "å…³é”®å­— $order: ${accList[order - 1]}\nç§»é™¤æˆåŠŸï¼")
+                                    accList.removeAt(order - 1)
+                                }
+                                else{
+                                    sendMsg(description, "ç§»é™¤å¤±è´¥ï¼Œä¸å­˜åœ¨åºå·ä¸º $order çš„å…³é”®å­—ï¼")
+                                }
+                            }
+                            else sendMsg(description, "åºå·åªèƒ½ä¸ºæ•°å­—ï¼")
+                        }
+
+                        empty {
+                            var msg = """
+                                è¯·è¾“å…¥å…³é”®å­—çš„åºå·ä»¥ç§»é™¤è¯¥å…³é”®å­—
+                                
+                                æ¨¡ç³ŠåŠ ç¾¤å®¡æ‰¹å…³é”®å­—åˆ—è¡¨:
+                            """.trimIndent()
+                            group.getSGroup().autoApplyFuz.forEachIndexed { i, str ->
+                                msg += "\n${i + 1}. $str"
+                            }
+                            sendMsg(description, msg)
+                        }
+                    }
+
+                    "clear" {
+                        group.getSGroup().autoApplyFuz.clear()
+                        sendMsg(description, "æ¨¡ç³ŠåŠ ç¾¤å®¡æ‰¹å…³é”®å­—å·²æ¸…ç©º~")
+                    }
+
+                    empty {
+                        sendMsg(description, "è¯·åŠ ä¸Šå‚æ•° [add/remove/clear] ä»¥ æ·»åŠ /ç§»é™¤/æ¸…ç©º æ¨¡ç³ŠåŠ ç¾¤å®¡æ‰¹å…³é”®å­—")
+                    }
+                }
+                
+                empty {
+                    sendMsg(description, "è¯·åŠ ä¸Šå‚æ•° [acc/fuz] ä»¥è®¾ç½® ç²¾ç¡®/æ¨¡ç³Š çš„åŠ ç¾¤å®¡æ‰¹å…³é”®å­—")
+                }
+            }
+            
+            
+            empty { 
+                sendMsg(description, """
+                    å‘½ä»¤å‚æ•°:
+                    join  -  å…¥ç¾¤æ¬¢è¿
+                    leave  -  é€€ç¾¤æç¤º
+                    apply  -  åŠ ç¾¤å®¡æ‰¹
+                """.trimIndent())
+            }
+        }
+        
+    }
+    
 }

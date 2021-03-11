@@ -9,7 +9,7 @@
     <option name="MAIN_CLASS_NAME" value="io.github.sunshinewzy.test.RunMiraiKt" />
     <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/../../Debug/mirai" />
     <method v="2">
-      <option name="Gradle.BeforeRunTask" enabled="true" tasks="jar" externalProjectPath="$PROJECT_DIR$" vmOptions="" scriptParameters="" />
+      <option name="Gradle.BeforeRunTask" enabled="false" tasks="jar" externalProjectPath="$PROJECT_DIR$" vmOptions="" scriptParameters="" />
     </method>
   </configuration>
 </component>

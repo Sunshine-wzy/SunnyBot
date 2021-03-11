@@ -6,6 +6,8 @@ import io.github.sunshinewzy.sunnybot.objects.SDataGroup
 import io.github.sunshinewzy.sunnybot.objects.SGroup
 import io.github.sunshinewzy.sunnybot.objects.SSaveGroup
 import io.github.sunshinewzy.sunnybot.objects.sDataGroupMap
+import kotlinx.coroutines.launch
+import net.mamoe.mirai.console.command.CommandSender
 import net.mamoe.mirai.contact.Contact
 import net.mamoe.mirai.contact.Member
 import net.mamoe.mirai.contact.User
@@ -18,6 +20,7 @@ import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.io.InputStream
+import java.util.regex.Pattern
 import javax.imageio.ImageIO
 import kotlin.math.pow
 
@@ -39,6 +42,28 @@ suspend fun Contact.sendMsg(title: String, text: Message) {
 }
 
 suspend fun Contact.sendMsg(title: Message, text: String) {
+    sendMsg(title, PlainText(text))
+}
+
+
+fun CommandSender.sendMsg(title: Message, text: Message) {
+    sunnyScope.launch {
+        sendMessage(PlainText("\t『") +
+            title + PlainText("』\n") +
+            text
+        )
+    }
+}
+
+fun CommandSender.sendMsg(title: String, text: String) {
+    sendMsg(PlainText(title), PlainText(text))
+}
+
+fun CommandSender.sendMsg(title: String, text: Message) {
+    sendMsg(PlainText(title), text)
+}
+
+fun CommandSender.sendMsg(title: Message, text: String) {
     sendMsg(title, PlainText(text))
 }
 
@@ -169,5 +194,26 @@ fun BufferedImage.toInputStream(): InputStream? {
     
     return null
 }
+
+//endregion
+
+//region String
+
+/**
+ * 判断是否为整数
+ * @param str 传入的字符串
+ * @return 是整数返回true,否则返回false
+ */
+fun String.isInteger(): Boolean {
+    val pattern = Pattern.compile("^[-\\+]?[\\d]*$")
+    return pattern.matcher(this).matches()
+}
+
+//endregion
+
+//region Char
+
+fun Char.isChineseChar(): Boolean =
+    toString().matches("[\u4e00-\u9fa5]".toRegex())
 
 //endregion

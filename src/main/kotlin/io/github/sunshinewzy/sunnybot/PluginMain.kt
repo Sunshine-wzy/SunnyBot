@@ -1,15 +1,17 @@
 package io.github.sunshinewzy.sunnybot
 
 import io.github.sunshinewzy.sunnybot.functions.AntiRecall
-import io.github.sunshinewzy.sunnybot.listeners.listenBot
-import io.github.sunshinewzy.sunnybot.listeners.listenMessage
+import io.github.sunshinewzy.sunnybot.listeners.BotListener
+import io.github.sunshinewzy.sunnybot.listeners.MessageListener
 import io.github.sunshinewzy.sunnybot.objects.SSaveGroup
 import io.github.sunshinewzy.sunnybot.objects.SSavePlayer
 import io.github.sunshinewzy.sunnybot.objects.SSaveSunny
 import net.mamoe.mirai.Bot
+import net.mamoe.mirai.console.command.descriptor.ExperimentalCommandDescriptors
 import net.mamoe.mirai.console.extension.PluginComponentStorage
 import net.mamoe.mirai.console.plugin.jvm.JvmPluginDescription
 import net.mamoe.mirai.console.plugin.jvm.KotlinPlugin
+import net.mamoe.mirai.console.util.ConsoleExperimentalApi
 import net.mamoe.mirai.utils.info
 
 const val NAMESPACE = "Sunny"
@@ -26,6 +28,8 @@ object PluginMain : KotlinPlugin(
         antiRecall = AntiRecall()
     }
     
+    @ExperimentalCommandDescriptors
+    @ConsoleExperimentalApi
     override fun onEnable() {
         logger.info { "Hello Sunny!" }
         
@@ -38,9 +42,11 @@ object PluginMain : KotlinPlugin(
     }
     
     
+    @ExperimentalCommandDescriptors
+    @ConsoleExperimentalApi
     private fun regListeners() {
-        listenBot()
-        listenMessage()
+        BotListener.listenBot()
+        MessageListener.listenMessage()
     }
     
     private fun reloadData() {

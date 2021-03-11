@@ -1,40 +1,50 @@
 package io.github.sunshinewzy.sunnybot.objects
 
 import com.google.gson.Gson
-import io.github.sunshinewzy.sunnybot.sendMsg
+import io.github.sunshinewzy.sunnybot.isChineseChar
 import io.github.sunshinewzy.sunnybot.toInputStream
 import kotlinx.coroutines.runBlocking
 import net.mamoe.mirai.contact.Contact
 import net.mamoe.mirai.message.data.Image
+import net.mamoe.mirai.message.data.Voice
+import net.mamoe.mirai.utils.ExternalResource.Companion.toExternalResource
 import net.mamoe.mirai.utils.ExternalResource.Companion.uploadAsImage
+import net.mamoe.mirai.utils.ExternalResource.Companion.uploadAsVoice
 import java.io.BufferedReader
+import java.io.FileOutputStream
 import java.io.InputStreamReader
 import java.io.UnsupportedEncodingException
 import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLEncoder
 import javax.imageio.ImageIO
+import kotlin.reflect.jvm.internal.impl.builtins.StandardNames.FqNames
+import kotlin.reflect.jvm.internal.impl.builtins.StandardNames.FqNames.string
+
+
+
 
 
 /**
- * @param url ½Ó¿ÚµØÖ·
+ * @param url æ¥å£åœ°å€
  */
 
 class SRequest(private val url: String) {
+    private val encodeUrl = urlEncode()
+    
+    
     fun result(): String {
         return httpRequest()
     }
     
-    fun resultRoselle(serverAddr: String, showFavicon: Int): RosellemcServerInfo {
-        //paramsÓÃÓÚ´æ´¢ÒªÇëÇóµÄ²ÎÊı
-        val params = HashMap<String, Any>()
-        params["server_addr"] = serverAddr
-        params["show_favicon"] = showFavicon
-        //µ÷ÓÃhttpRequest·½·¨£¬Õâ¸ö·½·¨Ö÷ÒªÓÃÓÚÇëÇóµØÖ·£¬²¢¼ÓÉÏÇëÇó²ÎÊı
-        val strRequest = httpRequest(params)
-        //´¦Àí·µ»ØµÄJSONÊı¾İ²¢·µ»Ø
-        return Gson().fromJson(strRequest, RosellemcServerInfo::class.java)
+    inline fun <reified T: SBean> result(params: Map<String, Any> = emptyMap()): T {
+        if(params.isEmpty()){
+            return Gson().fromJson(httpRequest(), T::class.java)
+        }
+        
+        return Gson().fromJson(httpRequest(params), T::class.java)
     }
+    
     
     fun resultImage(contact: Contact): Image? {
         var image: Image? = null
@@ -51,79 +61,116 @@ class SRequest(private val url: String) {
         return image
     }
 
+    fun resultVoice(contact: Contact): Voice? {
+        val theURL = URL(encodeUrl)
+        val connection = theURL.openConnection()
+        connection.setRequestProperty("Accept-Language", "zh-CN,zh;q=0.9,zh-TW;q=0.8,en-US;q=0.7,en;q=0.6")
+        val input = connection.getInputStream()
+        
+//        val buffer = ByteArray(1204)
+//        var byteReader = input.read(buffer)
+//        while(byteReader != -1){
+//            byteReader = input.read(buffer)
+//        }
+
+        var voice: Voice?
+        runBlocking {
+            voice = input.toExternalResource().uploadAsVoice(contact)
+        }
+        return voice
+    }
     
-    private fun httpRequest(params: Map<String, Any>): String {
-        //buffer ÓÃÓÚ½ÓÊÕ·µ»ØµÄ×Ö·û
+    
+    fun download(fileOutPath: String, fileName: String) {
+        val theURL = URL(encodeUrl)
+        val connection = theURL.openConnection()
+        val input = connection.getInputStream()
+        val output = FileOutputStream("$fileOutPath/$fileName")
+        
+        val buffer = ByteArray(1204)
+        var byteReader = input.read(buffer)
+        while(byteReader != -1){
+            output.write(buffer, 0, byteReader)
+            
+            byteReader = input.read(buffer)
+        }
+    }
+    
+    
+    fun httpRequest(params: Map<String, Any>): String {
+        //buffer ç”¨äºæ¥æ”¶è¿”å›çš„å­—ç¬¦
         val buffer = StringBuffer()
         try {
-            //½¨Á¢URL£¬°ÑÇëÇóµØÖ·¸ø²¹È«£¬ÆäÖĞurlEncode()·½·¨ÓÃÓÚ°ÑparamsÀïµÄ²ÎÊı¸øÈ¡³öÀ´
-            val theURL = URL(url + "?" + urlEncode(params))
-            //´ò¿ªhttpÁ¬½Ó
+            //å»ºç«‹URLï¼ŒæŠŠè¯·æ±‚åœ°å€ç»™è¡¥å…¨ï¼Œå…¶ä¸­urlEncode()æ–¹æ³•ç”¨äºæŠŠparamsé‡Œçš„å‚æ•°ç»™å–å‡ºæ¥
+            val theURL = URL(encodeUrl + "?" + urlEncode(params))
+            //æ‰“å¼€httpè¿æ¥
             val httpUrlConn: HttpURLConnection = theURL.openConnection() as HttpURLConnection
             httpUrlConn.doInput = true
             httpUrlConn.requestMethod = "GET"
+            httpUrlConn.setRequestProperty("Accept-Language", "zh-CN,zh;q=0.9,zh-TW;q=0.8,en-US;q=0.7,en;q=0.6")
             httpUrlConn.connect()
 
-            //»ñµÃÊäÈë
+            //è·å¾—è¾“å…¥
             val inputStream = httpUrlConn.inputStream ?: return ""
             val inputStreamReader = InputStreamReader(inputStream, "UTF-8")
             val bufferedReader = BufferedReader(inputStreamReader)
             
-            //½«bufferReaderµÄÖµ¸ø·Åµ½bufferÀï
+            //å°†bufferReaderçš„å€¼ç»™æ”¾åˆ°bufferé‡Œ
             var str: String?
             while ((bufferedReader.readLine().also { str = it }) != null){
                 buffer.append(str)
             }
-            //¹Ø±ÕbufferReaderºÍÊäÈëÁ÷
+            //å…³é—­bufferReaderå’Œè¾“å…¥æµ
             bufferedReader.close()
             inputStreamReader.close()
             inputStream.close()
-            //¶Ï¿ªÁ¬½Ó
+            //æ–­å¼€è¿æ¥
             httpUrlConn.disconnect()
         } catch (e: Exception) {
             e.printStackTrace()
         }
-        //·µ»Ø×Ö·û´®
+        //è¿”å›å­—ç¬¦ä¸²
         return buffer.toString()
     }
 
-    private fun httpRequest(): String {
-        //buffer ÓÃÓÚ½ÓÊÕ·µ»ØµÄ×Ö·û
+    fun httpRequest(): String {
+        //buffer ç”¨äºæ¥æ”¶è¿”å›çš„å­—ç¬¦
         val buffer = StringBuffer()
         try {
-            //½¨Á¢URL£¬°ÑÇëÇóµØÖ·¸ø²¹È«£¬ÆäÖĞurlEncode()·½·¨ÓÃÓÚ°ÑparamsÀïµÄ²ÎÊı¸øÈ¡³öÀ´
-            val theURL = URL(url)
-            //´ò¿ªhttpÁ¬½Ó
+            //å»ºç«‹URLï¼ŒæŠŠè¯·æ±‚åœ°å€ç»™è¡¥å…¨ï¼Œå…¶ä¸­urlEncode()æ–¹æ³•ç”¨äºæŠŠparamsé‡Œçš„å‚æ•°ç»™å–å‡ºæ¥
+            val theURL = URL(encodeUrl)
+            //æ‰“å¼€httpè¿æ¥
             val httpUrlConn: HttpURLConnection = theURL.openConnection() as HttpURLConnection
             httpUrlConn.doInput = true
             httpUrlConn.requestMethod = "GET"
+            httpUrlConn.setRequestProperty("Accept-Language", "zh-CN,zh;q=0.9,zh-TW;q=0.8,en-US;q=0.7,en;q=0.6")
             httpUrlConn.connect()
 
-            //»ñµÃÊäÈë
+            //è·å¾—è¾“å…¥
             val inputStream= httpUrlConn.inputStream ?: return ""
             val inputStreamReader = InputStreamReader(inputStream, "UTF-8")
             val bufferedReader = BufferedReader(inputStreamReader)
 
-            //½«bufferReaderµÄÖµ¸ø·Åµ½bufferÀï
+            //å°†bufferReaderçš„å€¼ç»™æ”¾åˆ°bufferé‡Œ
             var str: String?
             while ((bufferedReader.readLine().also { str = it }) != null){
                 buffer.append(str)
             }
-            //¹Ø±ÕbufferReaderºÍÊäÈëÁ÷
+            //å…³é—­bufferReaderå’Œè¾“å…¥æµ
             bufferedReader.close()
             inputStreamReader.close()
             inputStream.close()
-            //¶Ï¿ªÁ¬½Ó
+            //æ–­å¼€è¿æ¥
             httpUrlConn.disconnect()
         } catch (e: Exception) {
             e.printStackTrace()
         }
-        //·µ»Ø×Ö·û´®
+        //è¿”å›å­—ç¬¦ä¸²
         return buffer.toString()
     }
     
-    private fun urlEncode(data: Map<String, Any>): String {
-        //½«mapÀïµÄ²ÎÊı±ä³ÉÏñ showapi_appid=###&showapi_sign=###&µÄÑù×Ó
+    fun urlEncode(data: Map<String, Any>): String {
+        //å°†mapé‡Œçš„å‚æ•°å˜æˆåƒ showapi_appid=###&showapi_sign=###&çš„æ ·å­
         val sb = StringBuilder()
         for ((key, value) in data.entries) {
             try {
@@ -133,5 +180,32 @@ class SRequest(private val url: String) {
             }
         }
         return sb.toString()
+    }
+    
+    fun urlEncode(): String {
+        var resultURL = ""
+        for(i in url.indices) {
+            val charAt = url[i]
+            //åªå¯¹æ±‰å­—å¤„ç†
+            if(charAt.isChineseChar()) {
+                val encode = URLEncoder.encode(charAt.toString(), "UTF-8")
+                resultURL += encode
+            } else {
+                resultURL += charAt
+            }
+        }
+        return resultURL
+    }
+
+
+    fun resultRoselle(serverAddr: String, showFavicon: Int): RosellemcServerInfo {
+        //paramsç”¨äºå­˜å‚¨è¦è¯·æ±‚çš„å‚æ•°
+        val params = HashMap<String, Any>()
+        params["server_addr"] = serverAddr
+        params["show_favicon"] = showFavicon
+        //è°ƒç”¨httpRequestæ–¹æ³•ï¼Œè¿™ä¸ªæ–¹æ³•ä¸»è¦ç”¨äºè¯·æ±‚åœ°å€ï¼Œå¹¶åŠ ä¸Šè¯·æ±‚å‚æ•°
+        val strRequest = httpRequest(params)
+        //å¤„ç†è¿”å›çš„JSONæ•°æ®å¹¶è¿”å›
+        return Gson().fromJson(strRequest, RosellemcServerInfo::class.java)
     }
 }

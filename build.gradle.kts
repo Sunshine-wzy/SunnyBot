@@ -20,8 +20,12 @@ version = "1.1.1"
 
 repositories {
     mavenLocal()
+    
+    maven("https://maven.aliyun.com/repository/central")
+    
     mavenCentral()
     jcenter()
+    
     maven("https://dl.bintray.com/kotlin/kotlin-eap")
     maven { 
         url = uri("http://maven.imagej.net/content/groups/public")

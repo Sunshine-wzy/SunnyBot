@@ -12,8 +12,12 @@ class SGroup(private val groupID: Long) {
     var roselleServerIp = ""
     var serverIp = ""
     var isRepeat = false
+    var welcomeMessage = ""
+    var leaveMessage = ""
     
     val dailySignIns = ArrayList<Pair<Long, String>>()
+    val autoApplyAcc = ArrayList<String>()
+    val autoApplyFuz = ArrayList<String>()
 }
 
 object SSaveGroup: AutoSavePluginData("SGroupData") {

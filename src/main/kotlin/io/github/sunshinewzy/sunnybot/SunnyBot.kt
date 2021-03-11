@@ -1,20 +1,17 @@
 package io.github.sunshinewzy.sunnybot
 
-import io.github.sunshinewzy.sunnybot.commands.regSCompositeCommands
-import io.github.sunshinewzy.sunnybot.commands.regSRawCommands
-import io.github.sunshinewzy.sunnybot.commands.regSSimpleCommands
-import io.github.sunshinewzy.sunnybot.commands.setPermit
+import io.github.sunshinewzy.sunnybot.commands.*
 import io.github.sunshinewzy.sunnybot.enums.RunningState
 import io.github.sunshinewzy.sunnybot.functions.AntiRecall
 import io.github.sunshinewzy.sunnybot.functions.Repeater
 import io.github.sunshinewzy.sunnybot.games.SGameManager
-import io.github.sunshinewzy.sunnybot.objects.SDataGroup
-import io.github.sunshinewzy.sunnybot.objects.SGroup
+import io.github.sunshinewzy.sunnybot.objects.*
 import io.github.sunshinewzy.sunnybot.objects.SSaveGroup.sGroupMap
-import io.github.sunshinewzy.sunnybot.objects.sDataGroupMap
 import io.github.sunshinewzy.sunnybot.runnable.STimerTask
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
+import kotlinx.coroutines.launch
 import net.mamoe.mirai.console.command.descriptor.ExperimentalCommandDescriptors
 import net.mamoe.mirai.console.util.ConsoleExperimentalApi
 import net.mamoe.mirai.contact.Group
@@ -22,7 +19,10 @@ import net.mamoe.mirai.contact.Member
 import net.mamoe.mirai.contact.User
 import net.mamoe.mirai.event.globalEventChannel
 import net.mamoe.mirai.event.subscribeMessages
+import java.io.File
 import java.util.*
+import kotlin.collections.ArrayList
+import kotlin.concurrent.thread
 
 val sunnyScope = CoroutineScope(SupervisorJob())
 val sunnyChannel = sunnyScope.globalEventChannel()
@@ -53,6 +53,8 @@ suspend fun sunnyInit() {
     Timer().schedule(STimerTask, Date(), 86400_000L)       //24h = 1440min =  86400s = 86400_000ms
     //复读
     Repeater.repeat()
+    //下载语音文件
+    SunnyBot.downloadVoice()
 }
 
 private fun groupInit() {
@@ -67,6 +69,7 @@ private fun groupInit() {
 
 private fun regMsg() {
     sunnyChannel.subscribeMessages {
+        
         (contains("老子不会")) end@{
             val id = getGroupID(sender)
             if (id == 0L)
@@ -161,4 +164,29 @@ suspend fun Group.sendIntroduction() {
     )
 
     sendMessage(text.random())
+}
+
+
+object SunnyBot {
+    fun downloadVoice() {
+        thread {
+            val folder = File(PluginMain.dataFolder, "Voice")
+            if(!folder.exists())
+                folder.mkdirs()
+
+            val files = folder.listFiles() ?: emptyArray()
+            val names = ArrayList<String>()
+            files.forEach {
+                names += it.nameWithoutExtension
+            }
+
+            val popular = SRequest(SCSound.popularUrl).result<SBSounds>()
+            popular.sounds.forEach { sound ->
+                if(!names.contains(sound.title)){
+                    val slug = sound.slug
+                    SRequest(SCSound.downloadUrl + slug).download(folder.absolutePath, "${sound.title}.amr")
+                }
+            }
+        }
+    }
 }
