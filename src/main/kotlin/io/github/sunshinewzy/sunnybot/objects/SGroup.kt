@@ -1,11 +1,14 @@
 package io.github.sunshinewzy.sunnybot.objects
 
 import io.github.sunshinewzy.sunnybot.enums.RunningState
+import io.github.sunshinewzy.sunnybot.games.SGChess
 import kotlinx.serialization.Serializable
 import net.mamoe.mirai.console.data.AutoSavePluginData
 import net.mamoe.mirai.console.data.value
 import net.mamoe.mirai.contact.Group
 import net.mamoe.mirai.contact.Member
+import kotlin.random.Random
+import kotlin.random.nextInt
 
 @Serializable
 class SGroup(private val groupID: Long) {
@@ -16,8 +19,8 @@ class SGroup(private val groupID: Long) {
     var leaveMessage = ""
     
     val dailySignIns = ArrayList<Pair<Long, String>>()
-    val autoApplyAcc = ArrayList<String>()
-    val autoApplyFuz = ArrayList<String>()
+    val autoApply = ArrayList<String>()
+    val autoReject = ArrayList<String>()
 }
 
 object SSaveGroup: AutoSavePluginData("SGroupData") {
@@ -37,7 +40,8 @@ data class SDataGroup(
     var runningState: RunningState = RunningState.FREE,
     var lastRunning: RunningState = RunningState.FREE,
     val hour24:IntArray = IntArray(5) { -1 },
-    val ticTacToe: DataTicTacToe = DataTicTacToe()
+    val ticTacToe: DataTicTacToe = DataTicTacToe(),
+    val chess: DataChess = DataChess()
 ) {
     
     companion object {
@@ -53,7 +57,24 @@ data class DataTicTacToe(
     val slot: IntArray = IntArray(10),
     var round: Int = 0
 ) {
-    val player = Array<Member?>(3) { null }
+    val players = Array<Member?>(3) { null }
+}
+
+data class DataChess(
+    var board: SGChess.ChessBoard? = null
+) {
+    val players: Array<Member?> = Array(3) { null }
+    
+
+    fun init() {
+        board = SGChess.ChessBoard()
+        
+        if(Random.nextInt(1, 3) == 2){
+            val temp = players[1]
+            players[1] = players[2]
+            players[2] = temp
+        }
+    }
 }
 
 

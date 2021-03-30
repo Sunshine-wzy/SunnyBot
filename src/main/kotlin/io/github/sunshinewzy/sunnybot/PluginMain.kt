@@ -20,7 +20,7 @@ var sunnyBot: Bot? = null
 object PluginMain : KotlinPlugin(
     JvmPluginDescription(
         id = "io.github.sunshinewzy.sunnybot",
-        version = "1.1.1",
+        version = "1.1.2",
         name = "SunnyBot"
     )
 ) {

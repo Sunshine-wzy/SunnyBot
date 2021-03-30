@@ -37,6 +37,7 @@ suspend fun regSRawCommands() {
     SCWords.reg("u*")
     SCSound.reg("u*")
     SCGroupManager.reg()
+    SCMcbbs.reg()
 
     //Debug
     SCDebugLaTeX.reg("console")
@@ -538,112 +539,135 @@ object SCGroupManager: RawCommand(
             
             
             "apply" {
-                "acc" {
-                    "add" {
-                        any { list ->
-                            var str = ""
-                            list.forEach { str += it }
-                            group.getSGroup().autoApplyAcc += str
-                            sendMsg(description, "精确加群审批关键字添加成功:\n$str")
-                        }
+                "add" {
+                    any { list ->
+                        var str = ""
+                        list.forEach { str += it }
+                        group.getSGroup().autoApply += str
+                        sendMsg(description, "关键字添加成功:\n$str")
                     }
-                    
-                    "remove" {
-                        any { list ->
-                            val first = list.first
-                            if(first.isInteger()){
-                                val order = first.toInt()
-                                val accList = group.getSGroup().autoApplyAcc
-                                
-                                if((order - 1) in accList.indices){
-                                    sendMsg(description, "关键字 $order: ${accList[order - 1]}\n移除成功！")
-                                    accList.removeAt(order - 1)
-                                }
-                                else{
-                                    sendMsg(description, "移除失败，不存在序号为 $order 的关键字！")
-                                }
-                            }
-                            else sendMsg(description, "序号只能为数字！")
-                        }
-                        
-                        empty {
-                            var msg = """
-                                请输入关键字的序号以移除该关键字
-                                
-                                精确加群审批关键字列表:
-                            """.trimIndent()
-                            group.getSGroup().autoApplyAcc.forEachIndexed { i, str ->
-                                msg += "\n${i + 1}. $str"
-                            }
-                            sendMsg(description, msg)
-                        }
-                    }
-                    
-                    "clear" {
-                        group.getSGroup().autoApplyAcc.clear()
-                        sendMsg(description, "精确加群审批关键字已清空~")
-                    } 
-                    
-                    empty {
-                        sendMsg(description, "请加上参数 [add/remove/clear] 以 添加/移除/清空 精确加群审批关键字")
-                    }
-                    
                 }
-                
-                "fuz" {
-                    "add" {
-                        any { list ->
-                            var str = ""
-                            list.forEach { str += it }
-                            group.getSGroup().autoApplyFuz += str
-                            sendMsg(description, "模糊加群审批关键字添加成功:\n$str")
-                        }
-                    }
 
-                    "remove" {
-                        any { list ->
-                            val first = list.first
-                            if(first.isInteger()){
-                                val order = first.toInt()
-                                val accList = group.getSGroup().autoApplyFuz
+                "remove" {
+                    any { list ->
+                        val first = list.first
+                        if(first.isInteger()){
+                            val order = first.toInt()
+                            val accList = group.getSGroup().autoApply
 
-                                if((order - 1) in accList.indices){
-                                    sendMsg(description, "关键字 $order: ${accList[order - 1]}\n移除成功！")
-                                    accList.removeAt(order - 1)
-                                }
-                                else{
-                                    sendMsg(description, "移除失败，不存在序号为 $order 的关键字！")
-                                }
+                            if((order - 1) in accList.indices){
+                                sendMsg(description, "关键字 $order: ${accList[order - 1]}\n移除成功！")
+                                accList.removeAt(order - 1)
                             }
-                            else sendMsg(description, "序号只能为数字！")
-                        }
-
-                        empty {
-                            var msg = """
-                                请输入关键字的序号以移除该关键字
-                                
-                                模糊加群审批关键字列表:
-                            """.trimIndent()
-                            group.getSGroup().autoApplyFuz.forEachIndexed { i, str ->
-                                msg += "\n${i + 1}. $str"
+                            else{
+                                sendMsg(description, "移除失败，不存在序号为 $order 的关键字！")
                             }
-                            sendMsg(description, msg)
                         }
-                    }
-
-                    "clear" {
-                        group.getSGroup().autoApplyFuz.clear()
-                        sendMsg(description, "模糊加群审批关键字已清空~")
+                        else sendMsg(description, "序号只能为数字！")
                     }
 
                     empty {
-                        sendMsg(description, "请加上参数 [add/remove/clear] 以 添加/移除/清空 模糊加群审批关键字")
+                        var msg = """
+                                请输入关键字的序号以移除该关键字
+                                
+                                加群审批-自动同意 关键字列表:
+                            """.trimIndent()
+                        group.getSGroup().autoApply.forEachIndexed { i, str ->
+                            msg += "\n${i + 1}. $str"
+                        }
+                        sendMsg(description, msg)
                     }
                 }
+
+                "clear" {
+                    group.getSGroup().autoApply.clear()
+                    sendMsg(description, "加群审批-自动同意 关键字已清空~")
+                }
                 
+                "list" {
+                    var msg = "加群审批-自动同意 关键字列表:"
+                    group.getSGroup().autoApply.forEachIndexed { i, str ->
+                        msg += "\n${i + 1}. $str"
+                    }
+                    sendMsg(description, msg)
+                }
+
                 empty {
-                    sendMsg(description, "请加上参数 [acc/fuz] 以设置 精确/模糊 的加群审批关键字")
+                    sendMsg(description, """
+                            请加上参数 [add/remove/clear/list] 以 添加/移除/清空/显示 加群审批-自动同意 关键字
+                            
+                            Tips:
+                            1. 关键字不区分大小写
+                            2. 只要申请信息中包含关键字就会自动同意
+                        """.trimIndent())
                 }
+                
+            }
+
+            "reject" {
+                "add" {
+                    any { list ->
+                        var str = ""
+                        list.forEach { str += it }
+                        group.getSGroup().autoReject += str
+                        sendMsg(description, "关键字添加成功:\n$str")
+                    }
+                }
+
+                "remove" {
+                    any { list ->
+                        val first = list.first
+                        if(first.isInteger()){
+                            val order = first.toInt()
+                            val accList = group.getSGroup().autoReject
+
+                            if((order - 1) in accList.indices){
+                                sendMsg(description, "关键字 $order: ${accList[order - 1]}\n移除成功！")
+                                accList.removeAt(order - 1)
+                            }
+                            else{
+                                sendMsg(description, "移除失败，不存在序号为 $order 的关键字！")
+                            }
+                        }
+                        else sendMsg(description, "序号只能为数字！")
+                    }
+
+                    empty {
+                        var msg = """
+                                请输入关键字的序号以移除该关键字
+                                
+                                加群审批-自动拒绝 关键字列表:
+                            """.trimIndent()
+                        group.getSGroup().autoReject.forEachIndexed { i, str ->
+                            msg += "\n${i + 1}. $str"
+                        }
+                        sendMsg(description, msg)
+                    }
+                }
+
+                "clear" {
+                    group.getSGroup().autoReject.clear()
+                    sendMsg(description, "加群审批-自动拒绝 关键字已清空~")
+                }
+
+                "list" {
+                    var msg = "加群审批-自动拒绝 关键字列表:"
+                    group.getSGroup().autoReject.forEachIndexed { i, str ->
+                        msg += "\n${i + 1}. $str"
+                    }
+                    sendMsg(description, msg)
+                }
+
+                empty {
+                    sendMsg(description, """
+                            请加上参数 [add/remove/clear/list] 以 添加/移除/清空/显示 加群审批-自动拒绝 关键字
+                            
+                            Tips:
+                            1. 关键字不区分大小写
+                            2. 只要申请信息中包含关键字就会自动拒绝
+                        """.trimIndent())
+                }
+
             }
             
             
@@ -652,11 +676,46 @@ object SCGroupManager: RawCommand(
                     命令参数:
                     join  -  入群欢迎
                     leave  -  退群提示
-                    apply  -  加群审批
+                    apply  -  加群审批-自动同意
+                    reject  -  加群审批-自动拒绝
                 """.trimIndent())
             }
         }
         
     }
     
+}
+
+object SCMcbbs : RawCommand(
+    PluginMain,
+    "mcbbs",
+    usage = "MCBBS", description = "MCBBS"
+) {
+    private const val urlName1 = "https://www.mcbbs.net/home.php?username="
+    private const val urlName2 = "&uid=&gender=0&startage=&endage=&resideprovince=&birthprovince=&birthyear=0&birthmonth=0&birthday=0&searchsubmit=true&op=&mod=spacecp&ac=search&type=all"
+    
+    val params = listOf("" to "").toCommandParams()
+    
+    
+    override suspend fun CommandSender.onCommand(args: MessageChain) {
+        processSCommand(args) {
+//            "search" {
+//                any { list -> 
+//                    val name = list.first
+//                    val url = urlName1 + name + urlName2
+//                    
+//                    sendMsg(description, SRequest(url).result())
+//                }
+//                
+//                empty { 
+//                    sendMsg(description, "请输入用户名")
+//                }
+//            }
+            
+            empty { 
+                sendMsg(description, params)
+            }
+        }
+    }
+
 }

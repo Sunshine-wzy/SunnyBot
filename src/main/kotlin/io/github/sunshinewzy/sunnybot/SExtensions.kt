@@ -217,3 +217,15 @@ fun Char.isChineseChar(): Boolean =
     toString().matches("[\u4e00-\u9fa5]".toRegex())
 
 //endregion
+
+//region Map
+
+fun List<Pair<String, String>>.toCommandParams(): String {
+    var str = "ÃüÁî²ÎÊı:"
+    forEach { 
+       str += "\n${it.first}  -  ${it.second}" 
+    }
+    return str
+}
+
+//endregion

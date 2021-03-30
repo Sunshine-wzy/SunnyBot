@@ -38,7 +38,7 @@ object SGTicTacToe : SGroupGame("井字棋", RunningState.TICTACTOE, RunningState.T
         val group = event.group
         val member = event.member
         val id = member.id
-        val player = dataTicTacToe.player
+        val player = dataTicTacToe.players
         val p1 = player[1] ?: return
         val p2 = player[2] ?: return
         
@@ -120,7 +120,7 @@ object SGTicTacToe : SGroupGame("井字棋", RunningState.TICTACTOE, RunningState.T
         else if(dataTicTacToe.round == 2)
             dataTicTacToe.round = 1
 
-        group.sendMsg(name, At(dataTicTacToe.player[dataTicTacToe.round]!!) +
+        group.sendMsg(name, At(dataTicTacToe.players[dataTicTacToe.round]!!) +
             PlainText("\n到您的回合了，请输入 #x,y (x和y均为1-3之间的整数) 以落子")
         )
     }
@@ -133,7 +133,7 @@ object SGTicTacToe : SGroupGame("井字棋", RunningState.TICTACTOE, RunningState.T
         val sDataGroup = event.sDataGroup
 
         if(sDataGroup.runningState == RunningState.FREE) {
-            dataTicTacToe.player[1] = member
+            dataTicTacToe.players[1] = member
             group.sendMsg(
                 "井字棋",
                 At(member) + PlainText(
@@ -143,7 +143,7 @@ object SGTicTacToe : SGroupGame("井字棋", RunningState.TICTACTOE, RunningState.T
             )
             sDataGroup.runningState = RunningState.TICTACTOE_WAITING
         } else if(sDataGroup.runningState == RunningState.TICTACTOE_WAITING) {
-            val p1 = dataTicTacToe.player[1] ?: kotlin.run { 
+            val p1 = dataTicTacToe.players[1] ?: kotlin.run { 
                 group.sendMsg(name, "玩家1对象不存在，玩家初始化失败！\n井字棋 游戏结束")
                 group.setRunningState(RunningState.FREE)
                 return
@@ -155,8 +155,8 @@ object SGTicTacToe : SGroupGame("井字棋", RunningState.TICTACTOE, RunningState.T
                 return
             }
             
-            dataTicTacToe.player[2] = member
-            if(dataTicTacToe.player[1] == null || dataTicTacToe.player[2] == null){
+            dataTicTacToe.players[2] = member
+            if(dataTicTacToe.players[1] == null || dataTicTacToe.players[2] == null){
                 group.sendMsg(name, "玩家初始化失败，游戏结束！")
                 sDataGroup.runningState = RunningState.FREE
                 return
@@ -165,8 +165,8 @@ object SGTicTacToe : SGroupGame("井字棋", RunningState.TICTACTOE, RunningState.T
             sDataGroup.runningState = RunningState.TICTACTOE
             group.sendMsg(
                 name,
-                At(dataTicTacToe.player[1]!!) + PlainText(" ") +
-                    At(dataTicTacToe.player[2]!!) + PlainText(
+                At(dataTicTacToe.players[1]!!) + PlainText(" ") +
+                    At(dataTicTacToe.players[2]!!) + PlainText(
                     """
                         
                         玩家1、2均已就位
@@ -184,7 +184,7 @@ object SGTicTacToe : SGroupGame("井字棋", RunningState.TICTACTOE, RunningState.T
             val round = init(dataTicTacToe)
             val image = group.laTeXImage(printBoard(dataTicTacToe)) ?: return
             group.sendMsg(name, image)
-            group.sendMsg(name, At(dataTicTacToe.player[round]!!) +
+            group.sendMsg(name, At(dataTicTacToe.players[round]!!) +
                 PlainText("\n您是先手，请输入 #x,y (x和y均为1-3之间的整数) 以落子")
             )
         }
@@ -219,8 +219,8 @@ object SGTicTacToe : SGroupGame("井字棋", RunningState.TICTACTOE, RunningState.T
             return true
         }
         
-        val p1 = dataTicTacToe.player[1] ?: return false
-        val p2 = dataTicTacToe.player[2] ?: return false
+        val p1 = dataTicTacToe.players[1] ?: return false
+        val p2 = dataTicTacToe.players[2] ?: return false
         
         //平局判定
         var isDraw = true
@@ -250,7 +250,7 @@ object SGTicTacToe : SGroupGame("井字棋", RunningState.TICTACTOE, RunningState.T
     }
     
     private suspend fun win(group: Group, p: Int, dataTicTacToe: DataTicTacToe) {
-        val winner = dataTicTacToe.player[p] ?: kotlin.run {
+        val winner = dataTicTacToe.players[p] ?: kotlin.run {
             sDataGroupMap[group.id]?.runningState = RunningState.FREE
             group.sendMsg(name, "玩家对象不存在，胜利判定失败！\n井字棋 游戏结束")
             return

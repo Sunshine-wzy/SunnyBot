@@ -8,10 +8,7 @@ import io.github.sunshinewzy.sunnybot.games.SGameManager
 import io.github.sunshinewzy.sunnybot.objects.*
 import io.github.sunshinewzy.sunnybot.objects.SSaveGroup.sGroupMap
 import io.github.sunshinewzy.sunnybot.runnable.STimerTask
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.async
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 import net.mamoe.mirai.console.command.descriptor.ExperimentalCommandDescriptors
 import net.mamoe.mirai.console.util.ConsoleExperimentalApi
 import net.mamoe.mirai.contact.Group
@@ -169,7 +166,7 @@ suspend fun Group.sendIntroduction() {
 
 object SunnyBot {
     fun downloadVoice() {
-        thread {
+        GlobalScope.launch(SCoroutine.download) {
             val folder = File(PluginMain.dataFolder, "Voice")
             if(!folder.exists())
                 folder.mkdirs()

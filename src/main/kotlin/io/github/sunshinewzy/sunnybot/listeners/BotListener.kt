@@ -53,31 +53,33 @@ object BotListener {
             subscribeAlways<MemberJoinRequestEvent> { 
                 val group = group ?: return@subscribeAlways
                 val sGroup = group.getSGroup()
-                if(sGroup.autoApplyAcc.isEmpty() && sGroup.autoApplyFuz.isEmpty()) return@subscribeAlways
-                val msg = message.toLowerCase()
+                if(sGroup.autoApply.isEmpty()) return@subscribeAlways
+                val msg = message.toLowerCase().substringAfter("答案：")
                 
-                if(sGroup.autoApplyAcc.contains(msg.substringAfter("答案："))){
-                    accept()
-                    group.sendMsg("加群审批", """
-                        $fromNick ($fromId) 申请加入本群，申请信息:
-                        $message
-                        
-                        符合精确关键字
-                        已自动同意~
-                    """.trimIndent())
-                    
-                    return@subscribeAlways
+                sGroup.autoApply.forEach { key ->
+                    if(msg.contains(key.toLowerCase())){
+                        accept()
+                        group.sendMsg("加群审批 - 自动同意", """
+                            $fromNick ($fromId) 申请加入本群，申请信息:
+                            $msg
+                            
+                            符合关键字: $key
+                            已自动同意~
+                        """.trimIndent())
+
+                        return@subscribeAlways
+                    }
                 }
                 
-                sGroup.autoApplyFuz.forEach { fuz ->
-                    if(msg.contains(fuz.toLowerCase())){
-                        accept()
-                        group.sendMsg("加群审批", """
+                sGroup.autoReject.forEach { key ->
+                    if(msg.contains(key.toLowerCase())){
+                        reject()
+                        group.sendMsg("加群审批 - 自动拒绝", """
                             $fromNick ($fromId) 申请加入本群，申请信息:
-                            $message
+                            $msg
                             
-                            符合模糊关键字: $fuz
-                            已自动同意~
+                            符合关键字: $key
+                            已自动拒绝~
                         """.trimIndent())
 
                         return@subscribeAlways
