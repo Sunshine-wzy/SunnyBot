@@ -45,7 +45,7 @@ object SGChess : SGroupGame("Î§Æå", RunningState.CHESS) {
         val p1 = player[1] ?: return
         val p2 = player[2] ?: return
         val board = dataChess.board ?: return
-
+        
         var p = 0
         if(id == p1.id)
             p = 1
@@ -125,8 +125,8 @@ object SGChess : SGroupGame("Î§Æå", RunningState.CHESS) {
     override suspend fun startGame(event: SGroupGameEvent) {
         event.apply {
             val dataChess = sDataGroup.chess
-
-                if(sDataGroup.runningState == RunningState.FREE) {
+            
+            if(sDataGroup.runningState == RunningState.FREE) {
                 dataChess.players[1] = member
                 group.sendMsg(name,
                     At(member) + PlainText(
@@ -194,6 +194,7 @@ object SGChess : SGroupGame("Î§Æå", RunningState.CHESS) {
         
         var round = BLACK
         val eatCount = EatCount()
+        val manual = ArrayList<String>()        //ÆåÆ×¼ÇÂ¼
         
         
         fun update() {
@@ -354,10 +355,17 @@ object SGChess : SGroupGame("Î§Æå", RunningState.CHESS) {
                 }
             }
             
+            //ÆåÆ×¼ÇÂ¼
+//            manual += "${if(type == BLACK) "ºÚ" else "°×"},$x,$y"
 
             slots[x][y] = type
             return true
         }
+        
+        fun end() {
+            
+        }
+        
         
         private fun isRealEye(type: ChessType, x: Int, y: Int): Boolean {
             if(!isInBoard(x, y))

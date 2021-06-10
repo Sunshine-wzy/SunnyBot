@@ -1,6 +1,7 @@
 package io.github.sunshinewzy.sunnybot.commands
 
 import io.github.sunshinewzy.sunnybot.*
+import io.github.sunshinewzy.sunnybot.enums.ServerType
 import io.github.sunshinewzy.sunnybot.enums.SunSTSymbol
 import io.github.sunshinewzy.sunnybot.objects.*
 import io.github.sunshinewzy.sunnybot.utils.SLaTeX.laTeXImage
@@ -13,6 +14,7 @@ import net.mamoe.mirai.console.util.ConsoleExperimentalApi
 import net.mamoe.mirai.contact.Group
 import net.mamoe.mirai.contact.Member
 import net.mamoe.mirai.contact.isOperator
+import net.mamoe.mirai.message.code.MiraiCode.deserializeMiraiCode
 import net.mamoe.mirai.message.data.*
 import net.mamoe.mirai.utils.ExternalResource.Companion.toExternalResource
 import net.mamoe.mirai.utils.ExternalResource.Companion.uploadAsVoice
@@ -31,13 +33,15 @@ suspend fun regSRawCommands() {
     SCLaTeX.reg("u*")
     SCDailySignIn.reg("u*")
     SCServerInfo.reg("u*")
+    SCIpBind.reg()
     SCXmlMessage.reg("u*")
     SCRedEnvelopes.reg()
     SCRandomImage.reg("u*")
     SCWords.reg("u*")
     SCSound.reg("u*")
     SCGroupManager.reg()
-    SCMcbbs.reg()
+    SCMiraiCode.reg("u*")
+    SCMoeImage.reg("u*")
 
     //Debug
     SCDebugLaTeX.reg("console")
@@ -161,11 +165,12 @@ object SCDailySignIn: RawCommand(
 object SCServerInfo: RawCommand(
     PluginMain,
     "ServerInfo", "server", "zt", "服务器状态", "状态", "服务器",
+    description = "服务器状态查询",
     usage = "服务器状态查询" usageWith """
         /zt         默认查询方式
-        /zt 1       强制使用Ping查询
-        /zt 2       强制使用洛神云查询
         /zt m       显示详细mod信息
+        /zt [IP代号] 根据代号绑定的IP查询
+        /zt [ip]    根据IP查询
     """.trimIndent()
 ) {
     const val roselleUrl = "https://mc.iroselle.com/api/data/getServerInfo"
@@ -180,39 +185,43 @@ object SCServerInfo: RawCommand(
         val groupId = group.id
         val sGroup = SSaveGroup.sGroupMap[groupId] ?: return
 
-        if(str == "2" || sGroup.roselleServerIp != "") {
-            val ip = if(sGroup.roselleServerIp != "") sGroup.roselleServerIp else sGroup.serverIp
-            val result = SRequest(roselleUrl).resultRoselle(ip, 0)
-            val res = result.res
+//        if(str == "2") {
+//            val ip = sGroup.serverIp
+//            val result = SRequest(roselleUrl).resultRoselle(ip, 0)
+//            val res = result.res
+//
+//            var serverStatus = "离线"
+//            if(res.server_status == 1)
+//                serverStatus = "在线"
+//
+//            group.sendMsg("服务器状态查询 - 洛神云",
+//                    "服务器IP: $ip\n" +
+//                    "服务器状态: $serverStatus\n" +
+//                    "当前在线玩家数: ${res.server_player_online}\n" +
+//                    "在线玩家上限: ${res.server_player_max}\n" +
+//                    "日均在线人数: ${res.server_player_average}\n" +
+//                    "历史最高同时在线人数: ${res.server_player_history_max}\n" +
+//                    "昨日平均在线人数: ${res.server_player_yesterday_average}\n" +
+//                    "昨日最高同时在线人数: ${res.server_player_yesterday_max}\n" +
+//                    "更新时间: ${res.update_time}\n" +
+//                    "查询用时: ${result.run_time}s"
+//            )
+//        }
 
-            var serverStatus = "离线"
-            if(res.server_status == 1)
-                serverStatus = "在线"
-
-            group.sendMsg("服务器状态查询 - 洛神云",
-                    "服务器IP: $ip\n" +
-                    "服务器状态: $serverStatus\n" +
-                    "当前在线玩家数: ${res.server_player_online}\n" +
-                    "在线玩家上限: ${res.server_player_max}\n" +
-                    "日均在线人数: ${res.server_player_average}\n" +
-                    "历史最高同时在线人数: ${res.server_player_history_max}\n" +
-                    "昨日平均在线人数: ${res.server_player_yesterday_average}\n" +
-                    "昨日最高同时在线人数: ${res.server_player_yesterday_max}\n" +
-                    "更新时间: ${res.update_time}\n" +
-                    "查询用时: ${result.run_time}s"
-            )
-        }
-
-        else if((str == "1" || str == "m" || str == "" || args.isEmpty()) && (sGroup.serverIp != "" || sGroup.roselleServerIp != "")) {
-            val ip = if(sGroup.serverIp != "") sGroup.serverIp else sGroup.roselleServerIp
-
-            group.sendMsg("服务器状态查询 - Ping", group.pingServer(ip, str.contains("m")))
+        if(sGroup.serverIps.containsKey(str)) {
+            sGroup.serverIps[str]?.let {
+                group.sendMsg(description, group.pingServer(it.second, it.first))
+            }
         }
         
+        else if((str == "m" || str == "" || args.isEmpty()) && sGroup.serverIp.first != ServerType.NOT)
+            group.sendMsg(description, group.pingServer(sGroup.serverIp.second, sGroup.serverIp.first, str.contains("m")))
+        
         else if(str != ""){
-            if(SServerPing.checkServer(str))
-                group.sendMsg("服务器状态查询 - Ping", group.pingServer(str, true))
-            else group.sendMsg("服务器状态查询 - Ping", "查询失败= =\n" +
+            val check = SServerPing.checkServer(str)
+            if(check != ServerType.NOT)
+                group.sendMsg(description, group.pingServer(str, check, true))
+            else group.sendMsg(description, "查询失败= =\n" +
                 "请确保服务器IP正确且当前服务器在线！")
         }
 
@@ -222,6 +231,106 @@ object SCServerInfo: RawCommand(
             """.trimIndent())
     }
 }
+
+object SCIpBind: RawCommand(
+    PluginMain,
+    "IpBind", "ip", "服务器绑定", "绑定",
+    description = "服务器状态查询IP绑定"
+) {
+
+    override suspend fun CommandSender.onCommand(args: MessageChain) {
+        if(user != null && user is Member){
+            val member = user as Member
+            val group = member.group
+            val groupId = group.id
+            val sGroup = SSaveGroup.sGroupMap[groupId] ?: return
+
+            
+            processSCommand(args) {
+                "set" {
+                    any { list ->
+                        val symbol = list.first
+                        if(symbol.isLetterDigitOrChinese()) {
+                            if(list.size >= 2) {
+                                val ip = list[1]
+                                val check = SServerPing.checkServer(ip)
+                                if(check != ServerType.NOT){
+                                    sGroup.serverIps[symbol] = check to ip
+                                    sendMsg("$ip ($check) 绑定成功！")
+                                } else sendMsg(description, "绑定失败= =\n" +
+                                    "请确保服务器IP正确且当前服务器在线！")
+                            } else sendMsg(description, "请在 [IP代号] 后输入 [服务器IP]")
+                            
+                            
+                        } else sendMsg(description, "IP的代号只能含有英文、数字、汉字，不能包含任何符号！")
+                    }
+                    
+                    empty { 
+                        sendMsg(description, """
+                            请在set后输入: [绑定IP的代号] [服务器IP]
+                            例: /ip set bd www.baidu.com
+                            
+                            Tips:
+                            IP的代号只能含有英文、数字、汉字，不能包含任何符号！
+                        """.trimIndent())
+                    }
+                }
+                
+                "remove" {
+                    anyContents(false) { 
+                        if(sGroup.serverIps.containsKey(it)) {
+                            sGroup.serverIps.remove(it)
+                            sendMsg(description, "IP代号 '$it' 删除成功~")
+                        } else sendMsg(description, "IP代号 '$it' 不存在！")
+                    }
+                }
+                
+                "list" {
+                    empty { 
+                        if(sGroup.serverIps.isEmpty()) {
+                            sendMsg(description, "本群未绑定任何IP代号！")
+                            return@empty
+                        }
+                        
+                        var symbolIps = "已绑定的所有IP代号:"
+                        var index = 1
+                        sGroup.serverIps.forEach { (symbol, pair) -> 
+                            symbolIps += "\n$index. $symbol -> ${pair.second} (${pair.first})"
+                            index++
+                        }
+                        
+                        sendMsg(description, symbolIps)
+                    }
+                }
+                
+                anyContents(false) {
+                    if(it.startsWith("set") || it.startsWith("remove") || it.startsWith("list"))
+                        return@anyContents
+                    
+                    val check = SServerPing.checkServer(it)
+                    if(check != ServerType.NOT){
+                        sGroup.serverIp = check to it
+                        sendMsg("$it ($check) 绑定成功！")
+                    } else sendMsg(description, "绑定失败= =\n" +
+                        "请确保服务器IP正确且当前服务器在线！")
+                }
+                
+                empty {
+                    sendMsg(
+                        description, """
+                            命令参数:
+                            set     -   设置绑定IP代号
+                            remove  -   移除IP代号
+                            list    -   显示所有IP代号
+                        """.trimIndent())
+                }
+            }
+        }
+        
+    }
+    
+}
+
 
 object SCXmlMessage: RawCommand(
     PluginMain,
@@ -507,8 +616,14 @@ object SCGroupManager: RawCommand(
                     }
                 }
                 
+                "show" {
+                    empty { 
+                        sendMsg(description, "当前入群欢迎为:\n${group.getSGroup().welcomeMessage}")
+                    }
+                }
+                
                 empty {
-                    sendMsg(description, "请加上参数 [set/remove] 以 设置/移除 入群欢迎")
+                    sendMsg(description, "请加上参数 [set/remove/show] 以 设置/移除/查看 入群欢迎")
                 }
             }
             
@@ -532,8 +647,14 @@ object SCGroupManager: RawCommand(
                     }
                 }
 
+                "show" {
+                    empty {
+                        sendMsg(description, "当前退群提示为:\n${group.getSGroup().leaveMessage}")
+                    }
+                }
+
                 empty {
-                    sendMsg(description, "请加上参数 [set/remove] 以 设置/移除 退群提示")
+                    sendMsg(description, "请加上参数 [set/remove/show] 以 设置/移除/查看 退群提示")
                 }
             }
             
@@ -686,36 +807,60 @@ object SCGroupManager: RawCommand(
     
 }
 
-object SCMcbbs : RawCommand(
+object SCMiraiCode : RawCommand(
     PluginMain,
-    "mcbbs",
-    usage = "MCBBS", description = "MCBBS"
+    "MiraiCode", "code", "Mirai码", "码",
+    usage = "Mirai码", description = "Mirai码"
 ) {
-    private const val urlName1 = "https://www.mcbbs.net/home.php?username="
-    private const val urlName2 = "&uid=&gender=0&startage=&endage=&resideprovince=&birthprovince=&birthyear=0&birthmonth=0&birthday=0&searchsubmit=true&op=&mod=spacecp&ac=search&type=all"
-    
-    val params = listOf("" to "").toCommandParams()
-    
-    
     override suspend fun CommandSender.onCommand(args: MessageChain) {
+        
         processSCommand(args) {
-//            "search" {
-//                any { list -> 
-//                    val name = list.first
-//                    val url = urlName1 + name + urlName2
-//                    
-//                    sendMsg(description, SRequest(url).result())
-//                }
-//                
-//                empty { 
-//                    sendMsg(description, "请输入用户名")
-//                }
-//            }
+            "send" {
+                anyContents { code ->
+                    sendMsg(code.deserializeMiraiCode())
+                }
+            }
+            
+            "get" {
+                
+            }
             
             empty { 
-                sendMsg(description, params)
+                sendMsg(usage, """
+                    命令参数:
+                    send  -  发送mirai码
+                    get  -  获取mirai码
+                """.trimIndent())
             }
         }
     }
+}
 
+object SCMoeImage : RawCommand(
+    PluginMain,
+    "MoeImage", "moe", "动漫图片",
+    usage = "动漫图片", description = "动漫图片"
+) {
+    private const val apiUrl = "https://api.fantasyzone.cc/tu/?type=url&"
+    private const val apiPcUrl = apiUrl + "class=pc"
+    
+    
+    override suspend fun CommandSender.onCommand(args: MessageChain) {
+        val contact = subject ?: return
+        val user = user ?: return
+        
+        if(!user.isSunnyAdmin() || args.isEmpty()) {
+            val image = SRequest(apiPcUrl).resultImage(contact) ?: return
+            contact.sendMsg(description, image)
+            return
+        }
+        
+        processSCommand(args) {
+            anyContents(false) { 
+                val image = SRequest(apiUrl + it).resultImage(contact) ?: return@anyContents
+                sendMsg(description, image)
+            }
+        }
+        
+    }
 }

@@ -1,6 +1,7 @@
 package io.github.sunshinewzy.sunnybot.objects
 
 import io.github.sunshinewzy.sunnybot.enums.RunningState
+import io.github.sunshinewzy.sunnybot.enums.ServerType
 import io.github.sunshinewzy.sunnybot.games.SGChess
 import kotlinx.serialization.Serializable
 import net.mamoe.mirai.console.data.AutoSavePluginData
@@ -12,8 +13,7 @@ import kotlin.random.nextInt
 
 @Serializable
 class SGroup(private val groupID: Long) {
-    var roselleServerIp = ""
-    var serverIp = ""
+    var serverIp = ServerType.NOT to ""
     var isRepeat = false
     var welcomeMessage = ""
     var leaveMessage = ""
@@ -21,6 +21,7 @@ class SGroup(private val groupID: Long) {
     val dailySignIns = ArrayList<Pair<Long, String>>()
     val autoApply = ArrayList<String>()
     val autoReject = ArrayList<String>()
+    val serverIps = HashMap<String, Pair<ServerType, String>>()
 }
 
 object SSaveGroup: AutoSavePluginData("SGroupData") {

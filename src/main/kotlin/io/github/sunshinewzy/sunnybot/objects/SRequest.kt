@@ -10,19 +10,13 @@ import net.mamoe.mirai.message.data.Voice
 import net.mamoe.mirai.utils.ExternalResource.Companion.toExternalResource
 import net.mamoe.mirai.utils.ExternalResource.Companion.uploadAsImage
 import net.mamoe.mirai.utils.ExternalResource.Companion.uploadAsVoice
-import java.io.BufferedReader
-import java.io.FileOutputStream
-import java.io.InputStreamReader
-import java.io.UnsupportedEncodingException
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import java.io.*
 import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLEncoder
 import javax.imageio.ImageIO
-import kotlin.reflect.jvm.internal.impl.builtins.StandardNames.FqNames
-import kotlin.reflect.jvm.internal.impl.builtins.StandardNames.FqNames.string
-
-
-
 
 
 /**
@@ -75,7 +69,9 @@ class SRequest(private val url: String) {
 
         var voice: Voice?
         runBlocking {
-            voice = input.toExternalResource().uploadAsVoice(contact)
+            val extResource = input.toExternalResource()
+            voice = extResource.uploadAsVoice(contact)
+            extResource.close()
         }
         return voice
     }
@@ -94,10 +90,45 @@ class SRequest(private val url: String) {
             
             byteReader = input.read(buffer)
         }
+        output.close()
+    }
+
+
+    fun httpRequest(): String {
+        val request = Request.Builder()
+            .url(URL(encodeUrl))
+            .build()
+        val call = okHttpClient.newCall(request)
+
+        var ans = ""
+        try {
+            val response = call.execute()
+            ans += response.body?.string()
+        } catch (ex: Exception) {
+            ex.printStackTrace()
+        }
+
+        return ans
     }
     
-    
     fun httpRequest(params: Map<String, Any>): String {
+        val request = Request.Builder()
+            .url(URL(encodeUrl + "?" + urlEncode(params)))
+            .build()
+        val call = okHttpClient.newCall(request)
+        
+        var ans = ""
+        try {
+            val response = call.execute()
+            ans += response.body?.string()
+        } catch (ex: Exception) {
+            ex.printStackTrace()
+        }
+        
+        return ans
+    }
+    
+    fun httpRequestOld(params: Map<String, Any>): String {
         //buffer 用于接收返回的字符
         val buffer = StringBuffer()
         try {
@@ -133,7 +164,7 @@ class SRequest(private val url: String) {
         return buffer.toString()
     }
 
-    fun httpRequest(): String {
+    fun httpRequestOld(): String {
         //buffer 用于接收返回的字符
         val buffer = StringBuffer()
         try {
@@ -207,5 +238,11 @@ class SRequest(private val url: String) {
         val strRequest = httpRequest(params)
         //处理返回的JSON数据并返回
         return Gson().fromJson(strRequest, RosellemcServerInfo::class.java)
+    }
+    
+    
+    companion object {
+        private val okHttpClient = OkHttpClient()
+        
     }
 }

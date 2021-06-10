@@ -3,7 +3,7 @@ plugins {
     kotlin("jvm") version kotlinVersion
     kotlin("plugin.serialization") version kotlinVersion
 
-    id("net.mamoe.mirai-console") version "2.3.2"
+    id("net.mamoe.mirai-console") version "2.6.5"
     id("com.github.johnrengelman.shadow") version "2.0.4"
 }
 
@@ -16,13 +16,13 @@ dependencies {
 }
 
 group = "io.github.sunshinewzy"
-version = "1.1.2"
+version = "1.1.3"
 
 repositories {
+    maven {
+        url = uri("https://maven.aliyun.com/repository/public/")
+    }
     mavenLocal()
-    
-    maven("https://maven.aliyun.com/repository/central")
-    
     mavenCentral()
     jcenter()
     

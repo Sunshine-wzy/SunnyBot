@@ -1,6 +1,7 @@
 package io.github.sunshinewzy.sunnybot.commands
 
 import io.github.sunshinewzy.sunnybot.commands.SCommandWrapper.Type.*
+import io.github.sunshinewzy.sunnybot.getPlainText
 import net.mamoe.mirai.console.command.Command
 import net.mamoe.mirai.console.command.CommandManager.INSTANCE.register
 import net.mamoe.mirai.console.command.CommandSender
@@ -16,18 +17,15 @@ import java.util.*
 typealias SCWrapper = SCommandWrapper.() -> Unit
 
 fun CommandSender.processSCommand(args: MessageChain, cmd: SCWrapper) {
-    val list = LinkedList<String>()
-    args.forEach { 
-        if(it is PlainText)
-            list += it.content
-    }
-    
+    val list = args.getPlainText(LinkedList<String>())
     val wrapper = SCommandWrapper(list)
     cmd(wrapper)
 }
 
 
 class SCommandWrapper(val cmdArgs: LinkedList<String>) {
+    var shouldContinue = true
+    
     
     fun process() {
         
@@ -63,6 +61,18 @@ class SCommandWrapper(val cmdArgs: LinkedList<String>) {
     fun any(block: (LinkedList<String>) -> Unit) {
         if(cmdArgs.isEmpty()) return
         block(cmdArgs)
+    }
+    
+    fun anyContents(space: Boolean = true, block: (String) -> Unit) {
+        if(cmdArgs.isEmpty()) return
+        var contents = ""
+        cmdArgs.forEach { contents += "$it " }
+        
+        if(!space) {
+            contents = contents.replace(" ", "")
+        }
+        
+        block(contents)
     }
     
     

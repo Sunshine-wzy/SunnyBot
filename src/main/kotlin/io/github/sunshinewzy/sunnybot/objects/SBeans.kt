@@ -62,3 +62,16 @@ data class SBTag(
     val tagId: String,
     val text: String
 )
+
+data class SBBEServerPing(
+    val agreement: String,
+    val delay: Int,
+    val gamemode: String,
+    val ip: String,
+    val max: String,
+    val motd: String,
+    val online: String,
+    val port: String,
+    val status: String,
+    val version: String
+): SBean

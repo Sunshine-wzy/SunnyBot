@@ -8,7 +8,6 @@ import io.github.sunshinewzy.sunnybot.objects.getSGroup
 import io.github.sunshinewzy.sunnybot.objects.regPlayer
 import io.github.sunshinewzy.sunnybot.utils.SServerPing
 import io.github.sunshinewzy.sunnybot.utils.SServerPing.pingServer
-import kotlinx.coroutines.runBlocking
 import net.mamoe.mirai.console.command.CommandManager.INSTANCE.registeredCommands
 import net.mamoe.mirai.console.command.CommandSender
 import net.mamoe.mirai.console.command.MemberCommandSender
@@ -18,10 +17,8 @@ import net.mamoe.mirai.console.util.ConsoleExperimentalApi
 import net.mamoe.mirai.contact.Member
 import net.mamoe.mirai.contact.isOperator
 import net.mamoe.mirai.message.data.*
-import java.net.URL
 import java.text.SimpleDateFormat
 import java.util.*
-import javax.imageio.ImageIO
 
 /**
  * Sunny Simple Commands
@@ -36,8 +33,6 @@ suspend fun regSSimpleCommands() {
     SCGameMenu.reg()
     SCInfo.reg("u*")
     SCAntiRecall.reg()
-    SCIpBind.reg()
-    SCIpBindPing.reg()
     SCJavaDoc.reg("u*")
     SCRepeater.reg()
     SCBingPicture.reg()
@@ -86,7 +81,9 @@ object SCGameMenu: SimpleCommand(
             ◆ 井字棋
             ◆ 围棋
             ===============
-            请输入  #功能名称  以开始
+            请输入 '#游戏名称'
+            以开始一局游戏
+            
             [例] #24点
         """.trimIndent()
         )
@@ -180,66 +177,6 @@ object SCDebugServerInfo: SimpleCommand(
         }
 
         sendMessage(contact.pingServer(serverIp))
-    }
-}
-
-object SCIpBind: SimpleCommand(
-    PluginMain,
-    "IpBind", "ip", "服务器绑定", "绑定",
-    description = "服务器状态查询IP绑定"
-) {
-    @Handler
-    suspend fun CommandSender.handle(serverIp: String) {
-        if(user !=null && user is Member){
-            val member = user as Member
-            val group = member.group
-            val groupId = group.id
-            val sGroup = sGroupMap[groupId] ?: return
-            
-            val roselleResult = SRequest(SCServerInfo.roselleUrl).resultRoselle(serverIp, 0)
-            if(roselleResult.code == 1){
-                sGroup.roselleServerIp = serverIp
-                sGroup.serverIp = ""
-                sendMessage("$serverIp 绑定成功！")
-                return
-            }
-            
-            if(SServerPing.checkServer(serverIp)){
-                sGroup.serverIp = serverIp
-                sGroup.roselleServerIp = ""
-                sendMessage("$serverIp 绑定成功！")
-                return
-            }
-        }
-        
-        sendMessage("绑定失败= =\n" +
-            "请确保服务器IP正确且当前服务器在线！")
-    }
-}
-
-object SCIpBindPing: SimpleCommand(
-    PluginMain,
-    "IpBindPing", "ipp", "服务器绑定Ping", "绑定P",
-    description = "服务器状态查询ServerPing IP绑定"
-) {
-    @Handler
-    suspend fun CommandSender.handle(serverIp: String) {
-        if(user !=null && user is Member){
-            val member = user as Member
-            val group = member.group
-            val groupId = group.id
-            val sGroup = sGroupMap[groupId] ?: return
-
-            if(SServerPing.checkServer(serverIp)){
-                sGroup.serverIp = serverIp
-                sGroup.roselleServerIp = ""
-                sendMessage("$serverIp 绑定成功！")
-                return
-            }
-        }
-
-        sendMessage("绑定失败= =\n" +
-            "请确保服务器IP正确且当前服务器在线！")
     }
 }
 

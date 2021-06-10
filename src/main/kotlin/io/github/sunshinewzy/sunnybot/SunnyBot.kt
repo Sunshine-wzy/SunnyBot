@@ -181,7 +181,7 @@ object SunnyBot {
             popular.sounds.forEach { sound ->
                 if(!names.contains(sound.title)){
                     val slug = sound.slug
-                    SRequest(SCSound.downloadUrl + slug).download(folder.absolutePath, "${sound.title}.amr")
+                    SRequest(SCSound.downloadUrl + slug).download(folder.absolutePath, "${sound.title.replace(" ", "")}.amr")
                 }
             }
         }

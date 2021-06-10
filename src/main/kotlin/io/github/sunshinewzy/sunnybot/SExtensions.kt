@@ -67,6 +67,16 @@ fun CommandSender.sendMsg(title: Message, text: String) {
     sendMsg(title, PlainText(text))
 }
 
+fun CommandSender.sendMsg(text: Message) {
+    sunnyScope.launch {
+        sendMessage(text)
+    }
+}
+
+fun CommandSender.sendMsg(text: String) {
+    sendMsg(PlainText(text))
+}
+
 //endregion
 
 
@@ -209,6 +219,11 @@ fun String.isInteger(): Boolean {
     return pattern.matcher(this).matches()
 }
 
+fun String.isLetterDigitOrChinese(): Boolean {
+    val regex = "^[a-z0-9A-Z\u4e00-\u9fa5]+$".toRegex()
+    return matches(regex)
+}
+
 //endregion
 
 //region Char
@@ -226,6 +241,19 @@ fun List<Pair<String, String>>.toCommandParams(): String {
        str += "\n${it.first}  -  ${it.second}" 
     }
     return str
+}
+
+//endregion
+
+//region MessageChain
+
+fun <L: MutableList<String>> MessageChain.getPlainText(list: L): L {
+    forEach { 
+        if(it is PlainText) {
+            list += it.content
+        }
+    }
+    return list
 }
 
 //endregion
