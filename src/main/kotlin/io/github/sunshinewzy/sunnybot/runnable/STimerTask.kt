@@ -12,8 +12,5 @@ object STimerTask: TimerTask() {
             // 每日签到更新
             DailySignIn.runSchedule()
         }
-
-        // 语音下载
-        SunnyBot.downloadVoice()
     }
 }

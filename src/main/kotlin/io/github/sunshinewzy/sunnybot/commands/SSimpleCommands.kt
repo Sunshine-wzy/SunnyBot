@@ -1,13 +1,14 @@
 package io.github.sunshinewzy.sunnybot.commands
 
 import io.github.sunshinewzy.sunnybot.*
+import io.github.sunshinewzy.sunnybot.PluginMain.PERM_EXE_MEMBER
+import io.github.sunshinewzy.sunnybot.PluginMain.PERM_EXE_USER
 import io.github.sunshinewzy.sunnybot.objects.SRequest
-import io.github.sunshinewzy.sunnybot.objects.SSaveGroup.sGroupMap
 import io.github.sunshinewzy.sunnybot.objects.SSavePlayer.sPlayerMap
 import io.github.sunshinewzy.sunnybot.objects.getSGroup
 import io.github.sunshinewzy.sunnybot.objects.regPlayer
-import io.github.sunshinewzy.sunnybot.utils.SServerPing
 import io.github.sunshinewzy.sunnybot.utils.SServerPing.pingServer
+import net.mamoe.mirai.console.command.CommandManager.INSTANCE.register
 import net.mamoe.mirai.console.command.CommandManager.INSTANCE.registeredCommands
 import net.mamoe.mirai.console.command.CommandSender
 import net.mamoe.mirai.console.command.MemberCommandSender
@@ -28,15 +29,25 @@ import java.util.*
 @ExperimentalCommandDescriptors
 suspend fun regSSimpleCommands() {
     //指令注册
+
+    SCMenu.register()
+    SCGameMenu.register()
+    SCInfo.register()
+    SCAntiRecall.register()
+    SCJavaDoc.register()
+    SCRepeater.register()
+    SCBingPicture.register()
+    SCOpen.register()
+    
     //默认m*为任意群员 u*为任意用户
-    SCMenu.reg("u*")
-    SCGameMenu.reg()
-    SCInfo.reg("u*")
-    SCAntiRecall.reg()
-    SCJavaDoc.reg("u*")
-    SCRepeater.reg()
-    SCBingPicture.reg()
-    SCWeather.reg("u*")
+//    SCMenu.reg("u*")
+//    SCGameMenu.reg()
+//    SCInfo.reg("u*")
+//    SCAntiRecall.reg()
+//    SCJavaDoc.reg("u*")
+//    SCRepeater.reg()
+//    SCBingPicture.reg()
+//    SCOpen.reg()
     
     //Debug
     SCDebugServerInfo.reg("console")
@@ -47,7 +58,8 @@ suspend fun regSSimpleCommands() {
 object SCMenu: SimpleCommand(
     PluginMain,
     "Menu", "cd", "菜单", "功能",
-    description = "菜单|功能列表"
+    description = "菜单|功能列表",
+    parentPermission = PERM_EXE_USER
 ) {
     @Handler
     suspend fun CommandSender.handle() {
@@ -71,7 +83,8 @@ object SCMenu: SimpleCommand(
 object SCGameMenu: SimpleCommand(
     PluginMain,
     "GameMenu", "game", "游戏", "游戏菜单",
-    description = "游戏菜单"
+    description = "游戏菜单",
+    parentPermission = PERM_EXE_MEMBER
 ) {
     @Handler
     suspend fun CommandSender.handle() {
@@ -93,7 +106,8 @@ object SCGameMenu: SimpleCommand(
 object SCInfo: SimpleCommand(
     PluginMain,
     "信息", "info",
-    description = "查询个人信息"
+    description = "查询个人信息",
+    parentPermission = PERM_EXE_USER
 ) {
     @Handler
     suspend fun CommandSender.handle() {
@@ -121,7 +135,8 @@ object SCInfo: SimpleCommand(
 object SCAntiRecall: SimpleCommand(
     PluginMain,
     "AntiRecall", "atrc", "防撤回",
-    description = "启用/关闭防撤回"
+    description = "启用/关闭防撤回",
+    parentPermission = PERM_EXE_MEMBER
 ) {
     @Handler
     suspend fun CommandSender.handle(str: String) {
@@ -151,7 +166,7 @@ object SCDebugServerInfo: SimpleCommand(
 ) {
     @Handler
     suspend fun CommandSender.handle(serverIp: String) {
-        val contact = sunnyBot?.getGroup(423179929L) ?: return
+        val contact = sunnyBot.getGroup(423179929L) ?: return
         
         val roselleResult = SRequest(SCServerInfo.roselleUrl).resultRoselle(serverIp, 0)
         if(roselleResult.code == 1){
@@ -183,7 +198,8 @@ object SCDebugServerInfo: SimpleCommand(
 object SCJavaDoc: SimpleCommand(
     PluginMain,
     "JavaDoc", "jd",
-    description = "查看常用JavaDoc"
+    description = "查看常用JavaDoc",
+    parentPermission = PERM_EXE_USER
 ) {
     private val javaDocs = """
         OI Wiki: https://oi-wiki.org/
@@ -220,7 +236,8 @@ object SCJavaDoc: SimpleCommand(
 object SCRepeater : SimpleCommand(
     PluginMain,
     "Repeater", "rep", "复读",
-    description = "开启/关闭 复读"
+    description = "开启/关闭 复读",
+    parentPermission = PERM_EXE_MEMBER
 ) {
     @Handler
     suspend fun MemberCommandSender.handle(isRepeat: String) {
@@ -250,7 +267,8 @@ object SCRepeater : SimpleCommand(
 object SCBingPicture : SimpleCommand(
     PluginMain,
     "BingPicture", "bp", "每日一图",
-    description = "Bing必应每日一图"
+    description = "Bing必应每日一图",
+    parentPermission = PERM_EXE_USER
 ) {
     @Handler
     suspend fun CommandSender.handle() {
@@ -271,7 +289,7 @@ object SCDebugIntroduction : SimpleCommand(
 ) {
     @Handler
     suspend fun CommandSender.handle(groupId: Long) {
-        val group = sunnyBot?.getGroup(groupId) ?: kotlin.run { 
+        val group = sunnyBot.getGroup(groupId) ?: kotlin.run { 
             PluginMain.logger.warning("群$groupId 获取失败")
             return
         }
@@ -283,7 +301,8 @@ object SCDebugIntroduction : SimpleCommand(
 object SCWeather : SimpleCommand(
     PluginMain,
     "Weather", "天气",
-    description = "查询天气"
+    description = "查询天气",
+    parentPermission = PERM_EXE_USER
 ) {
     @Handler
     suspend fun CommandSender.handle() {
@@ -309,3 +328,33 @@ object SCWeather : SimpleCommand(
 "prompt":"[应用]天气","meta":{"richinfo":{"adcode":"","air":"126","city":"济南","date":"1月30日 周六","max":"13","min":"2","ts":"15158613","type":"201","wind":""}}}]
 */
 
+object SCOpen : SimpleCommand(
+    PluginMain,
+    "Open", "开关",
+    description = "开启/关闭 Sunny",
+    parentPermission = PERM_EXE_MEMBER
+) {
+    @Handler
+    suspend fun MemberCommandSender.handle(isOpen: String) {
+        val sGroup = group.getSGroup()
+
+        if(!user.isOperator() && !user.isSunnyAdmin()){
+            sendMessage(At(user).plus(PlainText("您不是群主或管理员，没有开启/关闭 本群Bot的权限！")))
+            group.sendMsg("Sunny状态", if(sGroup.isOpen) "开启" else "关闭")
+            return
+        }
+
+        val open = isOpen.toLowerCase()
+        if(open.contains("t") || open.contains("开")){
+            sGroup.isOpen = true
+            group.sendMsg("Sunny状态", "Sunny已开启！")
+        }
+        else if(open.contains("f") || open.contains("关")){
+            sGroup.isOpen = false
+            group.sendMsg("Sunny状态", "Sunny已关闭！")
+        }
+        else{
+            group.sendMsg("Sunny状态", if(sGroup.isOpen) "开启" else "关闭")
+        }
+    }
+}

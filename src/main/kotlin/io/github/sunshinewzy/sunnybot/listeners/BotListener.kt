@@ -5,28 +5,41 @@ import io.github.sunshinewzy.sunnybot.sendMsg
 import io.github.sunshinewzy.sunnybot.sunnyBot
 import io.github.sunshinewzy.sunnybot.sunnyChannel
 import io.github.sunshinewzy.sunnybot.sunnyInit
+import net.mamoe.mirai.Bot
 import net.mamoe.mirai.console.command.descriptor.ExperimentalCommandDescriptors
 import net.mamoe.mirai.console.util.ConsoleExperimentalApi
 import net.mamoe.mirai.contact.remarkOrNameCardOrNick
+import net.mamoe.mirai.event.Listener
 import net.mamoe.mirai.event.events.*
 import net.mamoe.mirai.message.data.At
 
 object BotListener {
-    var cnt = 0
+    private lateinit var msgListener: Listener<MessageEvent>
+    var isOnline = false
 
     @ExperimentalCommandDescriptors
     @ConsoleExperimentalApi
     fun listenBot() {
-        
         sunnyChannel.apply {
             
-            subscribeAlways<BotOnlineEvent> {
-                sunnyBot = bot
-                cnt++
-
-                if (cnt == 1)
+            msgListener = subscribeAlways { 
+                if(!isOnline) {
+                    sunnyBot = bot
+                    isOnline = true
                     sunnyInit()
+                    
+                    msgListener.complete()
+                }
             }
+            
+            
+//            subscribeAlways<BotOnlineEvent> {
+//                sunnyBot = bot
+//                cnt++
+//
+//                if (cnt == 1)
+//                    sunnyInit()
+//            }
 
             subscribeAlways<BotInvitedJoinGroupRequestEvent> {
                 accept()

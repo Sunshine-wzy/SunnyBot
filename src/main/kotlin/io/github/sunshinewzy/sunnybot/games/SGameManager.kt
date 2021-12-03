@@ -21,16 +21,14 @@ object SGameManager {
         regGame()
         
         sunnyChannel.subscribeMessages {
-            (contains("sunny") or contains("ั๔นโ") or startsWith("#")) game@{
+            (startsWith("#") or contains("sunny") or contains("ั๔นโ")) game@{
                 if (sender !is Member)
                     return@game
                 val member = sender as Member
                 val group = member.group
                 val groupId = group.id
-                if(!SSaveGroup.sGroupMap.containsKey(groupId))
-                    SSaveGroup.sGroupMap[groupId] = SGroup(groupId)
-                val sGroup = SSaveGroup.sGroupMap[groupId]!!
-                val sDataGroup = sDataGroupMap[groupId] ?: return@game
+                val sGroup = group.getSGroup()
+                val sDataGroup = group.getSData()
                 val msg = message.findIsInstance<PlainText>()?.contentToString() ?: return@game
                 
                 regPlayer(member)

@@ -9,15 +9,11 @@ import net.mamoe.mirai.console.terminal.MiraiConsoleTerminalLoader
 import net.mamoe.mirai.console.util.ConsoleExperimentalApi
 
 @ConsoleExperimentalApi
-fun main() {
-//    MiraiConsoleTerminalLoader.startAsDaemon()
+suspend fun main() {
+    MiraiConsoleTerminalLoader.startAsDaemon()
 
-//    PluginMain.load()
-//    PluginMain.enable()
+    PluginMain.load()
+    PluginMain.enable()
 
-//    val bot = MiraiConsole.addBot(123456L, "password") {
-//        fileBasedDeviceInfo()
-//    }.alsoLogin()
-
-//    MiraiConsole.job.join()
+    MiraiConsole.job.join()
 }

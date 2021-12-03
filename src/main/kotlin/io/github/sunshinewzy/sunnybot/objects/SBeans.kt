@@ -75,3 +75,18 @@ data class SBBEServerPing(
     val status: String,
     val version: String
 ): SBean
+
+
+data class SBOwnThink(
+    val `data`: SBOwnThinkData,
+    val message: String
+): SBean
+
+data class SBOwnThinkData(
+    val info: SBOwnThinkInfo,
+    val type: Int
+)
+
+data class SBOwnThinkInfo(
+    val text: String
+)

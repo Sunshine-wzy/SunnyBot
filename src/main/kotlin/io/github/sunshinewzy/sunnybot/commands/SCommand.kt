@@ -2,12 +2,11 @@ package io.github.sunshinewzy.sunnybot.commands
 
 import io.github.sunshinewzy.sunnybot.commands.SCommandWrapper.Type.*
 import io.github.sunshinewzy.sunnybot.getPlainText
-import net.mamoe.mirai.console.command.Command
+import net.mamoe.mirai.console.command.*
 import net.mamoe.mirai.console.command.CommandManager.INSTANCE.register
-import net.mamoe.mirai.console.command.CommandSender
-import net.mamoe.mirai.console.command.ConsoleCommandSender
 import net.mamoe.mirai.console.command.descriptor.ExperimentalCommandDescriptors
-import net.mamoe.mirai.console.command.executeCommand
+import net.mamoe.mirai.console.permission.PermissionService
+import net.mamoe.mirai.console.permission.PermissionService.Companion.permit
 import net.mamoe.mirai.console.util.ConsoleExperimentalApi
 import net.mamoe.mirai.message.data.MessageChain
 import net.mamoe.mirai.message.data.PlainText
@@ -93,7 +92,8 @@ suspend fun Command.reg(permittee: String = "m*") {
 @ConsoleExperimentalApi
 @ExperimentalCommandDescriptors
 suspend fun setPermit(permissionId: String, permittee: String) {
-    ConsoleCommandSender.executeCommand("/permission permit $permittee $permissionId")
+    BuiltInCommands.PermissionCommand.execute(ConsoleCommandSender, "$permittee $permissionId")
+//    ConsoleCommandSender.executeCommand("/permission permit $permittee $permissionId")
 }
 
 @ConsoleExperimentalApi

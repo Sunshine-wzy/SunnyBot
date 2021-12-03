@@ -16,6 +16,10 @@ import net.mamoe.mirai.contact.Member
 import net.mamoe.mirai.contact.User
 import net.mamoe.mirai.event.globalEventChannel
 import net.mamoe.mirai.event.subscribeMessages
+import net.mamoe.mirai.message.data.PlainText
+import net.mamoe.mirai.message.data.QuoteReply
+import net.mamoe.mirai.message.data.findIsInstance
+import net.mamoe.mirai.message.data.isContentEmpty
 import java.io.File
 import java.util.*
 import kotlin.collections.ArrayList
@@ -45,7 +49,7 @@ suspend fun sunnyInit() {
     //设置权限
     setPermissions()
     //游戏功能初始化
-    SGameManager.gameInit(sunnyBot!!)
+    SGameManager.gameInit(sunnyBot)
     //定时任务初始化
     Timer().schedule(STimerTask, Date(), 86400_000L)       //24h = 1440min =  86400s = 86400_000ms
     //复读
@@ -55,7 +59,7 @@ suspend fun sunnyInit() {
 }
 
 private fun groupInit() {
-    sunnyBot?.groups?.forEach {
+    sunnyBot.groups.forEach {
         val groupId = it.id
         if(!sGroupMap.containsKey(groupId))
             sGroupMap[groupId] = SGroup(groupId)
@@ -65,6 +69,7 @@ private fun groupInit() {
 }
 
 private fun regMsg() {
+    
     sunnyChannel.subscribeMessages {
         
         (contains("老子不会")) end@{
@@ -99,9 +104,39 @@ private fun regMsg() {
             group.sendMsg("Game", "当前没有游戏正在进行。")
         }
         
+        (contains("sunny", ignoreCase = true) and (contains("闭嘴") or contains("睡觉") or contains("关"))) sleep@{
+            if(sender !is Member)
+                return@sleep
+            val group = getGroup(sender) ?: return@sleep
+            
+            group.getSGroup().isOpen = false
+            group.sendMessage("Bye~ master")
+        }
+        
+        (contains("sunny", ignoreCase = true) and (contains("醒醒") or contains("启") or contains("开"))) start@{
+            if(sender !is Member)
+                return@start
+            val group = getGroup(sender) ?: return@start
+            
+            group.getSGroup().isOpen = true
+            group.sendMessage("Hi! master")
+        }
+        
         atBot {
-            val member = sender as Member
-            member.group.sendIntroduction()
+            val member = sender as? Member ?: return@atBot
+            val text = message.findIsInstance<PlainText>() ?: return@atBot
+            val msg = text.content.replace("\n", "").replace(" ", "")
+            if(msg.isEmpty()) {
+                member.group.sendIntroduction()
+                return@atBot
+            }
+            
+            val ownThink = SRequest("https://api.ownthink.com/bot?spoken=$msg")
+                .result<SBOwnThink>()
+            if(ownThink.message == "success") {
+                member.group.sendMessage(QuoteReply(message) + ownThink.data.info.text)
+            } else member.group.sendMessage("思 考 不 能")
+            
         }
         
     }

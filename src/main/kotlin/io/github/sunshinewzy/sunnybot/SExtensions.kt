@@ -27,7 +27,8 @@ import kotlin.math.pow
 //region 发送含标题文本
 
 suspend fun Contact.sendMsg(title: Message, text: Message) {
-    sendMessage(PlainText("\t『") +
+    val contact = if(this is Member) group else this
+    contact.sendMessage(PlainText("\t『") +
         title + PlainText("』\n") +
         text
     )

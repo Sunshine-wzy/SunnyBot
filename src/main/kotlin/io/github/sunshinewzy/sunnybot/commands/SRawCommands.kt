@@ -1,18 +1,26 @@
 package io.github.sunshinewzy.sunnybot.commands
 
 import io.github.sunshinewzy.sunnybot.*
+import io.github.sunshinewzy.sunnybot.PluginMain.PERM_EXE_3
+import io.github.sunshinewzy.sunnybot.PluginMain.PERM_EXE_MEMBER
+import io.github.sunshinewzy.sunnybot.PluginMain.PERM_EXE_USER
 import io.github.sunshinewzy.sunnybot.enums.ServerType
 import io.github.sunshinewzy.sunnybot.enums.SunSTSymbol
 import io.github.sunshinewzy.sunnybot.objects.*
+import io.github.sunshinewzy.sunnybot.timer.STimer
 import io.github.sunshinewzy.sunnybot.utils.SLaTeX.laTeXImage
 import io.github.sunshinewzy.sunnybot.utils.SServerPing
 import io.github.sunshinewzy.sunnybot.utils.SServerPing.pingServer
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import net.mamoe.mirai.console.command.CommandManager.INSTANCE.register
 import net.mamoe.mirai.console.command.CommandSender
 import net.mamoe.mirai.console.command.RawCommand
 import net.mamoe.mirai.console.command.descriptor.ExperimentalCommandDescriptors
 import net.mamoe.mirai.console.util.ConsoleExperimentalApi
 import net.mamoe.mirai.contact.Group
 import net.mamoe.mirai.contact.Member
+import net.mamoe.mirai.contact.User
 import net.mamoe.mirai.contact.isOperator
 import net.mamoe.mirai.message.code.MiraiCode.deserializeMiraiCode
 import net.mamoe.mirai.message.data.*
@@ -20,6 +28,8 @@ import net.mamoe.mirai.utils.ExternalResource.Companion.toExternalResource
 import net.mamoe.mirai.utils.ExternalResource.Companion.uploadAsVoice
 import net.mamoe.mirai.utils.MiraiExperimentalApi
 import java.io.File
+import java.text.SimpleDateFormat
+import java.util.*
 
 /**
  * Sunny Raw Commands
@@ -29,19 +39,32 @@ import java.io.File
 @ConsoleExperimentalApi
 suspend fun regSRawCommands() {
     //指令注册
+
+    SCLaTeX.register()
+    SCDailySignIn.register()
+    SCServerInfo.register()
+    SCIpBind.register()
+    SCXmlMessage.register()
+    SCRandomImage.register()
+    SCWords.register()
+    SCSound.register()
+    SCGroupManager.register()
+    SCMiraiCode.register()
+    SCMoeImage.register()
+    SCGaoKaoCountDown.register()
+    
     //默认m*为任意群员 u*为任意用户
-    SCLaTeX.reg("u*")
-    SCDailySignIn.reg("u*")
-    SCServerInfo.reg("u*")
-    SCIpBind.reg()
-    SCXmlMessage.reg("u*")
-    SCRedEnvelopes.reg()
-    SCRandomImage.reg("u*")
-    SCWords.reg("u*")
-    SCSound.reg("u*")
-    SCGroupManager.reg()
-    SCMiraiCode.reg("u*")
-    SCMoeImage.reg("u*")
+//    SCLaTeX.reg("u*")
+//    SCDailySignIn.reg("u*")
+//    SCServerInfo.reg("u*")
+//    SCIpBind.reg()
+//    SCXmlMessage.reg("u*")
+//    SCRandomImage.reg("u*")
+//    SCWords.reg("u*")
+//    SCSound.reg("u*")
+//    SCGroupManager.reg()
+//    SCMiraiCode.reg("u*")
+//    SCMoeImage.reg("u*")
 
     //Debug
     SCDebugLaTeX.reg("console")
@@ -51,14 +74,39 @@ suspend fun regSRawCommands() {
 object SCLaTeX: RawCommand(
     PluginMain,
     "LaTeX", "lx",
-    usage = "LaTeX渲染" usageWith "/lx LaTeX文本(可以有空格)"
+    usage = "LaTeX渲染" usageWith "/lx LaTeX文本(可以有空格)",
+    parentPermission = PERM_EXE_USER
 ) {
     override suspend fun CommandSender.onCommand(args: MessageChain) {
         val contact = subject ?: return
-        
         val text = args.contentToString()
-        val image = contact.laTeXImage(text) ?: return
-        contact.sendMsg("LaTeX", image)
+        var flag = false
+        val msg = MessageChainBuilder()
+        var txt = ""
+        var laTex = ""
+        
+        text.forEach { 
+            if(it == '$') {
+                if(flag) {
+                    flag = false
+                    contact.laTeXImage(laTex)?.let { img -> msg.add(img) }
+                    laTex = ""
+                } else {
+                    flag = true
+                    msg.add(txt)
+                    txt = ""
+                }
+            } else {
+                if(flag) {
+                    laTex += it
+                } else {
+                    txt += it
+                }
+            }
+        }
+        
+        if(txt != "") msg.add(txt)
+        contact.sendMsg("LaTeX", msg.asMessageChain())
     }
 }
 
@@ -83,7 +131,7 @@ object SCDebugLaTeX: RawCommand(
         }
         else text = args.contentToString()
 
-        val group = sunnyBot?.getGroup(groupId) ?: return
+        val group = sunnyBot.getGroup(groupId) ?: return
         val image = group.laTeXImage(text) ?: return
         group.sendMsg("LaTeX", image)
     }
@@ -92,7 +140,8 @@ object SCDebugLaTeX: RawCommand(
 object SCDailySignIn: RawCommand(
     PluginMain,
     "DailySignIn", "qd", "签到", "打卡",
-    usage = "每日签到" usageWith "/签到 <您的今日赠言>"
+    usage = "每日签到" usageWith "/签到 <您的今日赠言>",
+    parentPermission = PERM_EXE_USER
 ) {
     override suspend fun CommandSender.onCommand(args: MessageChain) {
         val member = user ?: return
@@ -171,7 +220,8 @@ object SCServerInfo: RawCommand(
         /zt m       显示详细mod信息
         /zt [IP代号] 根据代号绑定的IP查询
         /zt [ip]    根据IP查询
-    """.trimIndent()
+    """.trimIndent(),
+    parentPermission = PERM_EXE_USER
 ) {
     const val roselleUrl = "https://mc.iroselle.com/api/data/getServerInfo"
 
@@ -235,7 +285,9 @@ object SCServerInfo: RawCommand(
 object SCIpBind: RawCommand(
     PluginMain,
     "IpBind", "ip", "服务器绑定", "绑定",
-    description = "服务器状态查询IP绑定"
+    description = "服务器状态查询IP绑定",
+    usage = "服务器状态查询IP绑定",
+    parentPermission = PERM_EXE_MEMBER
 ) {
 
     override suspend fun CommandSender.onCommand(args: MessageChain) {
@@ -335,7 +387,8 @@ object SCIpBind: RawCommand(
 object SCXmlMessage: RawCommand(
     PluginMain,
     "XmlMessage", "xml",
-    usage = "发送一条Xml消息" usageWith "/xml <消息内容>"
+    usage = "发送一条Xml消息" usageWith "/xml <消息内容>",
+    parentPermission = PERM_EXE_USER
 ) {
     @MiraiExperimentalApi
     override suspend fun CommandSender.onCommand(args: MessageChain) {
@@ -379,7 +432,8 @@ object SCXmlMessage: RawCommand(
 object SCRedEnvelopes: RawCommand(
     PluginMain,
     "RedEnvelopes", "re", "红包",
-    usage = "发送一个红包消息" usageWith "/红包 <红包内容>"
+    usage = "发送一个红包消息" usageWith "/红包 <红包内容>",
+    parentPermission = PERM_EXE_USER
 ) {
     @MiraiExperimentalApi
     override suspend fun CommandSender.onCommand(args: MessageChain) {
@@ -436,7 +490,8 @@ object SCRandomImage : RawCommand(
     PluginMain,
     "RandomImage", "ri", "随机图片", "图片",
     description = "随机图片",
-    usage = "随机图片"
+    usage = "随机图片",
+    parentPermission = PERM_EXE_3
 ) {
     private const val url = "https://api.yimian.xyz/img"
     private val params = hashMapOf(
@@ -452,31 +507,30 @@ object SCRandomImage : RawCommand(
         val contact = subject ?: return
         val plainText = args.findIsInstance<PlainText>()
         
-        var img: Image? = null
-        if(plainText == null || plainText.content == ""){
-            img = SRequest(url).resultImage(contact)
-        }
-        else{
-            val text = plainText.content
-            if(params.containsKey(text)){
-                img = SRequest("$url?type=$text").resultImage(contact)
+        GlobalScope.launch(SCoroutine.image) {
+            var img: Image? = null
+            if(plainText == null || plainText.content == ""){
+                img = SRequest(url).resultImage(contact)
             }
             else{
-                var res = "参数不正确！\n请输入以下参数之一:\n"
-                params.forEach { (key, value) ->
-                    res += "$key  -  $value\n"
+                val text = plainText.content
+                if(params.containsKey(text)){
+                    img = SRequest("$url?type=$text").resultImage(contact)
                 }
-                contact.sendMsg(description, res)
+                else{
+                    var res = "参数不正确！\n请输入以下参数之一:\n"
+                    params.forEach { (key, value) ->
+                        res += "$key  -  $value\n"
+                    }
+                    contact.sendMsg(description, res)
+                }
             }
-        }
 
-        
-        if(img == null){
-            contact.sendMsg(description, "图片获取失败...")
-            return
+
+            if(img == null){
+                contact.sendMsg(description, "图片获取失败...")
+            } else contact.sendMsg(description, img)
         }
-        
-        contact.sendMsg(description, img)
     }
 
 }
@@ -485,7 +539,8 @@ object SCWords : RawCommand(
     PluginMain,
     "Words", "yy", "一言",
     description = "一言",
-    usage = "一言"
+    usage = "一言",
+    parentPermission = PERM_EXE_USER
 ) {
     private const val url = "https://api.yimian.xyz/words/"
     private val params = hashMapOf(
@@ -530,7 +585,8 @@ object SCWords : RawCommand(
 object SCSound : RawCommand(
     PluginMain,
     "Sound", "snd", "语音",
-    usage = "语音"
+    usage = "语音",
+    parentPermission = PERM_EXE_USER
 ) {
     const val popularUrl = "https://api.meowpad.me/v2/sounds/popular?skip=0"
     const val downloadUrl = "https://api.meowpad.me/v1/download/"
@@ -579,7 +635,8 @@ object SCSound : RawCommand(
 object SCGroupManager: RawCommand(
     PluginMain,
     "GroupManager", "gm", "群管理",
-    usage = "群管理", description = "群管理"
+    usage = "群管理", description = "群管理",
+    parentPermission = PERM_EXE_MEMBER
 ) {
     
     override suspend fun CommandSender.onCommand(args: MessageChain) {
@@ -810,8 +867,11 @@ object SCGroupManager: RawCommand(
 object SCMiraiCode : RawCommand(
     PluginMain,
     "MiraiCode", "code", "Mirai码", "码",
-    usage = "Mirai码", description = "Mirai码"
+    usage = "Mirai码", description = "Mirai码",
+    parentPermission = PERM_EXE_USER
 ) {
+    val userGetMiraiCode = HashMap<User, Long>()
+    
     override suspend fun CommandSender.onCommand(args: MessageChain) {
         
         processSCommand(args) {
@@ -822,7 +882,11 @@ object SCMiraiCode : RawCommand(
             }
             
             "get" {
-                
+                empty { 
+                    val user = user ?: return@empty
+                    userGetMiraiCode[user] = System.currentTimeMillis()
+                    sendMsg(description, "请在一分钟内发送要取码的消息")
+                }
             }
             
             empty { 
@@ -839,7 +903,8 @@ object SCMiraiCode : RawCommand(
 object SCMoeImage : RawCommand(
     PluginMain,
     "MoeImage", "moe", "动漫图片",
-    usage = "动漫图片", description = "动漫图片"
+    usage = "动漫图片", description = "动漫图片",
+    parentPermission = PERM_EXE_3
 ) {
     private const val apiUrl = "https://api.fantasyzone.cc/tu/?type=url&"
     private const val apiPcUrl = apiUrl + "class=pc"
@@ -850,17 +915,107 @@ object SCMoeImage : RawCommand(
         val user = user ?: return
         
         if(!user.isSunnyAdmin() || args.isEmpty()) {
-            val image = SRequest(apiPcUrl).resultImage(contact) ?: return
-            contact.sendMsg(description, image)
+            GlobalScope.launch(SCoroutine.image) {
+                SRequest(apiPcUrl).resultImage(contact)?.let { image ->
+                    contact.sendMsg(description, image)
+                }
+            }
             return
         }
         
         processSCommand(args) {
             anyContents(false) { 
-                val image = SRequest(apiUrl + it).resultImage(contact) ?: return@anyContents
-                sendMsg(description, image)
+                GlobalScope.launch(SCoroutine.image) {
+                    SRequest(apiUrl + it).resultImage(contact)?.let { image ->
+                        sendMsg(description, image)
+                    }
+                }
             }
         }
         
+    }
+}
+
+object SCGaoKaoCountDown : RawCommand(
+    PluginMain,
+    "GaoKaoCountDown", "高考倒计时", "gk",
+    usage = "高考倒计时", description = "高考倒计时",
+    parentPermission = PERM_EXE_MEMBER
+) {
+    const val MONTH = 6
+    const val DATE = 7
+    const val TIME = "-06-07 09:00:00"
+
+    val simpleFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+    
+    
+    override suspend fun CommandSender.onCommand(args: MessageChain) {
+        val group = subject as? Group ?: return
+        val member = user as? Member ?: return
+        
+        processSCommand(args) {
+            empty {
+                sendMsg(description, getCountDownContent() + "\n\nTip: 发送 /gk on 或 /gk off\n  以 开启/关闭 高考倒计时每日提醒")
+            }
+            
+            "on" {
+                if(member.isOperator() || member.isSunnyAdmin()){
+                    group.getSGroup().isGaoKaoCountDown = true
+                    sendMsg(description, "高考倒计时每日提醒 已开启")
+                } else sendMsg(description, At(member) + " 权限不足！")
+            }
+            
+            "off" {
+                if(member.isOperator() || member.isSunnyAdmin()){
+                    group.getSGroup().isGaoKaoCountDown = false
+                    sendMsg(description, "高考倒计时每日提醒 已关闭")
+                } else sendMsg(description, At(member) + " 权限不足！")
+            }
+        }
+    }
+
+    fun getCountDownContent(): String {
+        val dateNow = STimer.calendar.time
+        val (year, month, date, hour, minute, second) = STimer.getTime()
+        val timeGaoKao = when(month) {
+            in 1..6 -> "$year$TIME"
+            in 7..12 -> "${year + 1}$TIME"
+            else -> return ""
+        }
+        val dateGaoKao = simpleFormat.parse(timeGaoKao)
+
+        val str = StringBuilder()
+        str.append("""
+            当前时间: ${simpleFormat.format(dateNow)}
+            高考时间: $timeGaoKao
+            
+        """.trimIndent())
+
+        when(month) {
+            in 1..5 -> str.append("距离高考还有: ${calculate(dateNow, dateGaoKao)}")
+
+            6 -> {
+                when(date) {
+                    in 1..6 -> str.append("距离高考还有: ${calculate(dateNow, dateGaoKao)}")
+                    in 7..10 -> str.append("高考进行中！")
+                    in 11..30 -> str.append("高考已结束，请等待成绩公布")
+                }
+            }
+
+            in 7..12 -> str.append("距离高考还有: ${calculate(dateNow, dateGaoKao)}")
+        }
+
+        return str.toString()
+    }
+
+
+    fun calculate(date1: Date, date2: Date): String {
+        val between = date2.time - date1.time
+        val day = between / (24 * 60 * 60 * 1000)
+        val hour = between / (60 * 60 * 1000) - day * 24
+        val minute = between / (60 * 1000) - day * 24 * 60 - hour * 60
+        val second = between / 1000 - day * 24 * 60 * 60 - hour * 60 * 60 - minute * 60
+
+        return "${day}天 ${hour}时 ${minute}分 ${second}秒"
     }
 }

@@ -14,7 +14,11 @@ import kotlin.random.nextInt
 @Serializable
 class SGroup(private val groupID: Long) {
     var serverIp = ServerType.NOT to ""
+    
     var isRepeat = false
+    var isOpen = true
+    var isGaoKaoCountDown = false
+    
     var welcomeMessage = ""
     var leaveMessage = ""
     
@@ -40,7 +44,7 @@ val sDataGroupMap = HashMap<Long, SDataGroup>()
 data class SDataGroup(
     var runningState: RunningState = RunningState.FREE,
     var lastRunning: RunningState = RunningState.FREE,
-    val hour24:IntArray = IntArray(5) { -1 },
+    val hour24: IntArray = IntArray(5) { -1 },
     val ticTacToe: DataTicTacToe = DataTicTacToe(),
     val chess: DataChess = DataChess()
 ) {
@@ -84,10 +88,8 @@ fun Group.setRunningState(state: RunningState) {
     sDataGroup.runningState = state
 }
 
-fun Group.getSGroup(): SGroup {
-    val groupId = id
-    
-    if(!SSaveGroup.sGroupMap.containsKey(groupId))
-        SSaveGroup.sGroupMap[groupId] = SGroup(groupId)
-    return SSaveGroup.sGroupMap[groupId]!!
-}
+fun Group.getSGroup(): SGroup =
+    SSaveGroup.getSGroup(id)
+
+fun Group.getSData(): SDataGroup =
+    SDataGroup.getSDataGroup(id)
