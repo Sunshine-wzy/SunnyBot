@@ -5,12 +5,12 @@ import io.github.sunshinewzy.sunnybot.getPlainText
 import net.mamoe.mirai.console.command.*
 import net.mamoe.mirai.console.command.CommandManager.INSTANCE.register
 import net.mamoe.mirai.console.command.descriptor.ExperimentalCommandDescriptors
-import net.mamoe.mirai.console.permission.PermissionService
+import net.mamoe.mirai.console.permission.AbstractPermitteeId
+import net.mamoe.mirai.console.permission.Permission
 import net.mamoe.mirai.console.permission.PermissionService.Companion.permit
+import net.mamoe.mirai.console.permission.PermitteeId
 import net.mamoe.mirai.console.util.ConsoleExperimentalApi
 import net.mamoe.mirai.message.data.MessageChain
-import net.mamoe.mirai.message.data.PlainText
-import net.mamoe.mirai.message.data.findIsInstance
 import java.util.*
 
 typealias SCWrapper = SCommandWrapper.() -> Unit
@@ -24,6 +24,7 @@ fun CommandSender.processSCommand(args: MessageChain, cmd: SCWrapper) {
 
 class SCommandWrapper(val cmdArgs: LinkedList<String>) {
     var shouldContinue = true
+    var tempText = ""
     
     
     fun process() {
@@ -31,6 +32,8 @@ class SCommandWrapper(val cmdArgs: LinkedList<String>) {
     }
     
     private fun wrap(name: String, cmd: SCWrapper, type: Type = NORMAL) {
+        var text = ""
+        
         when(type) {
             NORMAL -> {
                 if(cmdArgs.isEmpty() || cmdArgs.first != name)
@@ -42,6 +45,11 @@ class SCommandWrapper(val cmdArgs: LinkedList<String>) {
                     return
             }
             
+            TEXT -> {
+                if(cmdArgs.isEmpty()) return
+                text = cmdArgs.first
+            }
+            
         }
         
         val list = LinkedList<String>().also { it.addAll(cmdArgs) }
@@ -49,11 +57,14 @@ class SCommandWrapper(val cmdArgs: LinkedList<String>) {
             list.removeFirst()
         
         val wrapper = SCommandWrapper(list)
+        wrapper.tempText = text
         cmd(wrapper)
     }
     
     
     operator fun String.invoke(cmd: SCWrapper) = wrap(this, cmd)
+    
+    fun text(cmd: SCWrapper) = wrap("", cmd, TEXT)
     
     fun empty(cmd: SCWrapper) = wrap("", cmd, EMPTY)
     
@@ -77,27 +88,23 @@ class SCommandWrapper(val cmdArgs: LinkedList<String>) {
     
     enum class Type {
         NORMAL,
-        EMPTY
+        EMPTY,
+        TEXT
     }
 }
 
 
-@ConsoleExperimentalApi
-@ExperimentalCommandDescriptors
-suspend fun Command.reg(permittee: String = "m*") {
+fun Command.reg(permittee: String = "m*") {
     register()
-    setPermit(permission.id.toString(), permittee)
+    setPermit(permission, permittee)
 }
 
-@ConsoleExperimentalApi
-@ExperimentalCommandDescriptors
-suspend fun setPermit(permissionId: String, permittee: String) {
-    BuiltInCommands.PermissionCommand.execute(ConsoleCommandSender, "$permittee $permissionId")
+fun setPermit(permission: Permission, permittee: String) {
+    AbstractPermitteeId.parseFromString(permittee).permit(permission)
+//    BuiltInCommands.PermissionCommand.execute(ConsoleCommandSender, "$permittee $permissionId")
 //    ConsoleCommandSender.executeCommand("/permission permit $permittee $permissionId")
 }
 
-@ConsoleExperimentalApi
-@ExperimentalCommandDescriptors
-suspend fun setPermit(permissionId: String) {
-    setPermit(permissionId, "m*")
+fun setPermit(permission: Permission) {
+    setPermit(permission, "m*")
 }

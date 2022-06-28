@@ -8,8 +8,8 @@ import net.mamoe.mirai.console.data.AutoSavePluginData
 import net.mamoe.mirai.console.data.value
 import net.mamoe.mirai.contact.Group
 import net.mamoe.mirai.contact.Member
+import java.lang.StringBuilder
 import kotlin.random.Random
-import kotlin.random.nextInt
 
 @Serializable
 class SGroup(private val groupID: Long) {
@@ -26,6 +26,7 @@ class SGroup(private val groupID: Long) {
     val autoApply = ArrayList<String>()
     val autoReject = ArrayList<String>()
     val serverIps = HashMap<String, Pair<ServerType, String>>()
+    val reminders = ArrayList<DataReminder>()
 }
 
 object SSaveGroup: AutoSavePluginData("SGroupData") {
@@ -80,6 +81,33 @@ data class DataChess(
             players[2] = temp
         }
     }
+}
+
+@Serializable
+data class DataReminder(
+    var hour: Int,
+    var minute: Int,
+    var content: String,
+    var isOnce: Boolean = false,
+    var isAtAll: Boolean = false
+) {
+    private fun timeToString(): String {
+        val str = StringBuilder(10)
+        if(hour < 10) str.append("0")
+        str.append("$hour:")
+        if(minute < 10) str.append("0")
+        str.append(minute)
+        return str.toString()
+    }
+    
+    private fun statusToString(): String {
+        var str = ""
+        if(isOnce) str += "[仅一次] "
+        if(isAtAll) str += "[At全体成员] "
+        return str
+    }
+    
+    override fun toString(): String = "${timeToString()} ${statusToString()}-> $content"
 }
 
 

@@ -25,9 +25,7 @@ import java.util.*
  * Sunny Simple Commands
  */
 
-@ConsoleExperimentalApi
-@ExperimentalCommandDescriptors
-suspend fun regSSimpleCommands() {
+fun regSSimpleCommands() {
     //指令注册
 
     SCMenu.register()
@@ -146,7 +144,7 @@ object SCAntiRecall: SimpleCommand(
         val group = member.group
         
         if(member.isOperator() || member.isSunnyAdmin()){
-            val msg = str.toLowerCase()
+            val msg = str.lowercase(Locale.getDefault())
             if(msg.contains("开") || msg.contains("t"))
                 antiRecall?.setAntiRecallStatus(group.id, true)
             else if(msg.contains("关") || msg.contains("f"))
@@ -241,7 +239,7 @@ object SCRepeater : SimpleCommand(
 ) {
     @Handler
     suspend fun MemberCommandSender.handle(isRepeat: String) {
-        val rep = isRepeat.toLowerCase()
+        val rep = isRepeat.lowercase(Locale.getDefault())
         val sGroup = group.getSGroup()
         
         if(!user.isOperator() && !user.isSunnyAdmin()){
@@ -344,7 +342,7 @@ object SCOpen : SimpleCommand(
             return
         }
 
-        val open = isOpen.toLowerCase()
+        val open = isOpen.lowercase(Locale.getDefault())
         if(open.contains("t") || open.contains("开")){
             sGroup.isOpen = true
             group.sendMsg("Sunny状态", "Sunny已开启！")

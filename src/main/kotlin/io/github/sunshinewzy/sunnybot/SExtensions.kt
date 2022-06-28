@@ -212,12 +212,11 @@ fun BufferedImage.toInputStream(): InputStream? {
 
 /**
  * 判断是否为整数
- * @param str 传入的字符串
  * @return 是整数返回true,否则返回false
  */
 fun String.isInteger(): Boolean {
-    val pattern = Pattern.compile("^[-\\+]?[\\d]*$")
-    return pattern.matcher(this).matches()
+    if(this == "") return false
+    return Pattern.compile("^[-\\+]?[\\d]*$").matcher(this).matches()
 }
 
 fun String.isLetterDigitOrChinese(): Boolean {

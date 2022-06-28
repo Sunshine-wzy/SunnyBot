@@ -9,6 +9,7 @@ import io.github.sunshinewzy.sunnybot.objects.SSavePlayer
 import io.github.sunshinewzy.sunnybot.objects.SSaveSunny
 import io.github.sunshinewzy.sunnybot.timer.STimer
 import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import net.mamoe.mirai.Bot
 import net.mamoe.mirai.console.command.descriptor.ExperimentalCommandDescriptors
@@ -25,7 +26,7 @@ lateinit var sunnyBot: Bot
 object PluginMain : KotlinPlugin(
     JvmPluginDescription(
         id = "io.github.sunshinewzy.sunnybot",
-        version = "1.1.6",
+        version = "1.2.0",
         name = "SunnyBot"
     )
 ) {
@@ -59,15 +60,11 @@ object PluginMain : KotlinPlugin(
     }
     
     
-    @ExperimentalCommandDescriptors
-    @ConsoleExperimentalApi
     private fun regListeners() {
         BotListener.listenBot()
         MessageListener.listenMessage()
     }
     
-    @ExperimentalCommandDescriptors
-    @ConsoleExperimentalApi
     private fun setPermissions() {
         PERM_ROOT
         PERM_EXE_1
@@ -75,12 +72,9 @@ object PluginMain : KotlinPlugin(
         PERM_EXE_3
         PERM_EXE_MEMBER
         PERM_EXE_USER
-        
-        GlobalScope.launch {
-            setPermit(PERM_EXE_USER.id.toString(), "u*")
-            setPermit(PERM_EXE_MEMBER.id.toString(), "m*")
-            
-        }
+
+        setPermit(PERM_EXE_USER, "u*")
+        setPermit(PERM_EXE_MEMBER, "m*")
     }
     
     private fun reloadData() {

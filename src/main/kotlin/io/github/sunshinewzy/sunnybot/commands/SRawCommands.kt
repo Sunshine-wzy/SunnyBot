@@ -35,9 +35,7 @@ import java.util.*
  * Sunny Raw Commands
  */
 
-@ExperimentalCommandDescriptors
-@ConsoleExperimentalApi
-suspend fun regSRawCommands() {
+fun regSRawCommands() {
     //指令注册
 
     SCLaTeX.register()
@@ -52,6 +50,7 @@ suspend fun regSRawCommands() {
     SCMiraiCode.register()
     SCMoeImage.register()
     SCGaoKaoCountDown.register()
+    SCReminder.register()
     
     //默认m*为任意群员 u*为任意用户
 //    SCLaTeX.reg("u*")
@@ -954,22 +953,26 @@ object SCGaoKaoCountDown : RawCommand(
         val member = user as? Member ?: return
         
         processSCommand(args) {
-            empty {
-                sendMsg(description, getCountDownContent() + "\n\nTip: 发送 /gk on 或 /gk off\n  以 开启/关闭 高考倒计时每日提醒")
-            }
-            
             "on" {
-                if(member.isOperator() || member.isSunnyAdmin()){
-                    group.getSGroup().isGaoKaoCountDown = true
-                    sendMsg(description, "高考倒计时每日提醒 已开启")
-                } else sendMsg(description, At(member) + " 权限不足！")
+                empty {
+                    if(member.isOperator() || member.isSunnyAdmin()){
+                        group.getSGroup().isGaoKaoCountDown = true
+                        sendMsg(description, "高考倒计时每日提醒 已开启")
+                    } else sendMsg(description, At(member) + " 权限不足！")
+                }
             }
             
             "off" {
-                if(member.isOperator() || member.isSunnyAdmin()){
-                    group.getSGroup().isGaoKaoCountDown = false
-                    sendMsg(description, "高考倒计时每日提醒 已关闭")
-                } else sendMsg(description, At(member) + " 权限不足！")
+                empty {
+                    if(member.isOperator() || member.isSunnyAdmin()){
+                        group.getSGroup().isGaoKaoCountDown = false
+                        sendMsg(description, "高考倒计时每日提醒 已关闭")
+                    } else sendMsg(description, At(member) + " 权限不足！")
+                }
+            }
+
+            empty {
+                sendMsg(description, getCountDownContent() + "\n\nTip: 发送 /gk on 或 /gk off\n  以 开启/关闭 高考倒计时每日提醒")
             }
         }
     }
@@ -1017,5 +1020,148 @@ object SCGaoKaoCountDown : RawCommand(
         val second = between / 1000 - day * 24 * 60 * 60 - hour * 60 * 60 - minute * 60
 
         return "${day}天 ${hour}时 ${minute}分 ${second}秒"
+    }
+}
+
+object SCReminder : RawCommand(
+    PluginMain,
+    "Reminder", "rem", "提醒",
+    usage = "定时提醒", description = "定时提醒",
+    parentPermission = PERM_EXE_MEMBER
+) {
+    val format = SimpleDateFormat("HH:mm")
+    
+    override suspend fun CommandSender.onCommand(args: MessageChain) {
+        val group = subject as? Group ?: return
+        val member = user as? Member ?: return
+
+        if(!member.isOperator() && !member.isSunnyAdmin()){
+            sendMsg(description, At(member) + " 您不是管理员，不能使用该功能！")
+            return
+        }
+        
+        processSCommand(args) {
+            "set" {
+                empty { 
+                    sendMsg(description, "Tip: /rem set [HH:mm] [提醒事项]")
+                }
+                
+                any { 
+                    val first = it.firstOrNull() ?: return@any
+                    val str = first.split(":")
+                    if(str.size != 2 || str[0].length != 2 || str[1].length != 2) {
+                        sendMsg(description, "时间格式错误 请使用 HH:mm 即 小时(24h制):分钟\n例: 09:00")
+                        return@any
+                    }
+                    val date = format.parse(first) ?: kotlin.run {
+                        sendMsg(description, "时间格式错误 请使用 HH:mm 即 小时(24h制):分钟\n例: 09:00")
+                        return@any
+                    }
+                    
+                    var text = ""
+                    for(i in 1 until it.size) {
+                        it.getOrNull(i)?.let { string -> text += string.replace(" ", "") }
+                    }
+                    if(text == "") {
+                        sendMsg(description, "请输入提醒事项")
+                        return@any
+                    }
+                    
+                    val calendar = Calendar.getInstance()
+                    calendar.time = date
+                    val hour = calendar.get(Calendar.HOUR_OF_DAY)
+                    val minute = calendar.get(Calendar.MINUTE)
+                    group.getSGroup().reminders += DataReminder(hour, minute, text)
+                    
+                    sendMsg(description, "成功添加每日 $hour:$minute 的提醒事项:\n$text")
+                }
+            }
+            
+            "list" {
+                empty {
+                    var msg = "所有提醒项:"
+                    group.getSGroup().reminders.forEachIndexed { i, rem ->
+                        msg += "\n${i + 1}. $rem"
+                    }
+                    sendMsg(description, msg)
+                }
+            }
+
+            "remove" {
+                any { list ->
+                    val first = list.first
+                    if(first.isInteger()) {
+                        val order = first.toInt()
+                        val remList = group.getSGroup().reminders
+
+                        if((order - 1) in remList.indices) {
+                            val rem = remList[order - 1]
+                            sendMsg(description, "提醒项 $order: $rem\n移除成功！")
+                            remList.removeAt(order - 1)
+                        } else sendMsg(description, "移除失败，不存在序号为 $order 的提醒项！")
+                    } else sendMsg(description, "序号只能为数字！")
+                }
+
+                empty {
+                    sendMsg(description, """
+                                请输入提醒项的序号以移除该提醒项
+                                Tip: 输入 /rem list 以查看所有提醒项
+                            """.trimIndent())
+                }
+            }
+            
+            "edit" {
+                text {
+                    if(tempText.isInteger()) {
+                        val order = tempText.toInt()
+                        val remList = group.getSGroup().reminders
+
+                        if((order - 1) in remList.indices) {
+                            val rem = remList[order - 1]
+                            
+                            "once" {
+                                empty { 
+                                    rem.isOnce = !rem.isOnce
+                                    sendMsg(description, "已将序号为 $order 的每日提醒项的 [仅一次] 状态设置为: ${rem.isOnce}")
+                                }
+                            }
+                            
+                            "atall" {
+                                empty {
+                                    rem.isAtAll = !rem.isAtAll
+                                    sendMsg(description, "已将序号为 $order 的每日提醒项的 [At全体成员] 状态设置为: ${rem.isAtAll}")
+                                }
+                            }
+                            
+                            empty {
+                                sendMsg(description, """
+                                    命令参数:
+                                    once  -  仅一次
+                                    atall  -  At全体成员
+                                """.trimIndent())
+                            }
+                            
+                        } else sendMsg(description, "编辑失败，不存在序号为 $order 的提醒项！")
+                    } else sendMsg(description, "序号只能为数字！")
+                }
+                
+                empty { 
+                    sendMsg(description, """
+                        请输入提醒项的序号以编辑改提醒项
+                        Tip: 输入 /rem edit [序号]
+                    """.trimIndent())
+                }
+            }
+
+            empty {
+                sendMsg(description, """
+                    命令参数:
+                    set  -  设置定时提醒项
+                    list  -  显示所有提醒项
+                    remove  -  删除定时提醒项
+                    edit - 编辑定时提醒项
+                """.trimIndent())
+            }
+        }
     }
 }

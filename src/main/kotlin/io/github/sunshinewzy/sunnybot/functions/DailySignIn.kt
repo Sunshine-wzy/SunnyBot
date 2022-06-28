@@ -5,7 +5,7 @@ import io.github.sunshinewzy.sunnybot.objects.getSGroup
 import io.github.sunshinewzy.sunnybot.sunnyBot
 
 object DailySignIn {
-    suspend fun runSchedule() {
+    fun reset() {
 //        val dateFormat = SimpleDateFormat("yyyy.MM.dd")
 //        val day = dateFormat.format(Date())
 //        if(SSaveSunny.dailySignInUpdate == day)

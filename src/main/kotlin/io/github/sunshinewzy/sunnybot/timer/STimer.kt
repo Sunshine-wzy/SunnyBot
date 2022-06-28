@@ -1,13 +1,12 @@
 package io.github.sunshinewzy.sunnybot.timer
 
 import io.github.sunshinewzy.sunnybot.commands.SCGaoKaoCountDown
+import io.github.sunshinewzy.sunnybot.functions.DailySignIn
 import io.github.sunshinewzy.sunnybot.objects.SSaveGroup
-import io.github.sunshinewzy.sunnybot.sendMsg
+import io.github.sunshinewzy.sunnybot.sendGroupMsg
 import io.github.sunshinewzy.sunnybot.sunnyBot
-import io.github.sunshinewzy.sunnybot.sunnyScope
-import kotlinx.coroutines.launch
-import net.mamoe.mirai.contact.Group
-import java.lang.Exception
+import net.mamoe.mirai.message.data.AtAll
+import net.mamoe.mirai.message.data.toPlainText
 import java.util.*
 
 object STimer : Runnable {
@@ -29,17 +28,31 @@ object STimer : Runnable {
                 
                 
                 time.apply {
-                    if(hour == 9 && minute == 0 && second == 0) {
-                        SSaveGroup.sGroupMap.forEach { groupId, sGroup -> 
-                            if(sGroup.isGaoKaoCountDown) {
-                                sunnyBot.getGroup(groupId)?.apply { 
-                                    sunnyScope.launch {
-                                        sendMsg("高考倒计时每日提醒", SCGaoKaoCountDown.getCountDownContent() + "\n\nTip: 发送 /gk on 或 /gk off\n  以 开启/关闭 高考倒计时每日提醒")
+                    SSaveGroup.sGroupMap.forEach { (groupId, sGroup) ->
+                        if(second == 0) {
+                            if(minute == 0) {
+                                if(hour == 0) {
+                                    DailySignIn.reset()
+                                } else if(hour == 9) {
+                                    if(sGroup.isGaoKaoCountDown) {
+                                        sunnyBot.sendGroupMsg(groupId, "高考倒计时每日提醒", SCGaoKaoCountDown.getCountDownContent() + "\n\nTip: 发送 /gk on 或 /gk off\n  以 开启/关闭 高考倒计时每日提醒")
                                     }
                                 }
                             }
+
+                            val remListReminders = arrayListOf<Int>()
+                            sGroup.reminders.forEachIndexed { index, it ->
+                                if(hour == it.hour && minute == it.minute) {
+                                    sunnyBot.sendGroupMsg(groupId, "定时提醒", if(it.isAtAll) AtAll + " " + it.content else it.content.toPlainText())
+                                    if(it.isOnce) remListReminders += index
+                                }
+                            }
+                            
+                            for(i in remListReminders.size - 1 downTo 0)
+                                sGroup.reminders.removeAt(remListReminders[i])
                         }
                     }
+                    
                     
                 }
                 

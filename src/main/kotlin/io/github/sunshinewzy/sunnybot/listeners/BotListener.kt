@@ -12,13 +12,12 @@ import net.mamoe.mirai.contact.remarkOrNameCardOrNick
 import net.mamoe.mirai.event.Listener
 import net.mamoe.mirai.event.events.*
 import net.mamoe.mirai.message.data.At
+import java.util.*
 
 object BotListener {
     private lateinit var msgListener: Listener<MessageEvent>
     var isOnline = false
 
-    @ExperimentalCommandDescriptors
-    @ConsoleExperimentalApi
     fun listenBot() {
         sunnyChannel.apply {
             
@@ -67,10 +66,10 @@ object BotListener {
                 val group = group ?: return@subscribeAlways
                 val sGroup = group.getSGroup()
                 if(sGroup.autoApply.isEmpty()) return@subscribeAlways
-                val msg = message.toLowerCase().substringAfter("答案：")
+                val msg = message.lowercase(Locale.getDefault()).substringAfter("答案：")
                 
                 sGroup.autoApply.forEach { key ->
-                    if(msg.contains(key.toLowerCase())){
+                    if(msg.contains(key.lowercase(Locale.getDefault()))){
                         accept()
                         group.sendMsg("加群审批 - 自动同意", """
                             $fromNick ($fromId) 申请加入本群，申请信息:
@@ -85,7 +84,7 @@ object BotListener {
                 }
                 
                 sGroup.autoReject.forEach { key ->
-                    if(msg.contains(key.toLowerCase())){
+                    if(msg.contains(key.lowercase(Locale.getDefault()))){
                         reject()
                         group.sendMsg("加群审批 - 自动拒绝", """
                             $fromNick ($fromId) 申请加入本群，申请信息:

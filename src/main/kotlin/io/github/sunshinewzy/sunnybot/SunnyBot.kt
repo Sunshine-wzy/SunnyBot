@@ -8,22 +8,23 @@ import io.github.sunshinewzy.sunnybot.games.SGameManager
 import io.github.sunshinewzy.sunnybot.objects.*
 import io.github.sunshinewzy.sunnybot.objects.SSaveGroup.sGroupMap
 import io.github.sunshinewzy.sunnybot.runnable.STimerTask
-import kotlinx.coroutines.*
-import net.mamoe.mirai.console.command.descriptor.ExperimentalCommandDescriptors
-import net.mamoe.mirai.console.util.ConsoleExperimentalApi
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+import net.mamoe.mirai.Bot
+import net.mamoe.mirai.console.permission.PermissionService
 import net.mamoe.mirai.contact.Group
 import net.mamoe.mirai.contact.Member
 import net.mamoe.mirai.contact.User
 import net.mamoe.mirai.event.globalEventChannel
 import net.mamoe.mirai.event.subscribeMessages
+import net.mamoe.mirai.message.data.Message
 import net.mamoe.mirai.message.data.PlainText
 import net.mamoe.mirai.message.data.QuoteReply
 import net.mamoe.mirai.message.data.findIsInstance
-import net.mamoe.mirai.message.data.isContentEmpty
 import java.io.File
 import java.util.*
-import kotlin.collections.ArrayList
-import kotlin.concurrent.thread
 
 val sunnyScope = CoroutineScope(SupervisorJob())
 val sunnyChannel = sunnyScope.globalEventChannel()
@@ -31,8 +32,6 @@ var antiRecall: AntiRecall? = null
 //超级管理员
 val sunnyAdmins = listOf(1123574549L)
 
-@ConsoleExperimentalApi
-@ExperimentalCommandDescriptors
 suspend fun sunnyInit() {
     //群初始化
     groupInit()
@@ -165,11 +164,9 @@ fun setPermissions() {
     
 }
 
-@ExperimentalCommandDescriptors
-@ConsoleExperimentalApi
-suspend fun setAdministrator() {
+fun setAdministrator() {
     sunnyAdmins.forEach { 
-        setPermit("*:*", "u$it")
+        setPermit(PermissionService.INSTANCE.rootPermission, "u$it")
     }
 }
 
@@ -185,6 +182,22 @@ fun getGroupID(sender: User): Long {
         return sender.group.id
 
     return 0
+}
+
+fun Bot.sendGroupMsg(groupId: Long, title: String, text: String) {
+    getGroup(groupId)?.apply { 
+        sunnyScope.launch {
+            sendMsg(title, text)
+        }
+    }
+}
+
+fun Bot.sendGroupMsg(groupId: Long, title: String, message: Message) {
+    getGroup(groupId)?.apply {
+        sunnyScope.launch {
+            sendMsg(title, message)
+        }
+    }
 }
 
 suspend fun Group.sendIntroduction() {
