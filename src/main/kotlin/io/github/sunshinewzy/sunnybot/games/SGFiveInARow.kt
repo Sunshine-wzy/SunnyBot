@@ -2,20 +2,21 @@ package io.github.sunshinewzy.sunnybot.games
 
 import io.github.sunshinewzy.sunnybot.enums.RunningState
 import io.github.sunshinewzy.sunnybot.events.game.SGroupGameEvent
-import io.github.sunshinewzy.sunnybot.games.SGChess.ChessType.*
+import io.github.sunshinewzy.sunnybot.games.SGFiveInARow.ChessBoard.Direction.*
+import io.github.sunshinewzy.sunnybot.games.SGFiveInARow.ChessType.*
+import io.github.sunshinewzy.sunnybot.objects.SCoordinate
+import io.github.sunshinewzy.sunnybot.objects.addSTD
 import io.github.sunshinewzy.sunnybot.objects.setRunningState
 import io.github.sunshinewzy.sunnybot.sendMsg
 import io.github.sunshinewzy.sunnybot.toInputStream
-import io.github.sunshinewzy.sunnybot.utils.PII
-import io.github.sunshinewzy.sunnybot.utils.PIIArrayList
 import io.github.sunshinewzy.sunnybot.utils.SImage
-import net.mamoe.mirai.contact.Group
 import net.mamoe.mirai.message.data.At
 import net.mamoe.mirai.message.data.PlainText
 import net.mamoe.mirai.utils.ExternalResource.Companion.uploadAsImage
 import java.awt.image.BufferedImage
+import kotlin.random.Random
 
-object SGChess : SGroupGame("围棋", RunningState.CHESS) {
+object SGFiveInARow : SGroupGame("五子棋", RunningState.FIVE_IN_A_ROW) {
     private val imgChessBoard = SImage.loadImage("Chess/ChessBoard.png")
     private val imgBlackPieces = SImage.loadImage("Chess/BlackPieces.png")
     private val imgWhitePieces = SImage.loadImage("Chess/WhitePieces.png")
@@ -31,11 +32,11 @@ object SGChess : SGroupGame("围棋", RunningState.CHESS) {
     
     
     override suspend fun runGame(event: SGroupGameEvent) {
-        val dataChess = event.sDataGroup.chess
+        val dataChess = event.sDataGroup.fiveInARow
         var str = event.msg
         if(str.startsWith("#")) str = str.substring(1)
         else return
-        str = str.replace(" ", "").toUpperCase()
+        str = str.replace(" ", "").uppercase()
         val group = event.group
         val member = event.member
         val id = member.id
@@ -55,7 +56,7 @@ object SGChess : SGroupGame("围棋", RunningState.CHESS) {
                 name,At(member) +
                 PlainText("""
                     
-                    您没有参加围棋对弈。
+                    您没有参加五子棋对弈。
                     当前玩家：
                     ① ${p1.nameCard} (${p1.id})
                     ② ${p2.nameCard} (${p2.id})
@@ -102,11 +103,26 @@ object SGChess : SGroupGame("围棋", RunningState.CHESS) {
             return
         }
 
-        if(board.judge(group, x, y))
-            return
-        
         val image = board.printBoard().toInputStream()?.uploadAsImage(group) ?: return
         group.sendMsg(name, image)
+
+        if(board.judge(x, y)) {
+            val winner = dataChess.players[board.round.id]!!
+            group.setRunningState(RunningState.FREE)
+
+            val reward = Random.nextInt(5) + 8
+            winner.addSTD(reward)
+
+            group.sendMsg(
+                name, PlainText("恭喜玩家 ") + At(winner) +
+                PlainText("""
+                
+                获得胜利！
+                游戏奖励: $reward STD
+            """.trimIndent())
+            )
+            return
+        }
         
         //回合更替
         if(board.round == BLACK)
@@ -122,20 +138,20 @@ object SGChess : SGroupGame("围棋", RunningState.CHESS) {
 
     override suspend fun startGame(event: SGroupGameEvent) {
         event.apply {
-            val dataChess = sDataGroup.chess
+            val dataChess = sDataGroup.fiveInARow
             
             if(sDataGroup.runningState == RunningState.FREE) {
                 dataChess.players[1] = member
                 group.sendMsg(name,
                     At(member) + PlainText(
                         "玩家1已就位\n" +
-                            "等待第2位玩家输入 #围棋"
+                            "等待第2位玩家输入 #五子棋"
                     )
                 )
-                sDataGroup.runningState = RunningState.CHESS_WAITING
-            } else if(sDataGroup.runningState == RunningState.CHESS_WAITING) {
+                sDataGroup.runningState = RunningState.FIVE_IN_A_ROW_WAITING
+            } else if(sDataGroup.runningState == RunningState.FIVE_IN_A_ROW_WAITING) {
                 val p1 = dataChess.players[1] ?: kotlin.run {
-                    group.sendMsg(name, "玩家1对象不存在，玩家初始化失败！\n围棋 游戏结束")
+                    group.sendMsg(name, "玩家1对象不存在，玩家初始化失败！\n五子棋 游戏结束")
                     group.setRunningState(RunningState.FREE)
                     return
                 }
@@ -154,7 +170,7 @@ object SGChess : SGroupGame("围棋", RunningState.CHESS) {
                     return
                 }
 
-                sDataGroup.runningState = RunningState.CHESS
+                sDataGroup.runningState = RunningState.FIVE_IN_A_ROW
                 group.sendMsg(
                     name,
                     At(dataChess.players[1]!!) + PlainText(" ") +
@@ -191,7 +207,6 @@ object SGChess : SGroupGame("围棋", RunningState.CHESS) {
         }
         
         var round = BLACK
-        val eatCount = EatCount()
         val manual = ArrayList<String>()        //棋谱记录
         
         
@@ -201,89 +216,35 @@ object SGChess : SGroupGame("围棋", RunningState.CHESS) {
 
         /**
          * 落子时触发判断
+         * 胜利判定
          */
-        suspend fun judge(group: Group, x: Int, y: Int): Boolean {
-            val list = PIIArrayList()
-            val eat = EatCount()
-            
-            //判断是否为活棋
-            if(isInBoard(x + 1, y) && !dfsLiberty(list, x + 1, y, slots[x + 1][y]))
-                clearPieces(list, eat)
-            
-            list.clear()
-            if(isInBoard(x - 1, y) && !dfsLiberty(list, x - 1, y, slots[x - 1][y]))
-                clearPieces(list, eat)
+        fun judge(x: Int, y: Int): Boolean {
+            if(judgeByDirection(SCoordinate(x, y), RIGHT) + judgeByDirection(SCoordinate(x, y), LEFT) >= JUDGE_COUNT)
+                return true
 
-            list.clear()
-            if(isInBoard(x, y + 1) && !dfsLiberty(list, x, y + 1, slots[x][y + 1]))
-                clearPieces(list, eat)
+            if(judgeByDirection(SCoordinate(x, y), UP) + judgeByDirection(SCoordinate(x, y), DOWN) >= JUDGE_COUNT)
+                return true
 
-            list.clear()
-            if(isInBoard(x, y - 1) && !dfsLiberty(list, x, y - 1, slots[x][y - 1]))
-                clearPieces(list, eat)
-            
-            if(!eat.isEmpty()){
-                eatCount += eat
+            if(judgeByDirection(SCoordinate(x, y), UP_RIGHT) + judgeByDirection(SCoordinate(x, y), DOWN_LEFT) >= JUDGE_COUNT)
+                return true
 
-                group.sendMsg(name, """
-                黑方本次吃子: ${eat.black}
-                黑方累计吃子: ${eatCount.black}
-                
-                白方本次吃子: ${eat.white}
-                白方累计吃子: ${eatCount.white}
-            """.trimIndent())
-            }
-            
+            if(judgeByDirection(SCoordinate(x, y), UP_LEFT) + judgeByDirection(SCoordinate(x, y), DOWN_RIGHT) >= JUDGE_COUNT)
+                return true
+
             return false
         }
         
-        private fun clearPieces(list: PIIArrayList, eatCount: EatCount, except: PII = -1 to -1) {
-            list.forEach { 
-                if(it == except)
-                    return@forEach
-                
-                when(slots[it.first][it.second]){
-                    BLACK -> eatCount.white++
-                    
-                    WHITE -> eatCount.black++
-                    
-                    else -> {}
-                }
-                    
-                
-                slots[it.first][it.second] = EMPTY
+        fun judgeByDirection(coordinate: SCoordinate, direction: Direction): Int {
+            coordinate.x += direction.offsetX
+            coordinate.y += direction.offsetY
+            
+            if(isInBoard(coordinate.x, coordinate.y) && slots[coordinate.x][coordinate.y] == round) {
+                return judgeByDirection(coordinate, direction) + 1
             }
+            
+            return 0
         }
         
-        private fun clearPieces(list: PIIArrayList, eatCount: EatCount, exceptX: Int, exceptY: Int) {
-            clearPieces(list, eatCount, exceptX to exceptY)
-        }
-
-        /**
-         * 深度优先搜索 - 判断是否有气
-         */
-        private fun dfsLiberty(list: PIIArrayList, x: Int, y: Int, type: ChessType): Boolean {
-            if(isInBoard(x, y)){
-                val pair = x to y
-                if(list.contains(pair))
-                    return false
-                
-                when(slots[x][y]){
-                    EMPTY -> return true
-
-                    type -> {
-                        list += pair
-                        
-                        return dfsLiberty(list, x + 1, y, type) || dfsLiberty(list, x - 1, y, type)
-                            || dfsLiberty(list, x, y + 1, type) || dfsLiberty(list, x, y - 1, type)
-                    }
-                    
-                    else -> {}
-                }
-            }
-
-            return false
-        }
         
         fun printBoard(): BufferedImage {
             val img = BufferedImage(imgChessBoard.width, imgChessBoard.height, BufferedImage.TYPE_4BYTE_ABGR)
@@ -317,146 +278,11 @@ object SGChess : SGroupGame("围棋", RunningState.CHESS) {
             if(slots[x][y] != EMPTY)
                 return false
             
-            //己方真眼特判
-            if(isRealEye(type, x, y))
-                return false
-            
-            val oppoType = type.getOpposite()
-            //敌方特判
-            when(aroundJudge(oppoType, x, y)) {
-                4 to 0, 3 to 1, 2 to 2 -> {
-                    val pair = x to y
-                    val listAll = PIIArrayList()
-                    
-                    if(dfsLiberty(listAll, x + 1, y, oppoType)){
-                        val list2 = PIIArrayList()
-                        list2 += pair
-                        
-                        if(listAll.contains(x - 1 to y) || dfsLiberty(list2, x - 1, y , oppoType)){
-                            listAll += list2
-                            val list3 = PIIArrayList()
-                            list3 += pair
-                            
-                            if(listAll.contains(x to y + 1) || dfsLiberty(list3, x, y + 1, oppoType)){
-                                listAll += list3
-                                val list4 = PIIArrayList()
-                                list4 += pair
-                                
-                                if(listAll.contains(x to y - 1) || dfsLiberty(list4, x, y - 1, oppoType)){
-                                    
-                                    return false
-                                }
-                            }
-                        }
-                    }
-                    
-                }
-            }
-            
             //棋谱记录
 //            manual += "${if(type == BLACK) "黑" else "白"},$x,$y"
 
             slots[x][y] = type
             return true
-        }
-        
-        fun end() {
-            
-        }
-        
-        
-        private fun isRealEye(type: ChessType, x: Int, y: Int): Boolean {
-            if(!isInBoard(x, y))
-                return false
-            
-            if(slots[x][y] != EMPTY)
-                return false
-            
-            when(aroundJudge(type, x, y)) {
-                //中间
-                4 to 0 -> {
-                    if(angleJudge(type, x, y).first >= 3)
-                        return true
-                }
-                
-                //边
-                3 to 1 -> {
-                    if(angleJudge(type, x, y).first >= 2)
-                        return true
-                }
-                
-                //角
-                2 to 2 -> {
-                    if(angleJudge(type, x, y).first >= 1)
-                        return true
-                }
-            }
-            
-            return false
-        }
-
-        private fun aroundJudge(type: ChessType, x: Int, y: Int): Pair<Int, Int> {
-            var cnt = 0
-            var outOfBoard = 0
-
-            if(isInBoard(x + 1, y)){
-                if(slots[x + 1][y] == type)
-                    cnt++
-            }
-            else outOfBoard++
-
-            if(isInBoard(x - 1, y)){
-                if(slots[x - 1][y] == type)
-                    cnt++
-            }
-            else outOfBoard++
-
-            if(isInBoard(x, y + 1)){
-                if(slots[x][y + 1] == type)
-                    cnt++
-            }
-            else outOfBoard++
-
-            if(isInBoard(x, y - 1)){
-                if(slots[x][y - 1] == type)
-                    cnt++
-            }
-            else outOfBoard++
-
-
-            return cnt to outOfBoard
-        }
-        
-        private fun angleJudge(type: ChessType, x: Int, y: Int): Pair<Int, Int> {
-            var cnt = 0
-            var outOfBoard = 0
-            
-            if(isInBoard(x + 1, y + 1)){
-                if(slots[x + 1][y + 1] == type)
-                    cnt++
-            }
-            else outOfBoard++
-
-            if(isInBoard(x + 1, y - 1)){
-                if(slots[x + 1][y - 1] == type)
-                    cnt++
-            }
-            else outOfBoard++
-
-            if(isInBoard(x - 1, y + 1)){
-                if(slots[x - 1][y + 1] == type)
-                    cnt++
-            }
-            else outOfBoard++
-
-            if(isInBoard(x - 1, y - 1)){
-                if(slots[x - 1][y - 1] == type)
-                    cnt++
-            }
-            else outOfBoard++
-            
-            
-            return cnt to outOfBoard
         }
         
         
@@ -465,23 +291,19 @@ object SGChess : SGroupGame("围棋", RunningState.CHESS) {
             private const val Y0 = 2731 - 50
             private const val DX = 146
             private const val DY = 146
+            
+            const val JUDGE_COUNT = 5 - 1
 
             
             fun isInBoard(x: Int, y: Int): Boolean = x in 1..19 && y in 1..19
         }
         
-        data class EatCount(
-            var black: Int = 0,
-            var white: Int = 0
-        ) {
-
-            operator fun plusAssign(eatCount: EatCount) {
-                black += eatCount.black
-                white += eatCount.white
-            }
-            
-            fun isEmpty(): Boolean = black == 0 && white == 0
-            
+        
+        enum class Direction(val offsetX: Int, val offsetY: Int) {
+            RIGHT(1, 0), LEFT(-1, 0),
+            UP(0, 1), DOWN(0, -1),
+            UP_RIGHT(1, 1), DOWN_LEFT(-1, -1),
+            UP_LEFT(-1, 1), DOWN_RIGHT(1, -1)
         }
         
     }

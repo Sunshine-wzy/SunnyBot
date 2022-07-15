@@ -3,6 +3,7 @@ package io.github.sunshinewzy.sunnybot.commands
 import io.github.sunshinewzy.sunnybot.*
 import io.github.sunshinewzy.sunnybot.PluginMain.PERM_EXE_MEMBER
 import io.github.sunshinewzy.sunnybot.PluginMain.PERM_EXE_USER
+import io.github.sunshinewzy.sunnybot.games.SGameManager
 import io.github.sunshinewzy.sunnybot.objects.SRequest
 import io.github.sunshinewzy.sunnybot.objects.SSavePlayer.sPlayerMap
 import io.github.sunshinewzy.sunnybot.objects.getSGroup
@@ -13,11 +14,11 @@ import net.mamoe.mirai.console.command.CommandManager.INSTANCE.registeredCommand
 import net.mamoe.mirai.console.command.CommandSender
 import net.mamoe.mirai.console.command.MemberCommandSender
 import net.mamoe.mirai.console.command.SimpleCommand
-import net.mamoe.mirai.console.command.descriptor.ExperimentalCommandDescriptors
-import net.mamoe.mirai.console.util.ConsoleExperimentalApi
 import net.mamoe.mirai.contact.Member
 import net.mamoe.mirai.contact.isOperator
-import net.mamoe.mirai.message.data.*
+import net.mamoe.mirai.message.data.At
+import net.mamoe.mirai.message.data.LightApp
+import net.mamoe.mirai.message.data.PlainText
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -84,20 +85,26 @@ object SCGameMenu: SimpleCommand(
     description = "游戏菜单",
     parentPermission = PERM_EXE_MEMBER
 ) {
-    @Handler
-    suspend fun CommandSender.handle() {
-        subject?.sendMsg("游戏菜单", """
-            ===============
-            ◆ 24点
-            ◆ 井字棋
-            ◆ 围棋
+    val message: String by lazy {
+        val str = StringBuilder()
+        str.append("===============\n")
+        SGameManager.sGroupGameHandlers.forEach {
+            str.append("◆ ${it.name}\n")
+        }
+        str.append("""
             ===============
             请输入 '#游戏名称'
             以开始一局游戏
             
             [例] #24点
-        """.trimIndent()
-        )
+        """.trimIndent())
+        str.toString()
+    }
+    
+    
+    @Handler
+    suspend fun CommandSender.handle() {
+        subject?.sendMsg("游戏菜单", message)
     }
 }
 

@@ -3,6 +3,7 @@ package io.github.sunshinewzy.sunnybot.objects
 import io.github.sunshinewzy.sunnybot.enums.RunningState
 import io.github.sunshinewzy.sunnybot.enums.ServerType
 import io.github.sunshinewzy.sunnybot.games.SGChess
+import io.github.sunshinewzy.sunnybot.games.SGFiveInARow
 import kotlinx.serialization.Serializable
 import net.mamoe.mirai.console.data.AutoSavePluginData
 import net.mamoe.mirai.console.data.value
@@ -47,7 +48,8 @@ data class SDataGroup(
     var lastRunning: RunningState = RunningState.FREE,
     val hour24: IntArray = IntArray(5) { -1 },
     val ticTacToe: DataTicTacToe = DataTicTacToe(),
-    val chess: DataChess = DataChess()
+    val chess: DataChess = DataChess(),
+    val fiveInARow: DataFiveInARow = DataFiveInARow()
 ) {
     
     companion object {
@@ -75,6 +77,23 @@ data class DataChess(
     fun init() {
         board = SGChess.ChessBoard()
         
+        if(Random.nextInt(1, 3) == 2){
+            val temp = players[1]
+            players[1] = players[2]
+            players[2] = temp
+        }
+    }
+}
+
+data class DataFiveInARow(
+    var board: SGFiveInARow.ChessBoard? = null
+) {
+    val players: Array<Member?> = Array(3) { null }
+
+
+    fun init() {
+        board = SGFiveInARow.ChessBoard()
+
         if(Random.nextInt(1, 3) == 2){
             val temp = players[1]
             players[1] = players[2]

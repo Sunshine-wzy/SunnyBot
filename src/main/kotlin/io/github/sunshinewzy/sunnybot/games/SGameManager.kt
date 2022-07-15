@@ -42,6 +42,7 @@ object SGameManager {
         registerGroupGame(SGHour24)
         registerGroupGame(SGTicTacToe)
         registerGroupGame(SGChess)
+        registerGroupGame(SGFiveInARow)
     }
     
     private fun registerGroupGame(sGroupGame: SGroupGame) {
