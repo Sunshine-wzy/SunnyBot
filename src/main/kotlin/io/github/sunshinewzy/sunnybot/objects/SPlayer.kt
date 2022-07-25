@@ -15,7 +15,10 @@ data class SPlayer(
     private val id: Long,
     var std: Long = 0,
     var isDailySignIn: Boolean = false
-)
+) {
+    val rconKeyMap = hashMapOf<String, String>()
+    var selectedRconSymbol = ""
+}
 
 object SSavePlayer: AutoSavePluginData("SPlayerData") {
     var sPlayerMap: MutableMap<Long, SPlayer> by value(mutableMapOf())

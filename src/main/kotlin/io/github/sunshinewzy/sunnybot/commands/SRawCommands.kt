@@ -8,6 +8,7 @@ import io.github.sunshinewzy.sunnybot.enums.ServerType
 import io.github.sunshinewzy.sunnybot.enums.SunSTSymbol
 import io.github.sunshinewzy.sunnybot.objects.*
 import io.github.sunshinewzy.sunnybot.timer.STimer
+import io.github.sunshinewzy.sunnybot.utils.RconManager
 import io.github.sunshinewzy.sunnybot.utils.SLaTeX.laTeXImage
 import io.github.sunshinewzy.sunnybot.utils.SServerPing
 import io.github.sunshinewzy.sunnybot.utils.SServerPing.pingServer
@@ -15,9 +16,8 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import net.mamoe.mirai.console.command.CommandManager.INSTANCE.register
 import net.mamoe.mirai.console.command.CommandSender
+import net.mamoe.mirai.console.command.MemberCommandSender
 import net.mamoe.mirai.console.command.RawCommand
-import net.mamoe.mirai.console.command.descriptor.ExperimentalCommandDescriptors
-import net.mamoe.mirai.console.util.ConsoleExperimentalApi
 import net.mamoe.mirai.contact.Group
 import net.mamoe.mirai.contact.Member
 import net.mamoe.mirai.contact.User
@@ -51,6 +51,7 @@ fun regSRawCommands() {
     SCMoeImage.register()
     SCGaoKaoCountDown.register()
     SCReminder.register()
+    SCRcon.register()
     
     //默认m*为任意群员 u*为任意用户
 //    SCLaTeX.reg("u*")
@@ -1160,6 +1161,198 @@ object SCReminder : RawCommand(
                     list  -  显示所有提醒项
                     remove  -  删除定时提醒项
                     edit - 编辑定时提醒项
+                """.trimIndent())
+            }
+        }
+    }
+}
+
+object SCRcon : RawCommand(
+    PluginMain,
+    "执行指令", "rcon",
+    usage = "Minecraft服务器指令远程执行", description = "Minecraft服务器指令远程执行",
+    parentPermission = PERM_EXE_USER
+) {
+    
+    
+    override suspend fun CommandSender.onCommand(args: MessageChain) {
+        val user = user ?: return
+        
+        processSCommand(args) {
+            "bind" {
+                if(this@onCommand !is MemberCommandSender) {
+                    any { list ->
+                        val symbol = list.first
+                        if(symbol.isLetterDigitOrChinese()) {
+                            if(list.size >= 3) {
+                                val ip = list[1]
+                                val strList = ip.split(':')
+                                if(strList.size == 2) {
+                                    val port = strList[1]
+                                    if(port.isInteger()) {
+
+                                        val key = RconData.buildKey(user.id, ip)
+                                        val data = SunnyData.rcon[key]
+                                        if(data == null) {
+                                            val rcon = RconManager.open(strList[0], port.toInt(), list[2])
+                                            if(rcon != null) {
+                                                SunnyData.rcon[key] = RconData(user.id, ip, list[2])
+                                                user.getSPlayer().apply {
+                                                    rconKeyMap[symbol] = key
+                                                    selectedRconSymbol = symbol
+                                                }
+                                                sendMsg(description, "绑定成功!\n$symbol -> $key")
+                                            } else sendMsg(description, "绑定失败= =\n请确保服务器IP正确且当前服务器在线！")
+                                        } else {
+                                            val sPlayer = user.getSPlayer()
+                                            val map = sPlayer.rconKeyMap
+                                            val theKey = map[symbol]
+                                            if(theKey != null && theKey == key) {
+                                                sendMsg(description, "绑定失败= =\n不能重复绑定")
+                                            } else {
+                                                map[symbol] = key
+                                                sPlayer.selectedRconSymbol = symbol
+                                                sendMsg(description, "绑定成功!\n$symbol -> $key")
+                                            }
+                                        }
+                                        
+                                    } else sendMsg(description, "[RCON端口] 只能为数字")
+                                } else sendMsg(description, "[服务器IP]:[RCON端口] 格式不正确")
+                            } else sendMsg(description, "请在 [服务器代号] 后输入 [服务器IP]:[RCON端口] [RCON密码]")
+                        } else sendMsg(description, "服务器代号只能含有英文、数字、汉字，不能包含任何符号！")
+                    }
+
+                    empty {
+                        sendMsg(
+                            description, """
+                            请在bind后输入: [服务器代号] [服务器IP]:[RCON端口] [RCON密码]
+                            例: /rcon bind a aminecraft.cc:25575 123456789
+                            
+                            Tips:
+                            服务器代号只能含有英文、数字、汉字，不能包含任何符号！
+                            关于服务器RCON配置请参考wiki: https://wiki.vg/RCON
+                        """.trimIndent())
+                    }
+                } else sendMsg(description, "bind指令只允许在私聊中使用!")
+            }
+            
+            "unbind" {
+                anyContents(false) {
+                    val rconKeyMap = user.getSPlayer().rconKeyMap
+                    if(rconKeyMap.containsKey(it)) {
+                        rconKeyMap.remove(it)
+                        sendMsg(description, "服务器代号 '$it' 删除成功~")
+                    } else sendMsg(description, "服务器代号 '$it' 不存在！")
+                }
+                
+                empty { 
+                    sendMsg(description, "/rcon unbind [服务器代号]\n解绑服务器")
+                }
+            }
+
+            "list" {
+                empty {
+                    val rconKeyMap = user.getSPlayer().rconKeyMap
+                    if(rconKeyMap.isEmpty()) {
+                        sendMsg(description, "您未绑定任何RCON")
+                        return@empty
+                    }
+
+                    val symbolIps = StringBuilder("已绑定的所有RCON:")
+                    var index = 1
+                    rconKeyMap.forEach { (symbol, key) ->
+                        symbolIps.append("\n$index. $symbol -> $key")
+                        index++
+                    }
+
+                    sendMsg(description, symbolIps.toString())
+                }
+            }
+            
+            "run" {
+                anyContents { cmd ->
+                    val sPlayer = user.getSPlayer()
+                    val symbol = sPlayer.selectedRconSymbol
+                    if(symbol != "") {
+                        sPlayer.rconKeyMap[symbol]?.let { key ->
+                            SunnyData.rcon[key]?.let { data ->
+                                
+                                if(data.owner == user.id || data.operators.contains(user.id)) {
+                                    RconManager.open(data)?.let { rcon ->
+                                        sendMsg(description, String(rcon.sendCommand(cmd).toByteArray(Charsets.US_ASCII), Charsets.ISO_8859_1))
+                                        return@anyContents
+                                    }
+
+                                    sendMsg(description, "RCON '$key'\n连接失败")
+                                    return@anyContents
+                                } else sendMsg(description, "您无权访问此RCON")
+                                
+                            }
+                            
+                            sendMsg(description, "RCON '$key'\n不存在，请重新绑定")
+                            return@anyContents
+                        }
+                    }
+                    
+                    sendMsg(description, "未选择服务器代号\n请输入 /rcon select [服务器代号]\n进行选择")
+                }
+                
+                empty { 
+                    sendMsg(description, "/rcon run [指令]\n向已选择的服务器发送并执行指令")
+                }
+            }
+            
+            "select" {
+                anyContents(false) { 
+                    val sPlayer = user.getSPlayer()
+                    if(sPlayer.rconKeyMap.containsKey(it)) {
+                        sPlayer.selectedRconSymbol = it
+                        sendMsg(description, "服务器代号 '$it' 选择成功")
+                    } else sendMsg(description, "未绑定服务器代号 '$it'")
+                }
+                
+                empty { 
+                    sendMsg(description, "/rcon select [服务器代号]\n选择服务器代号")
+                }
+            }
+            
+            "permit" {
+                any { list -> 
+                    val idStr = list.first
+                    if(idStr.isInteger()) {
+                        if(list.size >= 2) {
+                            val symbol = list[1]
+                            val key = user.getSPlayer().rconKeyMap[symbol]
+                            if(key != null) {
+                                val data = SunnyData.rcon[key]
+                                if(data != null) {
+                                    if(data.owner == user.id) {
+                                        val id = idStr.toLong()
+                                        data.operators += id
+                                        SSavePlayer.getSPlayer(id).rconKeyMap[symbol] = key
+                                        sendMsg(description, "$id 已获得\n$key 的指令执行权限")
+                                    } else sendMsg(description, "您不是此RCON的所有者，不能给他人授权")
+                                } else sendMsg(description, "RCON '$key'\n不存在，请重新绑定")
+                            } else sendMsg(description, "服务器代号 '$symbol' 不存在")
+                        } else sendMsg(description, "请在 [被许可人ID] 后输入 [服务器代号]")
+                    } else sendMsg(description, "[被许可人ID](QQ号) 只能为数字")
+                }
+                
+                empty { 
+                    sendMsg(description, "/rcon permit [被许可人ID] [服务器代号]\n授予他人指令执行权限")
+                }
+            }
+
+            empty {
+                sendMsg(
+                    description, """
+                    命令参数:
+                    bind  -  绑定服务器
+                    unbind  -  解绑服务器
+                    list  -  显示所有已绑定的服务器
+                    run  -  执行指令
+                    select  -  选择服务器代号
+                    permit  -  授予他人指令执行权限
                 """.trimIndent())
             }
         }

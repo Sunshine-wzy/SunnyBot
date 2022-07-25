@@ -6,11 +6,8 @@ import io.github.sunshinewzy.sunnybot.listeners.BotListener
 import io.github.sunshinewzy.sunnybot.listeners.MessageListener
 import io.github.sunshinewzy.sunnybot.objects.SSaveGroup
 import io.github.sunshinewzy.sunnybot.objects.SSavePlayer
-import io.github.sunshinewzy.sunnybot.objects.SSaveSunny
+import io.github.sunshinewzy.sunnybot.objects.SunnyData
 import io.github.sunshinewzy.sunnybot.timer.STimer
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.launch
 import net.mamoe.mirai.Bot
 import net.mamoe.mirai.console.command.descriptor.ExperimentalCommandDescriptors
 import net.mamoe.mirai.console.extension.PluginComponentStorage
@@ -80,7 +77,7 @@ object PluginMain : KotlinPlugin(
     private fun reloadData() {
         SSavePlayer.reload()
         SSaveGroup.reload()
-        SSaveSunny.reload()
+        SunnyData.reload()
     }
     
     private fun runTimer() {

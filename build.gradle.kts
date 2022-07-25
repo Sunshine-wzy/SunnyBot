@@ -13,19 +13,20 @@ dependencies {
     implementation("com.google.code.gson:gson:2.8.7")
     implementation("org.scilab.forge:jlatexmath:1.0.7")
     implementation("io.netty:netty-all:4.1.67.Final")
+    implementation("nl.vv32.rcon:rcon:1.2.0")
     
     implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar"))))
     implementation(kotlin("stdlib-jdk8"))
 }
 
 group = "io.github.sunshinewzy"
-version = "1.2.1"
+version = "1.2.2"
 
 repositories {
+    mavenLocal()
     maven {
         url = uri("https://maven.aliyun.com/repository/public/")
     }
-    mavenLocal()
     mavenCentral()
     jcenter()
     

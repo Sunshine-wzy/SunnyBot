@@ -2,14 +2,12 @@ package io.github.sunshinewzy.sunnybot.commands
 
 import io.github.sunshinewzy.sunnybot.commands.SCommandWrapper.Type.*
 import io.github.sunshinewzy.sunnybot.getPlainText
-import net.mamoe.mirai.console.command.*
+import net.mamoe.mirai.console.command.Command
 import net.mamoe.mirai.console.command.CommandManager.INSTANCE.register
-import net.mamoe.mirai.console.command.descriptor.ExperimentalCommandDescriptors
+import net.mamoe.mirai.console.command.CommandSender
 import net.mamoe.mirai.console.permission.AbstractPermitteeId
 import net.mamoe.mirai.console.permission.Permission
 import net.mamoe.mirai.console.permission.PermissionService.Companion.permit
-import net.mamoe.mirai.console.permission.PermitteeId
-import net.mamoe.mirai.console.util.ConsoleExperimentalApi
 import net.mamoe.mirai.message.data.MessageChain
 import java.util.*
 
@@ -75,9 +73,10 @@ class SCommandWrapper(val cmdArgs: LinkedList<String>) {
     
     fun anyContents(space: Boolean = true, block: (String) -> Unit) {
         if(cmdArgs.isEmpty()) return
-        var contents = ""
-        cmdArgs.forEach { contents += "$it " }
+        val str = StringBuilder()
+        cmdArgs.forEach { str.append("$it ") }
         
+        var contents = str.toString()
         if(!space) {
             contents = contents.replace(" ", "")
         }
