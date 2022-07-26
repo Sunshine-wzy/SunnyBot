@@ -7,6 +7,7 @@ import io.github.sunshinewzy.sunnybot.objects.SGroup
 import io.github.sunshinewzy.sunnybot.objects.SSaveGroup
 import io.github.sunshinewzy.sunnybot.objects.sDataGroupMap
 import kotlinx.coroutines.launch
+import net.mamoe.mirai.Bot
 import net.mamoe.mirai.console.command.CommandSender
 import net.mamoe.mirai.contact.Contact
 import net.mamoe.mirai.contact.Member
@@ -257,6 +258,16 @@ fun <L: MutableList<String>> MessageChain.getPlainText(list: L): L {
         }
     }
     return list
+}
+
+//endregion
+
+//region Bot
+
+fun Bot.getUser(id: Long): User? {
+    getFriend(id)?.let { return it }
+    getStranger(id)?.let { return it }
+    return null
 }
 
 //endregion

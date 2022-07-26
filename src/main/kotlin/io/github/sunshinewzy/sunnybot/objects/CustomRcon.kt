@@ -21,6 +21,7 @@ class CustomRcon(
                 }
                 return response.removeColor()
             } catch (_: Exception) {
+                disconnect()
                 connect(host, port, password)
                 val response = super.command(payload)
                 if (empty(response)) {

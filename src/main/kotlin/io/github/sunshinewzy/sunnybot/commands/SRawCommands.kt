@@ -52,6 +52,7 @@ fun regSRawCommands() {
     SCGaoKaoCountDown.register()
     SCReminder.register()
     SCRcon.register()
+    SCRconRun.register()
     
     //默认m*为任意群员 u*为任意用户
 //    SCLaTeX.reg("u*")
@@ -1277,9 +1278,19 @@ object SCRcon : RawCommand(
                         sPlayer.rconKeyMap[symbol]?.let { key ->
                             SunnyData.rcon[key]?.let { data ->
                                 
-                                if(data.owner == user.id || data.operators.contains(user.id)) {
+                                val executor = data.checkExecutor(user.id)
+                                if(executor == RconData.Executor.OWNER || executor == RconData.Executor.OPERATOR) {
                                     RconManager.open(data)?.let { rcon ->
                                         sendMsg(description, rcon.command(cmd))
+                                        
+                                        if(executor == RconData.Executor.OPERATOR) {
+                                            sunnyBot.getUser(data.owner)?.let { owner ->
+                                                sunnyScope.launch {
+                                                    owner.sendMsg(description, "服务器 $symbol 的管理员 ${user.id} 执行了指令:\n/$cmd")
+                                                }
+                                            }
+                                        }
+                                        
                                         return@anyContents
                                     }
 
@@ -1354,6 +1365,60 @@ object SCRcon : RawCommand(
                     select  -  选择服务器代号
                     permit  -  授予他人指令执行权限
                 """.trimIndent())
+            }
+        }
+    }
+}
+
+object SCRconRun : RawCommand(
+    PluginMain,
+    "快捷执行指令", "rr",
+    usage = "Minecraft服务器指令远程快捷执行", description = "Minecraft服务器指令远程执行",
+    parentPermission = PERM_EXE_USER
+) {
+    override suspend fun CommandSender.onCommand(args: MessageChain) {
+        val user = user ?: return
+        
+        processSCommand(args) {
+            anyContents { cmd ->
+                val sPlayer = user.getSPlayer()
+                val symbol = sPlayer.selectedRconSymbol
+                if(symbol != "") {
+                    sPlayer.rconKeyMap[symbol]?.let { key ->
+                        SunnyData.rcon[key]?.let { data ->
+
+                            val executor = data.checkExecutor(user.id)
+                            if(executor == RconData.Executor.OWNER || executor == RconData.Executor.OPERATOR) {
+                                RconManager.open(data)?.let { rcon ->
+                                    sendMsg(description, rcon.command(cmd))
+
+                                    if(executor == RconData.Executor.OPERATOR) {
+                                        sunnyBot.getUser(data.owner)?.let { owner ->
+                                            sunnyScope.launch {
+                                                owner.sendMsg(description, "服务器 $symbol 的管理员 ${user.id} 执行了指令:\n/$cmd")
+                                            }
+                                        }
+                                    }
+
+                                    return@anyContents
+                                }
+
+                                sendMsg(description, "RCON '$key'\n连接失败")
+                                return@anyContents
+                            } else sendMsg(description, "您无权访问此RCON")
+
+                        }
+
+                        sendMsg(description, "RCON '$key'\n不存在，请重新绑定")
+                        return@anyContents
+                    }
+                }
+
+                sendMsg(description, "未选择服务器代号\n请输入 /rcon select [服务器代号]\n进行选择")
+            }
+
+            empty {
+                sendMsg(description, "/rcon run [指令]\n向已选择的服务器发送并执行指令")
             }
         }
     }

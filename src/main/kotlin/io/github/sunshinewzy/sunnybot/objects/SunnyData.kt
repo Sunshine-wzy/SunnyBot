@@ -18,7 +18,19 @@ class RconData(
     val operators = hashSetOf<Long>()
     
     
+    fun checkExecutor(id: Long): Executor =
+        if(owner == id) Executor.OWNER
+        else if(operators.contains(id)) Executor.OPERATOR
+        else Executor.DEFAULT
+    
+    
     companion object {
         fun buildKey(owner: Long, ip: String): String = "$owner@$ip"
+    }
+    
+    enum class Executor {
+        OWNER,
+        OPERATOR,
+        DEFAULT
     }
 }

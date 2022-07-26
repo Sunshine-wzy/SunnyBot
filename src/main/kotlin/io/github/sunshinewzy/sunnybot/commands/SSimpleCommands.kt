@@ -62,20 +62,20 @@ object SCMenu: SimpleCommand(
 ) {
     @Handler
     suspend fun CommandSender.handle() {
-        var text = "===============\n"
+        val text = StringBuilder("===============\n")
         PluginMain.registeredCommands.forEach { 
             if(it.usage.contains("Debug")) return@forEach
             
-            text += "◆ ${it.usage.replaceFirst("\n", "")}\n"
+            text.append("◆ ${it.usage.replaceFirst("\n", "")}\n")
             
             it.secondaryNames.forEach { seName ->
-                text += "/$seName  "
+                text.append("/$seName  ")
             }
-            text += "\n\n"
+            text.append("\n\n")
         }
-        text += "===============\n"
+        text.append("===============\n")
         
-        subject?.sendMsg("菜单 | 功能列表", text)
+        subject?.sendMsg("菜单 | 功能列表", text.toString())
     }
 }
 
