@@ -1328,11 +1328,11 @@ object SCRcon : RawCommand(
             }
             
             "permit" {
-                any { list -> 
-                    val idStr = list.first
-                    if(idStr.isInteger()) {
-                        if(list.size >= 2) {
-                            val symbol = list[1]
+                any { list ->
+                    if(list.size >= 2) {
+                        val idStr = list[1]
+                        if(idStr.isInteger()) {
+                            val symbol = list[0]
                             val key = user.getSPlayer().rconKeyMap[symbol]
                             if(key != null) {
                                 val data = SunnyData.rcon[key]
@@ -1345,12 +1345,39 @@ object SCRcon : RawCommand(
                                     } else sendMsg(description, "您不是此RCON的所有者，不能给他人授权")
                                 } else sendMsg(description, "RCON '$key'\n不存在，请重新绑定")
                             } else sendMsg(description, "服务器代号 '$symbol' 不存在")
-                        } else sendMsg(description, "请在 [被许可人ID] 后输入 [服务器代号]")
-                    } else sendMsg(description, "[被许可人ID](QQ号) 只能为数字")
+                        } else sendMsg(description, "[被许可人ID](QQ号) 只能为数字")
+                    } else sendMsg(description, "请在 [服务器代号] 后输入 [被许可人ID]")
                 }
                 
                 empty { 
-                    sendMsg(description, "/rcon permit [被许可人ID] [服务器代号]\n授予他人指令执行权限")
+                    sendMsg(description, "/rcon permit [服务器代号] [被许可人ID]\n授予他人指令执行权限")
+                }
+            }
+            
+            "remove" {
+                any { list ->
+                    if(list.size >= 2) {
+                        val idStr = list[1]
+                        if(idStr.isInteger()) {
+                            val symbol = list[0]
+                            val key = user.getSPlayer().rconKeyMap[symbol]
+                            if(key != null) {
+                                val data = SunnyData.rcon[key]
+                                if(data != null) {
+                                    if(data.owner == user.id) {
+                                        val id = idStr.toLong()
+                                        data.operators -= id
+                                        SSavePlayer.getSPlayer(id).rconKeyMap -= symbol
+                                        sendMsg(description, "已撤销 $id 在服务器 $key 上的指令执行权限")
+                                    } else sendMsg(description, "您不是此RCON的所有者，不能撤销他人权限")
+                                } else sendMsg(description, "RCON '$key'\n不存在，请重新绑定")
+                            } else sendMsg(description, "服务器代号 '$symbol' 不存在")
+                        } else sendMsg(description, "[被许可人ID](QQ号) 只能为数字")
+                    } else sendMsg(description, "请在 [服务器代号] 后输入 [被许可人ID]")
+                }
+
+                empty {
+                    sendMsg(description, "/rcon remove [服务器代号] [被许可人ID]\n撤销他人指令执行权限")
                 }
             }
 
@@ -1364,6 +1391,7 @@ object SCRcon : RawCommand(
                     run  -  执行指令
                     select  -  选择服务器代号
                     permit  -  授予他人指令执行权限
+                    remove  -  撤销他人指令执行权限
                 """.trimIndent())
             }
         }
