@@ -1279,7 +1279,7 @@ object SCRcon : RawCommand(
                                 
                                 if(data.owner == user.id || data.operators.contains(user.id)) {
                                     RconManager.open(data)?.let { rcon ->
-                                        sendMsg(description, String(rcon.sendCommand(cmd).toByteArray(Charsets.US_ASCII), Charsets.ISO_8859_1))
+                                        sendMsg(description, rcon.command(cmd))
                                         return@anyContents
                                     }
 

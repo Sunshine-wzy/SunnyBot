@@ -220,9 +220,12 @@ fun String.isInteger(): Boolean {
 }
 
 fun String.isLetterDigitOrChinese(): Boolean {
-    val regex = "^[a-z0-9A-Z\u4e00-\u9fa5]+$".toRegex()
+    val regex = "^[a-z\\dA-Z\u4e00-\u9fa5]+$".toRegex()
     return matches(regex)
 }
+
+fun String.removeColor(): String =
+    replace("¡ì[\\da-z]".toRegex(), "")
 
 //endregion
 
