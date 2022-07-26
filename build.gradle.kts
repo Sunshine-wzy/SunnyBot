@@ -14,7 +14,7 @@ dependencies {
     implementation("org.scilab.forge:jlatexmath:1.0.7")
     implementation("io.netty:netty-all:4.1.67.Final")
     implementation("nl.vv32.rcon:rcon:1.2.0")
-    implementation("com.github.Pequla:RconCore:v1.2")
+    implementation("com.github.Sunshine-wzy:rkon-core:1.2.2")
     
     implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar"))))
     implementation(kotlin("stdlib-jdk8"))
@@ -48,7 +48,7 @@ tasks {
 
     compileKotlin {
         kotlinOptions {
-            freeCompilerArgs += "-Xopt-in=kotlin.RequiresOptIn"
+            freeCompilerArgs = freeCompilerArgs + "-Xopt-in=kotlin.RequiresOptIn"
         }
     }
 }
