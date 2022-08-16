@@ -88,7 +88,7 @@ private fun regMsg() {
             } else {
                 subject.sendMsg("Game", """
                     您不是当前游戏的玩家
-                    在 ${players.time()}毫秒 后才能结束当前游戏
+                    在 ${players.timeLeft()}毫秒 后才能结束当前游戏
                 """.trimIndent())
             }
             
@@ -117,7 +117,7 @@ private fun regMsg() {
             } else {
                 subject.sendMsg("Game", """
                     您不是当前游戏的玩家
-                    在 ${players.time()}毫秒 后才能结束当前游戏
+                    在 ${players.timeLeft()}毫秒 后才能结束当前游戏
                 """.trimIndent())
             }
             
