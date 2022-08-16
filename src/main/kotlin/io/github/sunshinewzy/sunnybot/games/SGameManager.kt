@@ -44,13 +44,13 @@ object SGameManager {
         sGroupGameHandlers.add(sGroupGame)
     }
     
-    fun callGame(member: Member, msg: String) {
+    fun callGame(member: Member, msg: String, forceStart: Boolean = false) {
         val sGroupGameEvent = SGroupGameEvent(member, msg)
         val state = sGroupGameEvent.sDataGroup.runningState
         
         sunnyScope.launch {
             sGroupGameHandlers.forEach {
-                if((state == RunningState.FREE || !state.isMain) && msg.contains(it.name)) {
+                if(forceStart || (state == RunningState.FREE || !state.isMain) && msg.contains(it.name)) {
                     it.startGame(sGroupGameEvent)
                     return@launch
                 }

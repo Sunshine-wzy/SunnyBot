@@ -103,7 +103,7 @@ private fun regMsg() {
             val lastState = data.lastRunningState
             if(state == RunningState.FREE) {
                 if(lastState != RunningState.FREE) {
-                    SGameManager.callGame(member, lastState.gameName)
+                    SGameManager.callGame(member, lastState.gameName, true)
                 } else {
                     group.sendMsg("Game", "没有游戏记录")
                 }
@@ -113,7 +113,7 @@ private fun regMsg() {
             
             val players = data.players
             if(players.contains(sender.id) || players.checkTimeout()) {
-                SGameManager.callGame(member, state.gameName)
+                SGameManager.callGame(member, state.gameName, true)
             } else {
                 subject.sendMsg("Game", """
                     您不是当前游戏的玩家
