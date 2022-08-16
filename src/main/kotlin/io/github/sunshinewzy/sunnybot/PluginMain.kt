@@ -23,7 +23,7 @@ lateinit var sunnyBot: Bot
 object PluginMain : KotlinPlugin(
     JvmPluginDescription(
         id = "io.github.sunshinewzy.sunnybot",
-        version = "1.2.2",
+        version = "1.2.3",
         name = "SunnyBot"
     )
 ) {

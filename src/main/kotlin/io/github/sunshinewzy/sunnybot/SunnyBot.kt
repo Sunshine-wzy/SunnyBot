@@ -72,35 +72,55 @@ private fun regMsg() {
     sunnyChannel.subscribeMessages {
         
         (contains("老子不会")) end@{
-            val id = getGroupID(sender)
-            if (id == 0L)
-                return@end
+            val group = subject as? Group ?: return@end
+            val data = group.getSData()
 
-            val state = sDataGroupMap[id]?.runningState
-            if(state == null || state == RunningState.FREE){
+            val state = data.runningState
+            if(state == RunningState.FREE) {
                 subject.sendMsg("Game", "当前没有游戏正在进行。")
                 return@end
             }
-
-            subject.sendMsg("Game", "${state.gameName} 游戏结束")
-            sDataGroupMap[id]?.runningState = RunningState.FREE
+            
+            val players = data.players
+            if(players.contains(sender.id) || players.checkTimeout()) {
+                group.setRunningState(RunningState.FREE)
+                subject.sendMsg("Game", "${state.gameName} 游戏结束")
+            } else {
+                subject.sendMsg("Game", """
+                    您不是当前游戏的玩家
+                    在 ${players.time()}毫秒 后才能结束当前游戏
+                """.trimIndent())
+            }
+            
         }
 
         (contains("再来亿把")) startAgain@{
-            if(sender !is Member)
-                return@startAgain
-            val member = sender as Member
-            val group = getGroup(member) ?: return@startAgain
-            val sGroupGameEvent = member.toSGroupGameEvent()
-
-            val lastRunning = sDataGroupMap[getGroupID(sender)]?.lastRunning ?: return@startAgain
-            SGameManager.sGroupGameHandlers.forEach { 
-                if(it.gameStates.contains(lastRunning)) {
-                    it.startGame(sGroupGameEvent)
-                    return@startAgain
+            val member = sender as? Member ?: return@startAgain
+            val group = member.group
+            val data = group.getSData()
+            
+            val state = data.runningState
+            val lastState = data.lastRunningState
+            if(state == RunningState.FREE) {
+                if(lastState != RunningState.FREE) {
+                    SGameManager.callGame(member, lastState.gameName)
+                } else {
+                    group.sendMsg("Game", "没有游戏记录")
                 }
+                
+                return@startAgain
             }
-            group.sendMsg("Game", "当前没有游戏正在进行。")
+            
+            val players = data.players
+            if(players.contains(sender.id) || players.checkTimeout()) {
+                SGameManager.callGame(member, state.gameName)
+            } else {
+                subject.sendMsg("Game", """
+                    您不是当前游戏的玩家
+                    在 ${players.time()}毫秒 后才能结束当前游戏
+                """.trimIndent())
+            }
+            
         }
         
         (contains("sunny", ignoreCase = true) and (contains("闭嘴") or contains("睡觉") or contains("关"))) sleep@{
@@ -123,7 +143,10 @@ private fun regMsg() {
         
         atBot {
             val member = sender as? Member ?: return@atBot
-            val text = message.findIsInstance<PlainText>() ?: return@atBot
+            val text = message.findIsInstance<PlainText>() ?: kotlin.run { 
+                member.group.sendIntroduction()
+                return@atBot
+            }
             val msg = text.content.replace("\n", "").replace(" ", "")
             if(msg.isEmpty()) {
                 member.group.sendIntroduction()

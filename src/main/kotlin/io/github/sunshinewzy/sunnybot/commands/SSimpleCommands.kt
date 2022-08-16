@@ -5,9 +5,8 @@ import io.github.sunshinewzy.sunnybot.PluginMain.PERM_EXE_MEMBER
 import io.github.sunshinewzy.sunnybot.PluginMain.PERM_EXE_USER
 import io.github.sunshinewzy.sunnybot.games.SGameManager
 import io.github.sunshinewzy.sunnybot.objects.SRequest
-import io.github.sunshinewzy.sunnybot.objects.SSavePlayer.sPlayerMap
 import io.github.sunshinewzy.sunnybot.objects.getSGroup
-import io.github.sunshinewzy.sunnybot.objects.regPlayer
+import io.github.sunshinewzy.sunnybot.objects.getSPlayer
 import io.github.sunshinewzy.sunnybot.utils.SServerPing.pingServer
 import net.mamoe.mirai.console.command.CommandManager.INSTANCE.register
 import net.mamoe.mirai.console.command.CommandManager.INSTANCE.registeredCommands
@@ -33,10 +32,9 @@ fun regSSimpleCommands() {
     SCGameMenu.register()
     SCInfo.register()
     SCAntiRecall.register()
-    SCJavaDoc.register()
     SCRepeater.register()
     SCBingPicture.register()
-    SCOpen.register()
+//    SCOpen.register()
     
     //默认m*为任意群员 u*为任意用户
 //    SCMenu.reg("u*")
@@ -116,15 +114,8 @@ object SCInfo: SimpleCommand(
 ) {
     @Handler
     suspend fun CommandSender.handle() {
-        if(user == null)
-            return
-        val player = user!!
-        val id = player.id
-        
-        if(!sPlayerMap.containsKey(id)){
-            regPlayer(player)
-        }
-        val sPlayer = sPlayerMap[id]!!
+        val player = user ?: return
+        val sPlayer = player.getSPlayer()
         
         if(user is Member){
             val member = user as Member
@@ -197,44 +188,6 @@ object SCDebugServerInfo: SimpleCommand(
         }
 
         sendMessage(contact.pingServer(serverIp))
-    }
-}
-
-object SCJavaDoc: SimpleCommand(
-    PluginMain,
-    "JavaDoc", "jd",
-    description = "查看常用JavaDoc",
-    parentPermission = PERM_EXE_USER
-) {
-    private val javaDocs = """
-        OI Wiki: https://oi-wiki.org/
-        Java8: https://docs.oracle.com/javase/8/docs/api/overview-summary.html 
-        
-        Bukkit教程:
-        基础 https://alpha.tdiant.net/
-        进阶 https://bdn.tdiant.net/
-        
-        BukkitAPI - Javadoc: 
-        1.7.10版(已过时):https://jd.bukkit.org/ 
-        Chinese_Bukkit: 
-        1.12.2版:http://docs.zoyn.top/bukkitapi/1.12.2/ 
-        1.13+版:https://bukkit.windit.net/javadoc/ 
-        Spigot: https://hub.spigotmc.org/javadocs/spigot/ 
-        Paper: https://papermc.io/javadocs/paper/
-        
-        Sponge: https://docs.spongepowered.org/stable/zh-CN/
-        BungeeCord:
-        API: https://ci.md-5.net/job/BungeeCord/ws/api/target/apidocs/overview-summary.html
-        API-Chat: https://ci.md-5.net/job/BungeeCord/ws/chat/target/apidocs/overview-summary.html
-        MCP Query: https://mcp.exz.me/
-        Vault: https://pluginwiki.github.io/VaultAPI/
-        ProtocolLib: https://ci.dmulloy2.net/job/ProtocolLib/javadoc/
-    """.trimIndent()
-    
-    @Handler
-    suspend fun CommandSender.handle() {
-        val contact = subject ?: return
-        contact.sendMsg("JavaDoc", javaDocs)
     }
 }
 

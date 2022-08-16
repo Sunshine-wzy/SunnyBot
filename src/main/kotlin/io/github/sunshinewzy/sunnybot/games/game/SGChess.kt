@@ -1,8 +1,9 @@
-package io.github.sunshinewzy.sunnybot.games
+package io.github.sunshinewzy.sunnybot.games.game
 
 import io.github.sunshinewzy.sunnybot.enums.RunningState
 import io.github.sunshinewzy.sunnybot.events.game.SGroupGameEvent
-import io.github.sunshinewzy.sunnybot.games.SGChess.ChessType.*
+import io.github.sunshinewzy.sunnybot.games.SGroupGame
+import io.github.sunshinewzy.sunnybot.games.game.SGChess.ChessType.*
 import io.github.sunshinewzy.sunnybot.objects.setRunningState
 import io.github.sunshinewzy.sunnybot.sendMsg
 import io.github.sunshinewzy.sunnybot.toInputStream
@@ -150,11 +151,17 @@ object SGChess : SGroupGame("围棋", RunningState.CHESS) {
                 dataChess.players[2] = member
                 if(dataChess.players[1] == null || dataChess.players[2] == null){
                     group.sendMsg(name, "玩家初始化失败，游戏结束！")
-                    sDataGroup.runningState = RunningState.FREE
+                    group.setRunningState(RunningState.FREE)
                     return
                 }
 
                 sDataGroup.runningState = RunningState.CHESS
+                with(sDataGroup.players) {
+                    clear()
+                    dataChess.players[1]?.id?.let { add(it) }
+                    dataChess.players[2]?.id?.let { add(it) }
+                }
+                
                 group.sendMsg(
                     name,
                     At(dataChess.players[1]!!) + PlainText(" ") +

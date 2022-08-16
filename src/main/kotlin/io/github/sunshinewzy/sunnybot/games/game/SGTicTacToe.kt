@@ -1,7 +1,8 @@
-package io.github.sunshinewzy.sunnybot.games
+package io.github.sunshinewzy.sunnybot.games.game
 
 import io.github.sunshinewzy.sunnybot.enums.RunningState
 import io.github.sunshinewzy.sunnybot.events.game.SGroupGameEvent
+import io.github.sunshinewzy.sunnybot.games.SGroupGame
 import io.github.sunshinewzy.sunnybot.objects.DataTicTacToe
 import io.github.sunshinewzy.sunnybot.objects.addSTD
 import io.github.sunshinewzy.sunnybot.objects.sDataGroupMap
@@ -158,11 +159,17 @@ object SGTicTacToe : SGroupGame("井字棋", RunningState.TICTACTOE, RunningState.T
             dataTicTacToe.players[2] = member
             if(dataTicTacToe.players[1] == null || dataTicTacToe.players[2] == null){
                 group.sendMsg(name, "玩家初始化失败，游戏结束！")
-                sDataGroup.runningState = RunningState.FREE
+                group.setRunningState(RunningState.FREE)
                 return
             }
 
             sDataGroup.runningState = RunningState.TICTACTOE
+            with(sDataGroup.players) {
+                clear()
+                dataTicTacToe.players[1]?.id?.let { add(it) }
+                dataTicTacToe.players[2]?.id?.let { add(it) }
+            }
+            
             group.sendMsg(
                 name,
                 At(dataTicTacToe.players[1]!!) + PlainText(" ") +
@@ -251,7 +258,7 @@ object SGTicTacToe : SGroupGame("井字棋", RunningState.TICTACTOE, RunningState.T
     
     private suspend fun win(group: Group, p: Int, dataTicTacToe: DataTicTacToe) {
         val winner = dataTicTacToe.players[p] ?: kotlin.run {
-            sDataGroupMap[group.id]?.runningState = RunningState.FREE
+            group.setRunningState(RunningState.FREE)
             group.sendMsg(name, "玩家对象不存在，胜利判定失败！\n井字棋 游戏结束")
             return
         }

@@ -1,9 +1,10 @@
-package io.github.sunshinewzy.sunnybot.games
+package io.github.sunshinewzy.sunnybot.games.game
 
 import io.github.sunshinewzy.sunnybot.enums.RunningState
 import io.github.sunshinewzy.sunnybot.events.game.SGroupGameEvent
-import io.github.sunshinewzy.sunnybot.games.SGFiveInARow.ChessBoard.Direction.*
-import io.github.sunshinewzy.sunnybot.games.SGFiveInARow.ChessType.*
+import io.github.sunshinewzy.sunnybot.games.SGroupGame
+import io.github.sunshinewzy.sunnybot.games.game.SGFiveInARow.ChessBoard.Direction.*
+import io.github.sunshinewzy.sunnybot.games.game.SGFiveInARow.ChessType.*
 import io.github.sunshinewzy.sunnybot.objects.SCoordinate
 import io.github.sunshinewzy.sunnybot.objects.addSTD
 import io.github.sunshinewzy.sunnybot.objects.setRunningState
@@ -166,11 +167,17 @@ object SGFiveInARow : SGroupGame("五子棋", RunningState.FIVE_IN_A_ROW) {
                 dataChess.players[2] = member
                 if(dataChess.players[1] == null || dataChess.players[2] == null){
                     group.sendMsg(name, "玩家初始化失败，游戏结束！")
-                    sDataGroup.runningState = RunningState.FREE
+                    group.setRunningState(RunningState.FREE)
                     return
                 }
 
                 sDataGroup.runningState = RunningState.FIVE_IN_A_ROW
+                with(sDataGroup.players) {
+                    clear()
+                    dataChess.players[1]?.id?.let { add(it) }
+                    dataChess.players[2]?.id?.let { add(it) }
+                }
+                
                 group.sendMsg(
                     name,
                     At(dataChess.players[1]!!) + PlainText(" ") +

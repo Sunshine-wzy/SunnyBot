@@ -1,13 +1,11 @@
-package io.github.sunshinewzy.sunnybot.games
+package io.github.sunshinewzy.sunnybot.games.game
 
 import io.github.sunshinewzy.sunnybot.enums.RunningState
 import io.github.sunshinewzy.sunnybot.events.game.SGroupGameEvent
-import io.github.sunshinewzy.sunnybot.objects.SDataGroup
-import io.github.sunshinewzy.sunnybot.objects.SGroup
-import io.github.sunshinewzy.sunnybot.objects.SSaveGroup
-import io.github.sunshinewzy.sunnybot.objects.addSTD
+import io.github.sunshinewzy.sunnybot.games.SGroupGame
+import io.github.sunshinewzy.sunnybot.objects.*
+import io.github.sunshinewzy.sunnybot.sendMsg
 import java.util.*
-import java.util.stream.Collectors
 
 /**
  * 24点
@@ -41,6 +39,8 @@ object SGHour24 : SGroupGame("24点", RunningState.HOUR24) {
         val operator = Stack<Char>()
         var i = 0
         var cnt = 0
+        val existNumber = HashSet<Int>()
+        
         while(i < str.length) {
             //左括号处理
             while(str[i] == '(') {
@@ -51,7 +51,7 @@ object SGHour24 : SGroupGame("24点", RunningState.HOUR24) {
             //操作数入栈
             var x = 0
             while(str[i] in '0'..'9')
-                x = x * 10 + (str[i++].toInt() - '0'.toInt())
+                x = x * 10 + (str[i++].code - '0'.code)
             if(!isHour24(x, event.sDataGroup)) {
                 //表达式合法性二次检查
                 event.group.sendMessage(
@@ -60,34 +60,28 @@ object SGHour24 : SGroupGame("24点", RunningState.HOUR24) {
                 )
                 return
             }
-            if(number.contains(x)) {
+            if(existNumber.contains(x)) {
                 event.group.sendMessage("请勿重复使用数字")
                 return
             }
             cnt++
+            existNumber += x
             number.push(x)
+            
             do {
                 //右括号处理
                 if(str[i] == ')') {
-                    while(operator.peek() != '(') popHour24(
-                        number,
-                        operator
-                    )
+                    while(operator.peek() != '(') {
+                        popHour24(number, operator)
+                    }
                     operator.pop()
                 } else {
                     //根据标志函数值作运算符入栈或出栈运算处理
-                    while(canHour24(
-                            str,
-                            i,
-                            operator
-                        )
-                    ) if(!popHour24(
-                            number,
-                            operator
-                        )
-                    ) {
-                        event.group.sendMessage("0不能作除数！请检查您的表达式是否正确")
-                        return
+                    while(canHour24(str, i, operator)) {
+                        if(!popHour24(number, operator)) {
+                            event.group.sendMessage("0不能作除数！请检查您的表达式是否正确")
+                            return
+                        }
                     }
                     operator.push(str[i])
                 }
@@ -108,7 +102,7 @@ object SGHour24 : SGroupGame("24点", RunningState.HOUR24) {
                 "恭喜玩家 ${event.member.nameCard} 获得胜利！\n"
                     + "获得奖励: $rewardSTD STD"
             )
-            event.sDataGroup.runningState = RunningState.FREE
+            event.group.setRunningState(RunningState.FREE)
         } else {
             event.group.sendMessage("${event.member.nameCard} 答案错误")
         }
@@ -124,7 +118,12 @@ object SGHour24 : SGroupGame("24点", RunningState.HOUR24) {
         val sDataGroup = event.sDataGroup
 
         sDataGroup.runningState = RunningState.HOUR24
-        sDataGroup.lastRunning = RunningState.HOUR24
+        sDataGroup.lastRunningState = RunningState.HOUR24
+        with(sDataGroup.players) {
+            clear()
+            add(event.member.id)
+        }
+        
         for(i in 0..4) {
             sDataGroup.hour24[i] = -1
         }
@@ -138,25 +137,20 @@ object SGHour24 : SGroupGame("24点", RunningState.HOUR24) {
             sDataGroup.hour24[i] = temp
         }
 
-        group.sendMessage(
-            "=====24点-游戏开始=====\n"
-                + "输入\"再来亿把\"以重新开始\n"
-                + "输入\"老子不会\"以结束游戏\n"
-                + "请用下面给出的4个数通过+ - * /四种运算\n"
-                + "以及()求出24即为胜利\n"
-                + "输入#后接你的答案\n\n"
-                + sDataGroup.hour24[1] + "  " + sDataGroup.hour24[2] + "  " + sDataGroup.hour24[3] + "  " + sDataGroup.hour24[4]
-                + "\n==============="
+        group.sendMsg(name, """
+               输入"再来亿把"以重新开始
+               输入"老子不会"以结束游戏
+               请用下面给出的4个数通过+ - * /四种运算
+               以及()求出24即为胜利
+               输入#后接你的答案
+               
+               ${sDataGroup.hour24[1]}  ${sDataGroup.hour24[2]}  ${sDataGroup.hour24[3]}  ${sDataGroup.hour24[4]}
+            """.trimIndent()
         )
     }
 
     private fun isHour24(num: Int, sDataGroup: SDataGroup): Boolean {
-        val listHour24: List<Int> =
-            Arrays.stream(sDataGroup.hour24).boxed()
-                .collect(
-                    Collectors.toList()
-                )
-        return listHour24.contains(num)
+        return sDataGroup.hour24.contains(num)
     }
 
     //判断运算符的优先级别，建立标志函数
@@ -174,12 +168,12 @@ object SGHour24 : SGroupGame("24点", RunningState.HOUR24) {
     private fun popHour24(number: Stack<Int>, operator: Stack<Char>): Boolean {
         val num = number.pop()
         when (operator.pop()) {
-            '+' -> number[number.size - 1] = number.peek() + num
-            '-' -> number[number.size - 1] = number.peek() - num
-            '*' -> number[number.size - 1] = number.peek() * num
+            '+' -> number[number.lastIndex] = number.peek() + num
+            '-' -> number[number.lastIndex] = number.peek() - num
+            '*' -> number[number.lastIndex] = number.peek() * num
             '/' -> {
                 if(num == 0) return false
-                number[number.size - 1] = number.peek() / num
+                number[number.lastIndex] = number.peek() / num
             }
         }
         return true

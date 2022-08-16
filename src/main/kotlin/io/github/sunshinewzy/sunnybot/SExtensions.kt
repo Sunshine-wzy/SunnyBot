@@ -1,11 +1,6 @@
 package io.github.sunshinewzy.sunnybot
 
 import io.github.sunshinewzy.sunnybot.enums.SunSTSymbol
-import io.github.sunshinewzy.sunnybot.events.game.SGroupGameEvent
-import io.github.sunshinewzy.sunnybot.objects.SDataGroup
-import io.github.sunshinewzy.sunnybot.objects.SGroup
-import io.github.sunshinewzy.sunnybot.objects.SSaveGroup
-import io.github.sunshinewzy.sunnybot.objects.sDataGroupMap
 import kotlinx.coroutines.launch
 import net.mamoe.mirai.Bot
 import net.mamoe.mirai.console.command.CommandSender
@@ -15,7 +10,6 @@ import net.mamoe.mirai.contact.User
 import net.mamoe.mirai.message.data.Message
 import net.mamoe.mirai.message.data.MessageChain
 import net.mamoe.mirai.message.data.PlainText
-import net.mamoe.mirai.message.data.findIsInstance
 import java.awt.image.BufferedImage
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
@@ -77,29 +71,6 @@ fun CommandSender.sendMsg(text: Message) {
 
 fun CommandSender.sendMsg(text: String) {
     sendMsg(PlainText(text))
-}
-
-//endregion
-
-
-//region 构造SGroupGameEvent事件
-
-fun Member.toSGroupGameEvent(message: MessageChain): SGroupGameEvent {
-    val group = this.group
-    val groupId = group.id
-    if(!SSaveGroup.sGroupMap.containsKey(groupId))
-        SSaveGroup.sGroupMap[groupId] = SGroup(groupId)
-    val sGroup = SSaveGroup.sGroupMap[groupId]!!
-    if(!sDataGroupMap.containsKey(groupId))
-        sDataGroupMap[groupId] = SDataGroup()
-    val sDataGroup = sDataGroupMap[groupId]!!
-    val msg = message.findIsInstance<PlainText>()?.contentToString() ?: ""
-    
-    return SGroupGameEvent(this, group, groupId, sGroup, sDataGroup, msg)
-}
-
-fun Member.toSGroupGameEvent(): SGroupGameEvent {
-    return toSGroupGameEvent(PlainText("") + PlainText(""))
 }
 
 //endregion

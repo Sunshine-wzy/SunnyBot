@@ -1,6 +1,5 @@
 package io.github.sunshinewzy.sunnybot.objects
 
-import io.github.sunshinewzy.sunnybot.objects.SSavePlayer.sPlayerMap
 import kotlinx.serialization.Serializable
 import net.mamoe.mirai.console.data.AutoSavePluginData
 import net.mamoe.mirai.console.data.value
@@ -21,23 +20,11 @@ data class SPlayer(
 }
 
 object SSavePlayer: AutoSavePluginData("SPlayerData") {
-    var sPlayerMap: MutableMap<Long, SPlayer> by value(mutableMapOf())
+    val sPlayerMap: MutableMap<Long, SPlayer> by value(mutableMapOf())
     
     
     fun getSPlayer(id: Long): SPlayer {
-        if(!sPlayerMap.containsKey(id))
-            sPlayerMap[id] = SPlayer(id)
-        return sPlayerMap[id]!!
-    }
-    
-}
-
-
-fun regPlayer(player: User) {
-    val id = player.id
-    
-    if(!sPlayerMap.containsKey(id)){
-        sPlayerMap[id] = SPlayer(id, 0)
+        return sPlayerMap[id] ?: SPlayer(id).also { sPlayerMap[id] = it }
     }
 }
 
@@ -51,7 +38,5 @@ fun User.addSTD(num: Int) {
 }
 
 fun User.getSPlayer(): SPlayer {
-    if(!sPlayerMap.containsKey(id))
-        sPlayerMap[id] = SPlayer(id)
-    return sPlayerMap[id]!!
+    return SSavePlayer.getSPlayer(id)
 }

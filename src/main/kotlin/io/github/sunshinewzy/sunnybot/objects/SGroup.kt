@@ -2,14 +2,13 @@ package io.github.sunshinewzy.sunnybot.objects
 
 import io.github.sunshinewzy.sunnybot.enums.RunningState
 import io.github.sunshinewzy.sunnybot.enums.ServerType
-import io.github.sunshinewzy.sunnybot.games.SGChess
-import io.github.sunshinewzy.sunnybot.games.SGFiveInARow
+import io.github.sunshinewzy.sunnybot.games.game.SGChess
+import io.github.sunshinewzy.sunnybot.games.game.SGFiveInARow
 import kotlinx.serialization.Serializable
 import net.mamoe.mirai.console.data.AutoSavePluginData
 import net.mamoe.mirai.console.data.value
 import net.mamoe.mirai.contact.Group
 import net.mamoe.mirai.contact.Member
-import java.lang.StringBuilder
 import kotlin.random.Random
 
 @Serializable
@@ -45,7 +44,8 @@ val sDataGroupMap = HashMap<Long, SDataGroup>()
 
 data class SDataGroup(
     var runningState: RunningState = RunningState.FREE,
-    var lastRunning: RunningState = RunningState.FREE,
+    var lastRunningState: RunningState = RunningState.FREE,
+    val players: IdTimeContainer = IdTimeContainer(60_000L),
     val hour24: IntArray = IntArray(5) { -1 },
     val ticTacToe: DataTicTacToe = DataTicTacToe(),
     val chess: DataChess = DataChess(),
@@ -133,6 +133,10 @@ data class DataReminder(
 fun Group.setRunningState(state: RunningState) {
     val sDataGroup = SDataGroup.getSDataGroup(id)
     sDataGroup.runningState = state
+    
+    if(state == RunningState.FREE) {
+        sDataGroup.players.clear()
+    }
 }
 
 fun Group.getSGroup(): SGroup =

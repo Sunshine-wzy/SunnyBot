@@ -42,7 +42,7 @@ fun regSRawCommands() {
     SCDailySignIn.register()
     SCServerInfo.register()
     SCIpBind.register()
-    SCXmlMessage.register()
+//    SCXmlMessage.register()
     SCRandomImage.register()
     SCWords.register()
     SCSound.register()
@@ -53,6 +53,7 @@ fun regSRawCommands() {
     SCReminder.register()
     SCRcon.register()
     SCRconRun.register()
+    SCJavaDoc.register()
     
     //默认m*为任意群员 u*为任意用户
 //    SCLaTeX.reg("u*")
@@ -68,7 +69,7 @@ fun regSRawCommands() {
 //    SCMoeImage.reg("u*")
 
     //Debug
-    SCDebugLaTeX.reg("console")
+//    SCDebugLaTeX.reg("console")
 }
 
 
@@ -1174,6 +1175,16 @@ object SCRcon : RawCommand(
     usage = "Minecraft服务器指令远程执行", description = "Minecraft服务器指令远程执行",
     parentPermission = PERM_EXE_USER
 ) {
+    private val RCON_BIND = """
+                            请在bind后输入: [服务器代号] [服务器IP]:[RCON端口] [RCON密码]
+                            例: /rcon bind a aminecraft.cc:25575 123456789
+                            
+                            Tips:
+                            服务器代号只能含有英文、数字、汉字，不能包含任何符号！
+                            RCON是Minecraft 1.9以上服务端原生支持的远程指令执行协议
+                            关于服务器RCON配置请参考wiki: https://wiki.vg/RCON
+                            按照wiki中的Server Config配置server.properties后重启服务端即可
+                        """.trimIndent()
     
     
     override suspend fun CommandSender.onCommand(args: MessageChain) {
@@ -1224,17 +1235,9 @@ object SCRcon : RawCommand(
                     }
 
                     empty {
-                        sendMsg(
-                            description, """
-                            请在bind后输入: [服务器代号] [服务器IP]:[RCON端口] [RCON密码]
-                            例: /rcon bind a aminecraft.cc:25575 123456789
-                            
-                            Tips:
-                            服务器代号只能含有英文、数字、汉字，不能包含任何符号！
-                            关于服务器RCON配置请参考wiki: https://wiki.vg/RCON
-                        """.trimIndent())
+                        sendMsg(description, RCON_BIND)
                     }
-                } else sendMsg(description, "bind指令只允许在私聊中使用!")
+                } else sendMsg(description, "bind指令只允许在私聊中使用!\n\n$RCON_BIND")
             }
             
             "unbind" {
@@ -1267,6 +1270,40 @@ object SCRcon : RawCommand(
                     }
 
                     sendMsg(description, symbolIps.toString())
+                }
+            }
+            
+            "info" {
+                anyContents(false) {
+                    val key = user.getSPlayer().rconKeyMap[it]
+                    if(key != null) {
+                        SunnyData.rcon[key]?.let { data ->
+                            val text = StringBuilder("""
+                                > 服务器 '$it' 信息
+                                
+                                IP: ${data.ip}
+                                所有者: ${data.owner}
+                                管理员:
+                            """.trimIndent())
+                            
+                            if(data.operators.isEmpty()) {
+                                text.append(" 无")
+                            } else {
+                                data.operators.forEach { operator ->
+                                    text.append("\n$operator")
+                                }
+                            }
+                            
+                            sendMsg(description, text.toString())
+                            return@anyContents
+                        }
+                        
+                        sendMsg(description, "服务器代号 '$it' 信息查询失败")
+                    } else sendMsg(description, "未绑定服务器代号 '$it'")
+                }
+
+                empty {
+                    sendMsg(description, "/rcon info [服务器代号]\n查看已绑定的服务器信息")
                 }
             }
             
@@ -1384,10 +1421,11 @@ object SCRcon : RawCommand(
             empty {
                 sendMsg(
                     description, """
-                    命令参数:
+                    > 命令参数
                     bind  -  绑定服务器
                     unbind  -  解绑服务器
                     list  -  显示所有已绑定的服务器
+                    info  -  查看已绑定的服务器信息
                     run  -  执行指令
                     select  -  选择服务器代号
                     permit  -  授予他人指令执行权限
@@ -1447,6 +1485,104 @@ object SCRconRun : RawCommand(
 
             empty {
                 sendMsg(description, "/rcon run [指令]\n向已选择的服务器发送并执行指令")
+            }
+        }
+    }
+}
+
+object SCJavaDoc: RawCommand(
+    PluginMain,
+    "JavaDoc", "jd",
+    description = "JavaDoc", usage = "JavaDoc",
+    parentPermission = PERM_EXE_USER
+) {
+    private val javaDocs = """
+        > BukkitAPI
+        最新版: https://bukkit.windit.net/javadoc/
+        1.12.2: https://docs.zoyn.top/bukkitapi/1.12.2/
+        1.7.10: https://jd.bukkit.org/
+        
+        > Spigot
+        https://hub.spigotmc.org/javadocs/spigot/ 
+        > Paper
+        https://papermc.io/javadocs/paper/
+        > Sponge
+        https://docs.spongepowered.org/stable/zh-CN/
+        > BungeeCord
+        API: https://ci.md-5.net/job/BungeeCord/ws/api/target/apidocs/overview-summary.html
+        API-Chat: https://ci.md-5.net/job/BungeeCord/ws/chat/target/apidocs/overview-summary.html
+        > MCP Query
+        https://mcp.exz.me/
+        > Vault
+        https://pluginwiki.github.io/VaultAPI/
+        > ProtocolLib
+        https://ci.dmulloy2.net/job/ProtocolLib/javadoc/
+        
+        > Java8
+        https://docs.oracle.com/javase/8/docs/api/overview-summary.html
+        > Kotlin
+        英文: https://kotlinlang.org/docs/home.html
+        中文: https://www.kotlincn.net/docs/reference/
+    """.trimIndent()
+
+    private val simpleJavaDocs = """
+        > BukkitAPI
+        最新版: https://bukkit.windit.net
+        1.12.2: https://docs.zoyn.top/
+        1.7.10: https://jd.bukkit.org/
+        
+        (发送 /jd help 获得指令帮助)
+    """.trimIndent()
+    
+    private val guides = """
+        > OI Wiki
+        https://oi-wiki.org/
+        
+        > Bukkit教程
+        综合: https://plgdev.xuogroup.top/
+        基础: https://alpha.tdiant.net/BukkitDevelopmentNoteAlpha/home.html
+        进阶: https://bdn.tdiant.net/
+        
+        > Minecraft Developer Guide
+        https://github.com/Mouse0w0/MinecraftDeveloperGuide/
+        
+        > TabooLib
+        https://docs.tabooproject.org/
+        
+        > Minestom
+        官方wiki: https://wiki.minestom.net/
+        中文wiki: https://www.yuque.com/u25177200/zhvci9
+    """.trimIndent()
+
+
+    override suspend fun CommandSender.onCommand(args: MessageChain) {
+        processSCommand(args) {
+            
+            "help" {
+                empty {
+                    sendMsg(description, """
+                    > 命令参数
+                    all   -  所有JavaDoc
+                    guide -  教程
+                """.trimIndent())
+                }
+            }
+            
+            "all" {
+                empty {
+                    sendMsg(description, javaDocs)
+                }
+            }
+            
+            "guide" {
+                empty { 
+                    sendMsg(description, guides)
+                }
+            }
+            
+            
+            empty { 
+                sendMsg(description, simpleJavaDocs)
             }
         }
     }
