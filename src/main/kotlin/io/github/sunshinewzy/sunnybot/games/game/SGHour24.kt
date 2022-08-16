@@ -5,6 +5,8 @@ import io.github.sunshinewzy.sunnybot.events.game.SGroupGameEvent
 import io.github.sunshinewzy.sunnybot.games.SGroupGame
 import io.github.sunshinewzy.sunnybot.objects.*
 import io.github.sunshinewzy.sunnybot.sendMsg
+import net.mamoe.mirai.contact.nameCardOrNick
+import net.mamoe.mirai.message.data.At
 import java.util.*
 
 /**
@@ -94,17 +96,17 @@ object SGHour24 : SGroupGame("24点", RunningState.HOUR24) {
             return
         }
 
-        event.group.sendMessage(event.member.nameCard + "的表达式计算结果为: " + number[0])
+        event.group.sendMessage(At(event.member) + " 的表达式计算结果为: ${number[0]}")
         if(number[0] == 24) {
             val rewardSTD = kotlin.random.Random.nextInt(5) + 6
             event.member.addSTD(rewardSTD)
             event.group.sendMessage(
-                "恭喜玩家 ${event.member.nameCard} 获得胜利！\n"
+                "恭喜玩家 " + At(event.member) + " 获得胜利！\n"
                     + "获得奖励: $rewardSTD STD"
             )
             event.group.setRunningState(RunningState.FREE)
         } else {
-            event.group.sendMessage("${event.member.nameCard} 答案错误")
+            event.group.sendMessage("${event.member.nameCardOrNick} 答案错误")
         }
     }
 

@@ -11,6 +11,7 @@ import io.github.sunshinewzy.sunnybot.utils.PII
 import io.github.sunshinewzy.sunnybot.utils.PIIArrayList
 import io.github.sunshinewzy.sunnybot.utils.SImage
 import net.mamoe.mirai.contact.Group
+import net.mamoe.mirai.contact.nameCardOrNick
 import net.mamoe.mirai.message.data.At
 import net.mamoe.mirai.message.data.PlainText
 import net.mamoe.mirai.utils.ExternalResource.Companion.uploadAsImage
@@ -58,8 +59,8 @@ object SGChess : SGroupGame("围棋", RunningState.CHESS) {
                     
                     您没有参加围棋对弈。
                     当前玩家：
-                    ① ${p1.nameCard} (${p1.id})
-                    ② ${p2.nameCard} (${p2.id})
+                    ① ${p1.nameCardOrNick} (${p1.id})
+                    ② ${p2.nameCardOrNick} (${p2.id})
                 """.trimIndent())
             )
             return

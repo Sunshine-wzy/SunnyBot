@@ -5,10 +5,7 @@ import io.github.sunshinewzy.sunnybot.sendMsg
 import io.github.sunshinewzy.sunnybot.sunnyBot
 import io.github.sunshinewzy.sunnybot.sunnyChannel
 import io.github.sunshinewzy.sunnybot.sunnyInit
-import net.mamoe.mirai.Bot
-import net.mamoe.mirai.console.command.descriptor.ExperimentalCommandDescriptors
-import net.mamoe.mirai.console.util.ConsoleExperimentalApi
-import net.mamoe.mirai.contact.remarkOrNameCardOrNick
+import net.mamoe.mirai.contact.nameCardOrNick
 import net.mamoe.mirai.event.Listener
 import net.mamoe.mirai.event.events.*
 import net.mamoe.mirai.message.data.At
@@ -59,7 +56,7 @@ object BotListener {
                 val msg = group.getSGroup().leaveMessage
 
                 if(msg != "")
-                    group.sendMessage("${member.remarkOrNameCardOrNick} (${member.id}) $msg")
+                    group.sendMessage("${member.nameCardOrNick} (${member.id}) $msg")
             }
             
             subscribeAlways<MemberJoinRequestEvent> { 

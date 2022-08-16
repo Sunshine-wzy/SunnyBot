@@ -11,6 +11,7 @@ import io.github.sunshinewzy.sunnybot.objects.setRunningState
 import io.github.sunshinewzy.sunnybot.sendMsg
 import io.github.sunshinewzy.sunnybot.toInputStream
 import io.github.sunshinewzy.sunnybot.utils.SImage
+import net.mamoe.mirai.contact.nameCardOrNick
 import net.mamoe.mirai.message.data.At
 import net.mamoe.mirai.message.data.PlainText
 import net.mamoe.mirai.utils.ExternalResource.Companion.uploadAsImage
@@ -59,8 +60,8 @@ object SGFiveInARow : SGroupGame("五子棋", RunningState.FIVE_IN_A_ROW) {
                     
                     您没有参加五子棋对弈。
                     当前玩家：
-                    ① ${p1.nameCard} (${p1.id})
-                    ② ${p2.nameCard} (${p2.id})
+                    ① ${p1.nameCardOrNick} (${p1.id})
+                    ② ${p2.nameCardOrNick} (${p2.id})
                 """.trimIndent())
             )
             return

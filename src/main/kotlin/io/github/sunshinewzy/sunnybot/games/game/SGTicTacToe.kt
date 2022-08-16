@@ -10,6 +10,7 @@ import io.github.sunshinewzy.sunnybot.objects.setRunningState
 import io.github.sunshinewzy.sunnybot.sendMsg
 import io.github.sunshinewzy.sunnybot.utils.SLaTeX.laTeXImage
 import net.mamoe.mirai.contact.Group
+import net.mamoe.mirai.contact.nameCardOrNick
 import net.mamoe.mirai.message.data.At
 import net.mamoe.mirai.message.data.PlainText
 import kotlin.random.Random
@@ -55,8 +56,8 @@ object SGTicTacToe : SGroupGame("井字棋", RunningState.TICTACTOE, RunningState.T
                     
                     您没有参加井字棋游戏。
                     当前玩家：
-                    ① ${p1.nameCard} (${p1.id})
-                    ② ${p2.nameCard} (${p2.id})
+                    ① ${p1.nameCardOrNick} (${p1.id})
+                    ② ${p2.nameCardOrNick} (${p2.id})
                 """.trimIndent())
             )
             return

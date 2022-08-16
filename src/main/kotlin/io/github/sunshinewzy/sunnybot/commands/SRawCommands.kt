@@ -18,10 +18,7 @@ import net.mamoe.mirai.console.command.CommandManager.INSTANCE.register
 import net.mamoe.mirai.console.command.CommandSender
 import net.mamoe.mirai.console.command.MemberCommandSender
 import net.mamoe.mirai.console.command.RawCommand
-import net.mamoe.mirai.contact.Group
-import net.mamoe.mirai.contact.Member
-import net.mamoe.mirai.contact.User
-import net.mamoe.mirai.contact.isOperator
+import net.mamoe.mirai.contact.*
 import net.mamoe.mirai.message.code.MiraiCode.deserializeMiraiCode
 import net.mamoe.mirai.message.data.*
 import net.mamoe.mirai.utils.ExternalResource.Companion.toExternalResource
@@ -54,6 +51,7 @@ fun regSRawCommands() {
     SCRcon.register()
     SCRconRun.register()
     SCJavaDoc.register()
+//    SCImage.register()
     
     //默认m*为任意群员 u*为任意用户
 //    SCLaTeX.reg("u*")
@@ -207,7 +205,7 @@ object SCDailySignIn: RawCommand(
         val last = if(dailySignIns.size < 5) dailySignIns.size else 5
         for(i in 0 until last){
             val signIn = dailySignIns[i]
-            msg += "${i + 1}. ${group[signIn.first]?.nameCard}: " + signIn.second.oldSunSTSymbol(SunSTSymbol.ENTER) + "\n"
+            msg += "${i + 1}. ${group[signIn.first]?.nameCardOrNick}: " + signIn.second.oldSunSTSymbol(SunSTSymbol.ENTER) + "\n"
         }
         group.sendMsg("每日签到", At(member) + " $msg")
     }
@@ -1583,6 +1581,41 @@ object SCJavaDoc: RawCommand(
             
             empty { 
                 sendMsg(description, simpleJavaDocs)
+            }
+        }
+    }
+}
+
+object SCImage : RawCommand(
+    PluginMain,
+    "Image", "img",
+    description = "图片", usage = "图片",
+    parentPermission = PERM_EXE_USER
+) {
+    override suspend fun CommandSender.onCommand(args: MessageChain) {
+        processSCommand(args) {
+            "add" {
+                anyContents(false) { category ->
+                    
+                }
+            }
+            
+            "remove" {
+                anyContents(false) {
+                    
+                }
+            }
+            
+            "alias" {
+                any { 
+                    
+                }
+            }
+            
+            "list" {
+                empty { 
+                    
+                }
             }
         }
     }
