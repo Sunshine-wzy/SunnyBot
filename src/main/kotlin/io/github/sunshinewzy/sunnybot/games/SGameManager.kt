@@ -57,6 +57,7 @@ object SGameManager {
                 
                 if(it.gameStates.contains(state)) {
                     it.runGame(sGroupGameEvent)
+                    sGroupGameEvent.sDataGroup.players.update()
                     return@launch
                 }
             }

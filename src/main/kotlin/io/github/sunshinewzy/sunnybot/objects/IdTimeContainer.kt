@@ -2,7 +2,7 @@ package io.github.sunshinewzy.sunnybot.objects
 
 class IdTimeContainer(val period: Long = 60_000L) {
     private val ids = HashSet<Long>()
-    private var startTime: Long = 0
+    private var time: Long = 0
     
     
     fun add(id: Long): IdTimeContainer {
@@ -27,7 +27,7 @@ class IdTimeContainer(val period: Long = 60_000L) {
         ids.contains(id)
     
     fun time(): Long =
-        System.currentTimeMillis() - startTime
+        System.currentTimeMillis() - time
     
     fun checkTimeout(): Boolean {
         val isTimeout = time() >= period
@@ -39,13 +39,17 @@ class IdTimeContainer(val period: Long = 60_000L) {
         return isTimeout
     }
     
+    fun update() {
+        time = System.currentTimeMillis()
+    }
+    
     
     private fun startTimings() {
-        startTime = System.currentTimeMillis()
+        time = System.currentTimeMillis()
     }
     
     private fun timeout() {
-        startTime = 0
+        time = 0
         clear()
     }
     
