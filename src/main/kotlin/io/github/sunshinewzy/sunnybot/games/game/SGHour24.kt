@@ -7,6 +7,8 @@ import io.github.sunshinewzy.sunnybot.objects.*
 import io.github.sunshinewzy.sunnybot.sendMsg
 import net.mamoe.mirai.contact.nameCardOrNick
 import net.mamoe.mirai.message.data.At
+import net.mamoe.mirai.message.data.PlainText
+import net.mamoe.mirai.message.data.buildMessageChain
 import java.util.*
 
 /**
@@ -96,13 +98,15 @@ object SGHour24 : SGroupGame("24点", RunningState.HOUR24) {
             return
         }
 
-        event.group.sendMessage(At(event.member) + " 的表达式计算结果为: ${number[0]}")
+        event.group.sendMsg(name, At(event.member) + " 的表达式计算结果为: ${number[0]}")
         if(number[0] == 24) {
             val rewardSTD = kotlin.random.Random.nextInt(5) + 6
             event.member.addSTD(rewardSTD)
-            event.group.sendMessage(
-                "恭喜玩家 " + At(event.member) + " 获得胜利！\n"
-                    + "获得奖励: $rewardSTD STD"
+            event.group.sendMsg(name, buildMessageChain {
+                +PlainText("恭喜玩家 ")
+                +At(event.member)
+                +" 获得胜利！\n获得奖励: $rewardSTD STD"
+            }
             )
             event.group.setRunningState(RunningState.FREE)
         } else {
