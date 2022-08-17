@@ -467,7 +467,7 @@ object SCRedEnvelopes: RawCommand(
 
                 picture("https://s3.ax1x.com/2021/02/11/yB4uFA.png")
             }
-
+            
             source("QQ红包")
 
             serviceId = id
@@ -917,7 +917,7 @@ object SCMoeImage : RawCommand(
         if(!user.isSunnyAdmin() || args.isEmpty()) {
             GlobalScope.launch(SCoroutine.image) {
                 SRequest(apiPcUrl).resultImage(contact)?.let { image ->
-                    contact.sendMsg(description, image)
+                    sendMsg(description, image)
                 }
             }
             return
