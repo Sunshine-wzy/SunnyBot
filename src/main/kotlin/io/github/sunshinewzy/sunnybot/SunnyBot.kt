@@ -19,10 +19,7 @@ import net.mamoe.mirai.contact.Member
 import net.mamoe.mirai.contact.User
 import net.mamoe.mirai.event.globalEventChannel
 import net.mamoe.mirai.event.subscribeMessages
-import net.mamoe.mirai.message.data.Message
-import net.mamoe.mirai.message.data.PlainText
-import net.mamoe.mirai.message.data.QuoteReply
-import net.mamoe.mirai.message.data.findIsInstance
+import net.mamoe.mirai.message.data.*
 import java.io.File
 import java.util.*
 
@@ -156,7 +153,7 @@ private fun regMsg() {
             val ownThink = SRequest("https://api.ownthink.com/bot?spoken=$msg")
                 .result<SBOwnThink>()
             if(ownThink.message == "success") {
-                member.group.sendMessage(QuoteReply(message) + ownThink.data.info.text)
+                member.group.sendMessage(QuoteReply(message) + At(member) + " ${ownThink.data.info.text}")
             } else member.group.sendMessage("Ë¼ ¿¼ ²» ÄÜ")
             
         }

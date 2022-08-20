@@ -1,6 +1,7 @@
 package io.github.sunshinewzy.sunnybot.commands
 
 import io.github.sunshinewzy.sunnybot.*
+import io.github.sunshinewzy.sunnybot.PluginMain.PERM_EXE_2
 import io.github.sunshinewzy.sunnybot.PluginMain.PERM_EXE_MEMBER
 import io.github.sunshinewzy.sunnybot.PluginMain.PERM_EXE_USER
 import io.github.sunshinewzy.sunnybot.games.SGameManager
@@ -132,7 +133,7 @@ object SCAntiRecall: SimpleCommand(
     PluginMain,
     "AntiRecall", "atrc", "·À³·»Ø",
     description = "ÆôÓÃ/¹Ø±Õ·À³·»Ø",
-    parentPermission = PERM_EXE_MEMBER
+    parentPermission = PERM_EXE_2
 ) {
     @Handler
     suspend fun CommandSender.handle(str: String) {
@@ -195,7 +196,7 @@ object SCRepeater : SimpleCommand(
     PluginMain,
     "Repeater", "rep", "¸´¶Á",
     description = "¿ªÆô/¹Ø±Õ ¸´¶Á",
-    parentPermission = PERM_EXE_MEMBER
+    parentPermission = PERM_EXE_2
 ) {
     @Handler
     suspend fun MemberCommandSender.handle(isRepeat: String) {

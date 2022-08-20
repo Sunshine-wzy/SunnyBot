@@ -38,7 +38,9 @@ object BotListener {
 //            }
 
             subscribeAlways<BotInvitedJoinGroupRequestEvent> {
-                accept()
+                invitor?.sendMessage(
+                    "请加群423179929，@群主 说明您对机器人的使用需求，等待群主手动同意(将会48小时内给予回复)"
+                )
             }
 
             subscribeAlways<NewFriendRequestEvent> {
