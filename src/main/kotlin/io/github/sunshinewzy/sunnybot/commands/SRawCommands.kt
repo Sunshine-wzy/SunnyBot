@@ -1,6 +1,7 @@
 package io.github.sunshinewzy.sunnybot.commands
 
 import io.github.sunshinewzy.sunnybot.*
+import io.github.sunshinewzy.sunnybot.PluginMain.PERM_EXE_1
 import io.github.sunshinewzy.sunnybot.PluginMain.PERM_EXE_3
 import io.github.sunshinewzy.sunnybot.PluginMain.PERM_EXE_MEMBER
 import io.github.sunshinewzy.sunnybot.PluginMain.PERM_EXE_USER
@@ -42,7 +43,7 @@ fun regSRawCommands() {
 //    SCXmlMessage.register()
     SCRandomImage.register()
     SCWords.register()
-    SCSound.register()
+//    SCSound.register()
     SCGroupManager.register()
     SCMiraiCode.register()
     SCMoeImage.register()
@@ -586,7 +587,7 @@ object SCSound : RawCommand(
     PluginMain,
     "Sound", "snd", "语音",
     usage = "语音",
-    parentPermission = PERM_EXE_USER
+    parentPermission = PERM_EXE_1
 ) {
     const val popularUrl = "https://api.meowpad.me/v2/sounds/popular?skip=0"
     const val downloadUrl = "https://api.meowpad.me/v1/download/"

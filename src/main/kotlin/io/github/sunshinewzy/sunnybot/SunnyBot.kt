@@ -51,7 +51,7 @@ suspend fun sunnyInit() {
     //¸´¶Á
     Repeater.repeat()
     //ÏÂÔØÓïÒôÎÄ¼ş
-    SunnyBot.downloadVoice()
+//    SunnyBot.downloadVoice()
 }
 
 private fun groupInit() {
