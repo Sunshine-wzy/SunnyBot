@@ -8,6 +8,7 @@ import io.github.sunshinewzy.sunnybot.objects.SSaveGroup
 import io.github.sunshinewzy.sunnybot.objects.SSavePlayer
 import io.github.sunshinewzy.sunnybot.objects.SunnyData
 import io.github.sunshinewzy.sunnybot.timer.STimer
+import io.github.sunshinewzy.sunnybot.utils.MessageCache
 import net.mamoe.mirai.Bot
 import net.mamoe.mirai.console.command.descriptor.ExperimentalCommandDescriptors
 import net.mamoe.mirai.console.extension.PluginComponentStorage
@@ -23,7 +24,7 @@ lateinit var sunnyBot: Bot
 object PluginMain : KotlinPlugin(
     JvmPluginDescription(
         id = "io.github.sunshinewzy.sunnybot",
-        version = "1.2.3",
+        version = "1.2.4",
         name = "SunnyBot"
     )
 ) {
@@ -60,6 +61,10 @@ object PluginMain : KotlinPlugin(
     private fun regListeners() {
         BotListener.listenBot()
         MessageListener.listenMessage()
+        
+        with(sunnyChannel) {
+            registerListenerHost(MessageCache)
+        }
     }
     
     private fun setPermissions() {

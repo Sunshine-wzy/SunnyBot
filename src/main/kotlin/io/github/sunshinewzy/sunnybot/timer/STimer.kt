@@ -28,8 +28,8 @@ object STimer : Runnable {
                 
                 
                 time.apply {
-                    SSaveGroup.sGroupMap.forEach { (groupId, sGroup) ->
-                        if(second == 0) {
+                    if(second == 0) {
+                        SSaveGroup.sGroupMap.forEach { (groupId, sGroup) ->
                             if(minute == 0) {
                                 if(hour == 0) {
                                     DailySignIn.reset()
@@ -47,12 +47,11 @@ object STimer : Runnable {
                                     if(it.isOnce) remListReminders += index
                                 }
                             }
-                            
+
                             for(i in remListReminders.size - 1 downTo 0)
                                 sGroup.reminders.removeAt(remListReminders[i])
                         }
                     }
-                    
                     
                 }
                 

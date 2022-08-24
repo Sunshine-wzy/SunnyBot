@@ -5,7 +5,6 @@ import io.github.sunshinewzy.sunnybot.events.game.SGroupGameEvent
 import io.github.sunshinewzy.sunnybot.games.SGroupGame
 import io.github.sunshinewzy.sunnybot.objects.DataTicTacToe
 import io.github.sunshinewzy.sunnybot.objects.addSTD
-import io.github.sunshinewzy.sunnybot.objects.sDataGroupMap
 import io.github.sunshinewzy.sunnybot.objects.setRunningState
 import io.github.sunshinewzy.sunnybot.sendMsg
 import io.github.sunshinewzy.sunnybot.utils.SLaTeX.laTeXImage
@@ -130,9 +129,8 @@ object SGTicTacToe : SGroupGame("¾®×ÖÆå", RunningState.TICTACTOE, RunningState.T
     override suspend fun startGame(event: SGroupGameEvent) {
         val group = event.group
         val member = event.member
-        val sGroup = event.sGroup
-        val dataTicTacToe = sDataGroupMap[group.id]!!.ticTacToe
         val sDataGroup = event.sDataGroup
+        val dataTicTacToe = sDataGroup.ticTacToe
 
         if(sDataGroup.runningState == RunningState.FREE) {
             dataTicTacToe.players[1] = member

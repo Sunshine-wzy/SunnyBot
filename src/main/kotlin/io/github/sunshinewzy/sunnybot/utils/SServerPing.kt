@@ -10,7 +10,6 @@ import net.mamoe.mirai.utils.ExternalResource.Companion.uploadAsImage
 import studio.trc.minecraft.serverpinglib.API.MCServerSocket
 import studio.trc.minecraft.serverpinglib.Protocol.ProtocolVersion
 import java.io.ByteArrayInputStream
-import java.lang.Exception
 
 object SServerPing {
     const val apiBEServer = "http://motdpe.blackbe.xyz/api.php"
@@ -127,7 +126,7 @@ object SServerPing {
     
     fun pingBEServer(serverIp: String): SBBEServerPing {
         val (ip, port) = serverIp.toIpAndPort() ?: return SBBEServerPing("", 0, "", "", "", "", "", "", "", "")
-        return SRequest(apiBEServer).result(mapOf("ip" to ip, "port" to port))
+        return SRequest(apiBEServer).resultBean(mapOf("ip" to ip, "port" to port))
     }
     
     

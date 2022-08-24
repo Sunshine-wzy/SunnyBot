@@ -11,6 +11,7 @@ plugins {
 
 dependencies {
     implementation("com.google.code.gson:gson:2.8.7")
+    implementation("com.google.guava:guava:31.1-jre")
     implementation("org.scilab.forge:jlatexmath:1.0.7")
     implementation("io.netty:netty-all:4.1.67.Final")
     implementation("nl.vv32.rcon:rcon:1.2.0")
@@ -21,7 +22,7 @@ dependencies {
 }
 
 group = "io.github.sunshinewzy"
-version = "1.2.3"
+version = "1.2.4"
 
 repositories {
     mavenLocal()

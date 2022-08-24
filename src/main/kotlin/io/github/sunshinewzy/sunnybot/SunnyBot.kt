@@ -1,15 +1,13 @@
 package io.github.sunshinewzy.sunnybot
 
 import io.github.sunshinewzy.sunnybot.commands.*
-import io.github.sunshinewzy.sunnybot.enums.RunningState
 import io.github.sunshinewzy.sunnybot.functions.AntiRecall
 import io.github.sunshinewzy.sunnybot.functions.Repeater
 import io.github.sunshinewzy.sunnybot.games.SGameManager
-import io.github.sunshinewzy.sunnybot.objects.*
-import io.github.sunshinewzy.sunnybot.objects.SSaveGroup.sGroupMap
-import io.github.sunshinewzy.sunnybot.runnable.STimerTask
+import io.github.sunshinewzy.sunnybot.objects.SBSounds
+import io.github.sunshinewzy.sunnybot.objects.SRequest
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import net.mamoe.mirai.Bot
@@ -18,10 +16,8 @@ import net.mamoe.mirai.contact.Group
 import net.mamoe.mirai.contact.Member
 import net.mamoe.mirai.contact.User
 import net.mamoe.mirai.event.globalEventChannel
-import net.mamoe.mirai.event.subscribeMessages
-import net.mamoe.mirai.message.data.*
+import net.mamoe.mirai.message.data.Message
 import java.io.File
-import java.util.*
 
 val sunnyScope = CoroutineScope(SupervisorJob())
 val sunnyChannel = sunnyScope.globalEventChannel()
@@ -30,10 +26,6 @@ var antiRecall: AntiRecall? = null
 val sunnyAdmins = listOf(1123574549L)
 
 suspend fun sunnyInit() {
-    //群初始化
-    groupInit()
-    //全局消息监听
-    regMsg()
     //注册简单指令
     regSSimpleCommands()
     //注册复合指令
@@ -47,118 +39,11 @@ suspend fun sunnyInit() {
     //游戏功能初始化
     SGameManager.gameInit(sunnyBot)
     //定时任务初始化
-    Timer().schedule(STimerTask, Date(), 86400_000L)       //24h = 1440min =  86400s = 86400_000ms
+//    Timer().schedule(STimerTask, Date(), 86400_000L)       //24h = 1440min =  86400s = 86400_000ms
     //复读
     Repeater.repeat()
     //下载语音文件
 //    SunnyBot.downloadVoice()
-}
-
-private fun groupInit() {
-    sunnyBot.groups.forEach {
-        val groupId = it.id
-        if(!sGroupMap.containsKey(groupId))
-            sGroupMap[groupId] = SGroup(groupId)
-        if(!sDataGroupMap.containsKey(groupId))
-            sDataGroupMap[groupId] = SDataGroup()
-    }
-}
-
-private fun regMsg() {
-    
-    sunnyChannel.subscribeMessages {
-        
-        (contains("老子不会")) end@{
-            val group = subject as? Group ?: return@end
-            val data = group.getSData()
-
-            val state = data.runningState
-            if(state == RunningState.FREE) {
-                subject.sendMsg("Game", "当前没有游戏正在进行。")
-                return@end
-            }
-            
-            val players = data.players
-            if(players.contains(sender.id) || players.checkTimeout()) {
-                group.setRunningState(RunningState.FREE)
-                subject.sendMsg("Game", "${state.gameName} 游戏结束")
-            } else {
-                subject.sendMsg("Game", """
-                    您不是当前游戏的玩家
-                    在 ${players.timeLeft()}毫秒 后才能结束当前游戏
-                """.trimIndent())
-            }
-            
-        }
-
-        (contains("再来亿把")) startAgain@{
-            val member = sender as? Member ?: return@startAgain
-            val group = member.group
-            val data = group.getSData()
-            
-            val state = data.runningState
-            val lastState = data.lastRunningState
-            if(state == RunningState.FREE) {
-                if(lastState != RunningState.FREE) {
-                    SGameManager.callGame(member, lastState.gameName, true)
-                } else {
-                    group.sendMsg("Game", "没有游戏记录")
-                }
-                
-                return@startAgain
-            }
-            
-            val players = data.players
-            if(players.contains(sender.id) || players.checkTimeout()) {
-                SGameManager.callGame(member, state.gameName, true)
-            } else {
-                subject.sendMsg("Game", """
-                    您不是当前游戏的玩家
-                    在 ${players.timeLeft()}毫秒 后才能结束当前游戏
-                """.trimIndent())
-            }
-            
-        }
-        
-        (contains("sunny", ignoreCase = true) and (contains("闭嘴") or contains("睡觉") or contains("关"))) sleep@{
-            if(sender !is Member)
-                return@sleep
-            val group = getGroup(sender) ?: return@sleep
-            
-            group.getSGroup().isOpen = false
-            group.sendMessage("Bye~ master")
-        }
-        
-        (contains("sunny", ignoreCase = true) and (contains("醒醒") or contains("启") or contains("开"))) start@{
-            if(sender !is Member)
-                return@start
-            val group = getGroup(sender) ?: return@start
-            
-            group.getSGroup().isOpen = true
-            group.sendMessage("Hi! master")
-        }
-        
-        atBot {
-            val member = sender as? Member ?: return@atBot
-            val text = message.findIsInstance<PlainText>() ?: kotlin.run { 
-                member.group.sendIntroduction()
-                return@atBot
-            }
-            val msg = text.content.replace("\n", "").replace(" ", "")
-            if(msg.isEmpty()) {
-                member.group.sendIntroduction()
-                return@atBot
-            }
-            
-            val ownThink = SRequest("https://api.ownthink.com/bot?spoken=$msg")
-                .result<SBOwnThink>()
-            if(ownThink.message == "success") {
-                member.group.sendMessage(QuoteReply(message) + At(member) + " ${ownThink.data.info.text}")
-            } else member.group.sendMessage("思 考 不 能")
-            
-        }
-        
-    }
 }
 
 /**
@@ -233,8 +118,11 @@ suspend fun Group.sendIntroduction() {
 
 
 object SunnyBot {
+    val illegalFileName = listOf("CON", "PRN", "AUX", "NUL", "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9", "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9")
+    
+    
     fun downloadVoice() {
-        GlobalScope.launch(SCoroutine.download) {
+        sunnyScope.launch(Dispatchers.IO) {
             val folder = File(PluginMain.dataFolder, "Voice")
             if(!folder.exists())
                 folder.mkdirs()
@@ -245,7 +133,7 @@ object SunnyBot {
                 names += it.nameWithoutExtension
             }
 
-            val popular = SRequest(SCSound.popularUrl).result<SBSounds>()
+            val popular = SRequest(SCSound.popularUrl).resultBean<SBSounds>()
             popular.sounds.forEach { sound ->
                 if(!names.contains(sound.title)){
                     val slug = sound.slug

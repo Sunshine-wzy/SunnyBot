@@ -2,19 +2,23 @@ package io.github.sunshinewzy.sunnybot.commands
 
 import io.github.sunshinewzy.sunnybot.*
 import io.github.sunshinewzy.sunnybot.PluginMain.PERM_EXE_1
+import io.github.sunshinewzy.sunnybot.PluginMain.PERM_EXE_2
 import io.github.sunshinewzy.sunnybot.PluginMain.PERM_EXE_3
 import io.github.sunshinewzy.sunnybot.PluginMain.PERM_EXE_MEMBER
 import io.github.sunshinewzy.sunnybot.PluginMain.PERM_EXE_USER
+import io.github.sunshinewzy.sunnybot.commands.SCommandManager.registerSCommand
 import io.github.sunshinewzy.sunnybot.enums.ServerType
 import io.github.sunshinewzy.sunnybot.enums.SunSTSymbol
 import io.github.sunshinewzy.sunnybot.objects.*
 import io.github.sunshinewzy.sunnybot.timer.STimer
+import io.github.sunshinewzy.sunnybot.utils.MessageCache
 import io.github.sunshinewzy.sunnybot.utils.RconManager
 import io.github.sunshinewzy.sunnybot.utils.SLaTeX.laTeXImage
 import io.github.sunshinewzy.sunnybot.utils.SServerPing
 import io.github.sunshinewzy.sunnybot.utils.SServerPing.pingServer
-import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import net.mamoe.mirai.console.command.CommandManager.INSTANCE.register
 import net.mamoe.mirai.console.command.CommandSender
 import net.mamoe.mirai.console.command.MemberCommandSender
@@ -22,9 +26,12 @@ import net.mamoe.mirai.console.command.RawCommand
 import net.mamoe.mirai.contact.*
 import net.mamoe.mirai.message.code.MiraiCode.deserializeMiraiCode
 import net.mamoe.mirai.message.data.*
+import net.mamoe.mirai.message.data.Image.Key.queryUrl
 import net.mamoe.mirai.utils.ExternalResource.Companion.toExternalResource
+import net.mamoe.mirai.utils.ExternalResource.Companion.uploadAsImage
 import net.mamoe.mirai.utils.ExternalResource.Companion.uploadAsVoice
 import net.mamoe.mirai.utils.MiraiExperimentalApi
+import net.mamoe.mirai.utils.MiraiInternalApi
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
@@ -52,7 +59,8 @@ fun regSRawCommands() {
     SCRcon.register()
     SCRconRun.register()
     SCJavaDoc.register()
-//    SCImage.register()
+    SCImage.register()
+    SCImage.registerSCommand()
     
     //默认m*为任意群员 u*为任意用户
 //    SCLaTeX.reg("u*")
@@ -224,7 +232,6 @@ object SCServerInfo: RawCommand(
     """.trimIndent(),
     parentPermission = PERM_EXE_USER
 ) {
-    const val roselleUrl = "https://mc.iroselle.com/api/data/getServerInfo"
 
     override suspend fun CommandSender.onCommand(args: MessageChain) {
         val str = args.contentToString()
@@ -233,31 +240,7 @@ object SCServerInfo: RawCommand(
             return
         val member = user as Member
         val group = member.group
-        val groupId = group.id
-        val sGroup = SSaveGroup.sGroupMap[groupId] ?: return
-
-//        if(str == "2") {
-//            val ip = sGroup.serverIp
-//            val result = SRequest(roselleUrl).resultRoselle(ip, 0)
-//            val res = result.res
-//
-//            var serverStatus = "离线"
-//            if(res.server_status == 1)
-//                serverStatus = "在线"
-//
-//            group.sendMsg("服务器状态查询 - 洛神云",
-//                    "服务器IP: $ip\n" +
-//                    "服务器状态: $serverStatus\n" +
-//                    "当前在线玩家数: ${res.server_player_online}\n" +
-//                    "在线玩家上限: ${res.server_player_max}\n" +
-//                    "日均在线人数: ${res.server_player_average}\n" +
-//                    "历史最高同时在线人数: ${res.server_player_history_max}\n" +
-//                    "昨日平均在线人数: ${res.server_player_yesterday_average}\n" +
-//                    "昨日最高同时在线人数: ${res.server_player_yesterday_max}\n" +
-//                    "更新时间: ${res.update_time}\n" +
-//                    "查询用时: ${result.run_time}s"
-//            )
-//        }
+        val sGroup = group.getSGroup()
 
         if(sGroup.serverIps.containsKey(str)) {
             sGroup.serverIps[str]?.let {
@@ -295,13 +278,12 @@ object SCIpBind: RawCommand(
         if(user != null && user is Member){
             val member = user as Member
             val group = member.group
-            val groupId = group.id
-            val sGroup = SSaveGroup.sGroupMap[groupId] ?: return
+            val sGroup = group.getSGroup()
 
             
             processSCommand(args) {
                 "set" {
-                    any { list ->
+                    contents { list ->
                         val symbol = list.first
                         if(symbol.isLetterDigitOrChinese()) {
                             if(list.size >= 2) {
@@ -330,7 +312,7 @@ object SCIpBind: RawCommand(
                 }
                 
                 "remove" {
-                    anyContents(false) { 
+                    content(false) { 
                         if(sGroup.serverIps.containsKey(it)) {
                             sGroup.serverIps.remove(it)
                             sendMsg(description, "IP代号 '$it' 删除成功~")
@@ -356,9 +338,9 @@ object SCIpBind: RawCommand(
                     }
                 }
                 
-                anyContents(false) {
+                content(false) {
                     if(it.startsWith("set") || it.startsWith("remove") || it.startsWith("list"))
-                        return@anyContents
+                        return@content
                     
                     val check = SServerPing.checkServer(it)
                     if(check != ServerType.NOT){
@@ -508,7 +490,7 @@ object SCRandomImage : RawCommand(
         val contact = subject ?: return
         val plainText = args.findIsInstance<PlainText>()
         
-        GlobalScope.launch(SCoroutine.image) {
+        sunnyScope.launch(Dispatchers.IO) {
             var img: Image? = null
             if(plainText == null || plainText.content == ""){
                 img = SRequest(url).resultImage(contact)
@@ -556,12 +538,12 @@ object SCWords : RawCommand(
 
         var words: String? = null
         if(plainText == null || plainText.content == ""){
-            words = SRequest(url).result()
+            words = SRequest(url).resultString()
         }
         else{
             val text = plainText.content
             if(params.contains(text)){
-                words = SRequest("$url?lang=$text").result()
+                words = SRequest("$url?lang=$text").resultString()
             }
             else{
                 var res = "参数不正确！\n请输入以下参数之一:\n"
@@ -656,7 +638,7 @@ object SCGroupManager: RawCommand(
             
             "join" {
                 "set" {
-                    any { list ->
+                    contents { list ->
                         var welcomeMsg = ""
                         list.forEach { 
                             welcomeMsg += "$it "
@@ -687,7 +669,7 @@ object SCGroupManager: RawCommand(
             
             "leave" {
                 "set" {
-                    any { list ->
+                    contents { list ->
                         var leaveMsg = ""
                         list.forEach { 
                             leaveMsg += "$it "
@@ -719,7 +701,7 @@ object SCGroupManager: RawCommand(
             
             "apply" {
                 "add" {
-                    any { list ->
+                    contents { list ->
                         var str = ""
                         list.forEach { str += it }
                         group.getSGroup().autoApply += str
@@ -728,7 +710,7 @@ object SCGroupManager: RawCommand(
                 }
 
                 "remove" {
-                    any { list ->
+                    contents { list ->
                         val first = list.first
                         if(first.isInteger()){
                             val order = first.toInt()
@@ -785,7 +767,7 @@ object SCGroupManager: RawCommand(
 
             "reject" {
                 "add" {
-                    any { list ->
+                    contents { list ->
                         var str = ""
                         list.forEach { str += it }
                         group.getSGroup().autoReject += str
@@ -794,7 +776,7 @@ object SCGroupManager: RawCommand(
                 }
 
                 "remove" {
-                    any { list ->
+                    contents { list ->
                         val first = list.first
                         if(first.isInteger()){
                             val order = first.toInt()
@@ -877,7 +859,7 @@ object SCMiraiCode : RawCommand(
         
         processSCommand(args) {
             "send" {
-                anyContents { code ->
+                content { code ->
                     sendMsg(code.deserializeMiraiCode())
                 }
             }
@@ -916,7 +898,7 @@ object SCMoeImage : RawCommand(
         val user = user ?: return
         
         if(!user.isSunnyAdmin() || args.isEmpty()) {
-            GlobalScope.launch(SCoroutine.image) {
+            sunnyScope.launch(Dispatchers.IO) {
                 SRequest(apiPcUrl).resultImage(contact)?.let { image ->
                     sendMsg(description, image)
                 }
@@ -925,8 +907,8 @@ object SCMoeImage : RawCommand(
         }
         
         processSCommand(args) {
-            anyContents(false) { 
-                GlobalScope.launch(SCoroutine.image) {
+            content(false) { 
+                sunnyScope.launch(Dispatchers.IO) {
                     SRequest(apiUrl + it).resultImage(contact)?.let { image ->
                         sendMsg(description, image)
                     }
@@ -1048,16 +1030,16 @@ object SCReminder : RawCommand(
                     sendMsg(description, "Tip: /rem set [HH:mm] [提醒事项]")
                 }
                 
-                any { 
-                    val first = it.firstOrNull() ?: return@any
+                contents { 
+                    val first = it.firstOrNull() ?: return@contents
                     val str = first.split(":")
                     if(str.size != 2 || str[0].length != 2 || str[1].length != 2) {
                         sendMsg(description, "时间格式错误 请使用 HH:mm 即 小时(24h制):分钟\n例: 09:00")
-                        return@any
+                        return@contents
                     }
                     val date = format.parse(first) ?: kotlin.run {
                         sendMsg(description, "时间格式错误 请使用 HH:mm 即 小时(24h制):分钟\n例: 09:00")
-                        return@any
+                        return@contents
                     }
                     
                     var text = ""
@@ -1066,7 +1048,7 @@ object SCReminder : RawCommand(
                     }
                     if(text == "") {
                         sendMsg(description, "请输入提醒事项")
-                        return@any
+                        return@contents
                     }
                     
                     val calendar = Calendar.getInstance()
@@ -1090,7 +1072,7 @@ object SCReminder : RawCommand(
             }
 
             "remove" {
-                any { list ->
+                contents { list ->
                     val first = list.first
                     if(first.isInteger()) {
                         val order = first.toInt()
@@ -1114,8 +1096,8 @@ object SCReminder : RawCommand(
             
             "edit" {
                 text {
-                    if(tempText.isInteger()) {
-                        val order = tempText.toInt()
+                    if(text.isInteger()) {
+                        val order = text.toInt()
                         val remList = group.getSGroup().reminders
 
                         if((order - 1) in remList.indices) {
@@ -1192,7 +1174,7 @@ object SCRcon : RawCommand(
         processSCommand(args) {
             "bind" {
                 if(this@onCommand !is MemberCommandSender) {
-                    any { list ->
+                    contents { list ->
                         val symbol = list.first
                         if(symbol.isLetterDigitOrChinese()) {
                             if(list.size >= 3) {
@@ -1240,7 +1222,7 @@ object SCRcon : RawCommand(
             }
             
             "unbind" {
-                anyContents(false) {
+                content(false) {
                     val rconKeyMap = user.getSPlayer().rconKeyMap
                     if(rconKeyMap.containsKey(it)) {
                         rconKeyMap.remove(it)
@@ -1273,7 +1255,7 @@ object SCRcon : RawCommand(
             }
             
             "info" {
-                anyContents(false) {
+                content(false) {
                     val key = user.getSPlayer().rconKeyMap[it]
                     if(key != null) {
                         SunnyData.rcon[key]?.let { data ->
@@ -1294,7 +1276,7 @@ object SCRcon : RawCommand(
                             }
                             
                             sendMsg(description, text.toString())
-                            return@anyContents
+                            return@content
                         }
                         
                         sendMsg(description, "服务器代号 '$it' 信息查询失败")
@@ -1307,7 +1289,7 @@ object SCRcon : RawCommand(
             }
             
             "run" {
-                anyContents { cmd ->
+                content { cmd ->
                     val sPlayer = user.getSPlayer()
                     val symbol = sPlayer.selectedRconSymbol
                     if(symbol != "") {
@@ -1327,17 +1309,17 @@ object SCRcon : RawCommand(
                                             }
                                         }
                                         
-                                        return@anyContents
+                                        return@content
                                     }
 
                                     sendMsg(description, "RCON '$key'\n连接失败")
-                                    return@anyContents
+                                    return@content
                                 } else sendMsg(description, "您无权访问此RCON")
                                 
                             }
                             
                             sendMsg(description, "RCON '$key'\n不存在，请重新绑定")
-                            return@anyContents
+                            return@content
                         }
                     }
                     
@@ -1350,7 +1332,7 @@ object SCRcon : RawCommand(
             }
             
             "select" {
-                anyContents(false) { 
+                content(false) { 
                     val sPlayer = user.getSPlayer()
                     if(sPlayer.rconKeyMap.containsKey(it)) {
                         sPlayer.selectedRconSymbol = it
@@ -1364,7 +1346,7 @@ object SCRcon : RawCommand(
             }
             
             "permit" {
-                any { list ->
+                contents { list ->
                     if(list.size >= 2) {
                         val idStr = list[1]
                         if(idStr.isInteger()) {
@@ -1391,7 +1373,7 @@ object SCRcon : RawCommand(
             }
             
             "remove" {
-                any { list ->
+                contents { list ->
                     if(list.size >= 2) {
                         val idStr = list[1]
                         if(idStr.isInteger()) {
@@ -1445,7 +1427,7 @@ object SCRconRun : RawCommand(
         val user = user ?: return
         
         processSCommand(args) {
-            anyContents { cmd ->
+            content { cmd ->
                 val sPlayer = user.getSPlayer()
                 val symbol = sPlayer.selectedRconSymbol
                 if(symbol != "") {
@@ -1465,17 +1447,17 @@ object SCRconRun : RawCommand(
                                         }
                                     }
 
-                                    return@anyContents
+                                    return@content
                                 }
 
                                 sendMsg(description, "RCON '$key'\n连接失败")
-                                return@anyContents
+                                return@content
                             } else sendMsg(description, "您无权访问此RCON")
 
                         }
 
                         sendMsg(description, "RCON '$key'\n不存在，请重新绑定")
-                        return@anyContents
+                        return@content
                     }
                 }
 
@@ -1589,35 +1571,257 @@ object SCJavaDoc: RawCommand(
 
 object SCImage : RawCommand(
     PluginMain,
-    "Image", "img",
-    description = "图片", usage = "图片",
-    parentPermission = PERM_EXE_USER
-) {
+    "ImageLibrary", "img",
+    description = "图库", usage = "图库",
+    parentPermission = PERM_EXE_2
+), SCommandable {
+    override val sCommandName: String = "img"
+
+    
     override suspend fun CommandSender.onCommand(args: MessageChain) {
+        val subject = subject ?: return
+        
         processSCommand(args) {
-            "add" {
-                anyContents(false) { category ->
-                    
+            "add" add@{
+                sunnyScope.launch {
+                    commandAdd(args, this@add)
                 }
             }
-            
+
             "remove" {
-                anyContents(false) {
+                content(false) {
                     
                 }
             }
-            
+
             "alias" {
-                any { 
+                contents {
+
+                }
+            }
+
+            "list" {
+                text lib@{ 
+                    val libName = text
+                    val data = SunnyData.image[libName] ?: kotlin.run {
+                        sendMsg(description, "图库 '$libName' 不存在")
+                        return@lib
+                    }
                     
+                    text image@{ 
+                        val imageName = text
+                        val fileNames = data.nameMap[imageName] ?: kotlin.run { 
+                            sendMsg(description, "图片 '$imageName' 不存在")
+                            return@image
+                        }
+                        
+                        sunnyScope.launch(Dispatchers.IO) {
+                            sendMsg(
+                                description,
+                                buildMessageChain {
+                                    +"> 图库 '$libName' 中的图片 '$imageName'\n"
+
+                                    fileNames.forEach { fileName ->
+                                        subject.getImageFromFile(libName, fileName)?.let { 
+                                            +it
+                                        }
+                                    }
+                                }
+                            )
+                        }
+                    }
+                    
+                    empty {
+                        val imageNames = data.nameMap.keys
+                        sendMsg(
+                            description,
+                            buildString {
+                                appendLine("在 [图库名] 后输入 [图片名] 以查看该图片")
+                                appendLine()
+
+                                append(
+                                    if(imageNames.isEmpty()) "> 图库 '$libName' 空空如也"
+                                    else "> 图库 '$libName' 的所有图片名\n${imageNames.joinToString()}"
+                                )
+                            }
+                        )
+                    }
+                }
+                
+                empty {
+                    val msg = buildString {
+                        appendLine("在 list 后输入 [图库名] 以查看该图库存有的图片名")
+                        appendLine()
+                        
+                        val imageDataKeys = SunnyData.image.keys
+                        if(imageDataKeys.isEmpty()) {
+                            appendLine("> 当前没有任何图库")
+                        } else {
+                            appendLine("> 所有图库名")
+                            append(imageDataKeys.joinToString())
+                        }
+                    }
+                    
+                    sendMsg(description, msg)
                 }
             }
             
-            "list" {
-                empty { 
+            "edit" {
+                text {
+                    val libName = text
                     
+                    
+                    "alias" {
+                        
+                    }
+                    
+                    "message" {
+                        
+                    }
                 }
+            }
+            
+            
+            empty { 
+                sendMsg(description, """
+                    > 指令参数
+                    add  -  添加图片到图库
+                    remove  -  删除图库或图片
+                    
+                """.trimIndent())
             }
         }
     }
+
+    
+    override suspend fun executeCommand(sender: CommandSender, args: MessageChain) {
+        sender.processSCommand(args) {
+            sunnyScope.launch {
+                sender.commandAdd(args, this@processSCommand)
+            }
+        }
+    }
+    
+    
+    suspend fun sendRandomImage(sender: Contact, libName: String) {
+        val data = SunnyData.image[libName] ?: kotlin.run { 
+            sender.sendMsg(description, "图库 '$libName' 不存在")
+            return
+        }
+        
+        val key = data.nameMap.keys.random()
+        val fileName = data.nameMap[key]?.random() ?: kotlin.run { 
+            sender.sendMsg(description, "图片 '$key' 路径获取失败")
+            return
+        }
+        
+        withContext(Dispatchers.IO) {
+            sender.getImageFromFile(libName, fileName)?.let { sender.sendMsg(description, it) }
+        }
+    }
+    
+    
+    @OptIn(MiraiInternalApi::class)
+    private suspend fun CommandSender.commandAdd(args: MessageChain, wrapper: SCommandWrapper) {
+        wrapper.apply {
+            text textLib@{
+                val libName = text
+                if(!libName.isLegalFileName()) {
+                    sendMsg(description, "非法的文件名！")
+                    return@textLib
+                }
+
+                if(!libName.isLetterDigitOrChinese()) {
+                    sendMsg(description, "[图库名] 只能含有英文、数字、汉字，不能包含任何符号！")
+                    return@textLib
+                }
+
+                text textImage@{
+                    val imageName = text
+                    if(!imageName.isLetterDigitOrChinese()) {
+                        sendMsg(description, "[图片名] 只能含有英文、数字、汉字，不能包含任何符号！")
+                        return@textImage
+                    }
+
+                    val images = LinkedList<Image>()
+                    args.filterIsInstanceTo(images)
+                    args[QuoteReply]?.source?.ids?.elementAtOrNull(0)?.let { id ->
+                        MessageCache[id]?.filterIsInstanceTo(images)
+                    }
+                    
+                    if(images.isEmpty()) {
+                        sendMsg(description, "请在 [图片名] 后添加您需要存入图库的图片，或在引用回复包含图片的消息的同时输入: #img [图库名] [图片名]")
+                        return@textImage
+                    }
+
+                    val data = SunnyData.image[libName] ?: kotlin.run {
+                        sendMsg(description, "没有检索到图库 '$libName'，已为您自动创建~")
+                        ImageData().also { SunnyData.image[libName] = it }
+                    }
+
+                    sunnyScope.launch(Dispatchers.IO) {
+                        val failedOrders = LinkedList<Int>()
+                        images.forEachIndexed { index, image ->
+                            val order = index + 1
+                            val queryUrl = image.queryUrl()
+                            val byteStream = SRequest(queryUrl).resultByteStream() ?: run {
+                                sendMsg(description, "第 $order 张图片下载连接获取失败")
+                                failedOrders += order
+                                return@forEachIndexed
+                            }
+
+                            val uuid = UUID.randomUUID()
+                            val fileName = "$uuid.${image.imageType.formatName}"
+
+                            if(!byteStream.copyToFile(
+                                File(
+                                    PluginMain.dataFolder,
+                                    "image/$libName/$fileName"
+                                )
+                            )) {
+                                sendMsg(description, "第 $order 张图片下载失败")
+                                failedOrders += order
+                                return@forEachIndexed
+                            }
+                            byteStream.close()
+                            
+                            data.nameMap.putElement(imageName, fileName)
+                        }
+                        
+                        sendMsg(description, """
+                            ${if(failedOrders.isEmpty()) "全部图片下载成功~" else "第 ${failedOrders.joinToString()} 张图片下载失败"}
+                            成功将 ${images.size - failedOrders.size} 张图片添加进图库 '$libName'
+                        """.trimIndent())
+                    }
+                }
+
+                empty {
+                    sendMsg(description, "请在 [图库名] 后输入 [图片名]")
+                }
+
+            }
+
+            empty {
+                sendMsg(description, "请在指令后输入 [图库名]")
+            }
+        }
+    }
+    
+    private suspend fun Contact.getImageFromFile(libName: String, fileName: String): Image? {
+        try {
+            File(
+                PluginMain.dataFolder,
+                "image/$libName/$fileName"
+            ).toExternalResource().use {
+                return it.uploadAsImage(this)
+            }
+        } catch (ex: Exception) {
+            ex.printStackTrace()
+            sendMsg(description, "图片 '$libName/$fileName' 获取失败")
+        }
+        
+        return null
+    }
+    
 }
+

@@ -3,7 +3,9 @@ package io.github.sunshinewzy.sunnybot.games.game
 import io.github.sunshinewzy.sunnybot.enums.RunningState
 import io.github.sunshinewzy.sunnybot.events.game.SGroupGameEvent
 import io.github.sunshinewzy.sunnybot.games.SGroupGame
-import io.github.sunshinewzy.sunnybot.objects.*
+import io.github.sunshinewzy.sunnybot.objects.SDataGroup
+import io.github.sunshinewzy.sunnybot.objects.addSTD
+import io.github.sunshinewzy.sunnybot.objects.setRunningState
 import io.github.sunshinewzy.sunnybot.sendMsg
 import net.mamoe.mirai.contact.nameCardOrNick
 import net.mamoe.mirai.message.data.At
@@ -116,11 +118,6 @@ object SGHour24 : SGroupGame("24µã", RunningState.HOUR24) {
 
     override suspend fun startGame(event: SGroupGameEvent) {
         val group = event.group
-        val id = group.id
-
-        if(!SSaveGroup.sGroupMap.containsKey(id))
-            SSaveGroup.sGroupMap[id] = SGroup(id)
-        val sGroup = SSaveGroup.sGroupMap[id] ?: return
         val sDataGroup = event.sDataGroup
 
         sDataGroup.runningState = RunningState.HOUR24

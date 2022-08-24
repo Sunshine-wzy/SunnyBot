@@ -30,17 +30,14 @@ class SGroup(private val groupID: Long) {
 }
 
 object SSaveGroup: AutoSavePluginData("SGroupData") {
-    var sGroupMap: MutableMap<Long, SGroup> by value(mutableMapOf())
+    val sGroupMap: MutableMap<Long, SGroup> by value(mutableMapOf())
     
     
     fun getSGroup(groupId: Long): SGroup {
-        if(!sGroupMap.containsKey(groupId))
-            sGroupMap[groupId] = SGroup(groupId)
-        return sGroupMap[groupId]!!
+        return sGroupMap.getOrPut(groupId) { SGroup(groupId) }
     }
 }
 
-val sDataGroupMap = HashMap<Long, SDataGroup>()
 
 data class SDataGroup(
     var runningState: RunningState = RunningState.FREE,
@@ -53,10 +50,11 @@ data class SDataGroup(
 ) {
     
     companion object {
+        val sDataGroupMap = HashMap<Long, SDataGroup>()
+        
+        
         fun getSDataGroup(groupId: Long): SDataGroup {
-            if(!sDataGroupMap.containsKey(groupId))
-                sDataGroupMap[groupId] = SDataGroup()
-            return sDataGroupMap[groupId]!!
+            return sDataGroupMap.getOrPut(groupId) { SDataGroup() }
         }
     }
 }

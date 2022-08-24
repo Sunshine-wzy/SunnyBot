@@ -1,7 +1,7 @@
 package io.github.sunshinewzy.sunnybot.functions
 
 import io.github.sunshinewzy.sunnybot.PluginMain
-import kotlinx.coroutines.GlobalScope
+import io.github.sunshinewzy.sunnybot.sunnyScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -21,7 +21,7 @@ class AntiRecall {
 
     init{
         try {
-            GlobalScope.launch {
+            sunnyScope.launch {
                 while (true){
                     // 间隔4min,删除过时记录消息记录
                     delay(4*60_000)

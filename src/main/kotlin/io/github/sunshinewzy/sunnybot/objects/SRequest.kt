@@ -3,7 +3,9 @@ package io.github.sunshinewzy.sunnybot.objects
 import com.google.gson.Gson
 import io.github.sunshinewzy.sunnybot.isChineseChar
 import io.github.sunshinewzy.sunnybot.toInputStream
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import net.mamoe.mirai.contact.Contact
 import net.mamoe.mirai.message.data.Image
 import net.mamoe.mirai.message.data.Voice
@@ -12,6 +14,7 @@ import net.mamoe.mirai.utils.ExternalResource.Companion.uploadAsImage
 import net.mamoe.mirai.utils.ExternalResource.Companion.uploadAsVoice
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.Response
 import java.io.*
 import java.net.HttpURLConnection
 import java.net.URL
@@ -25,18 +28,36 @@ import javax.imageio.ImageIO
 
 class SRequest(private val url: String) {
     private val encodeUrl = urlEncode()
-    
-    
-    fun result(): String {
-        return httpRequest()
+
+
+    fun result(params: Map<String, Any> = emptyMap()): Response? {
+        val request = Request.Builder()
+            .url(URL(
+                if(params.isEmpty()) encodeUrl
+                else encodeUrl + "?" + urlEncode(params)
+            ))
+            .build()
+        val call = okHttpClient.newCall(request)
+
+        var response: Response? = null
+        try {
+            response = call.execute()
+        } catch (_: Exception) {}
+
+        return response
     }
     
-    inline fun <reified T: SBean> result(params: Map<String, Any> = emptyMap()): T {
-        if(params.isEmpty()){
-            return Gson().fromJson(httpRequest(), T::class.java)
-        }
-        
-        return Gson().fromJson(httpRequest(params), T::class.java)
+    
+    fun resultString(params: Map<String, Any> = emptyMap()): String {
+        return result(params)?.use { it.body?.string() } ?: ""
+    }
+    
+    fun resultByteStream(params: Map<String, Any> = emptyMap()): InputStream? {
+        return result(params)?.body?.byteStream()
+    }
+    
+    inline fun <reified T: SBean> resultBean(params: Map<String, Any> = emptyMap()): T {
+        return Gson().fromJson(resultString(params), T::class.java)
     }
     
     
@@ -48,7 +69,7 @@ class SRequest(private val url: String) {
             runBlocking { 
                 image = bufImg?.toInputStream()?.uploadAsImage(contact)
             }
-        } catch (ex: Exception) {
+        } catch (_: Exception) {
             
         }
         
@@ -71,7 +92,9 @@ class SRequest(private val url: String) {
         runBlocking {
             val extResource = input.toExternalResource()
             voice = extResource.uploadAsVoice(contact)
-            extResource.close()
+            withContext(Dispatchers.IO) {
+                extResource.close()
+            }
         }
         return voice
     }
@@ -93,40 +116,6 @@ class SRequest(private val url: String) {
         output.close()
     }
 
-
-    fun httpRequest(): String {
-        val request = Request.Builder()
-            .url(URL(encodeUrl))
-            .build()
-        val call = okHttpClient.newCall(request)
-
-        var ans = ""
-        try {
-            val response = call.execute()
-            ans += response.body?.string()
-        } catch (ex: Exception) {
-            ex.printStackTrace()
-        }
-
-        return ans
-    }
-    
-    fun httpRequest(params: Map<String, Any>): String {
-        val request = Request.Builder()
-            .url(URL(encodeUrl + "?" + urlEncode(params)))
-            .build()
-        val call = okHttpClient.newCall(request)
-        
-        var ans = ""
-        try {
-            val response = call.execute()
-            ans += response.body?.string()
-        } catch (ex: Exception) {
-            ex.printStackTrace()
-        }
-        
-        return ans
-    }
     
     fun httpRequestOld(params: Map<String, Any>): String {
         //buffer 用于接收返回的字符
@@ -200,6 +189,7 @@ class SRequest(private val url: String) {
         return buffer.toString()
     }
     
+    
     fun urlEncode(data: Map<String, Any>): String {
         //将map里的参数变成像 showapi_appid=###&showapi_sign=###&的样子
         val sb = StringBuilder()
@@ -229,19 +219,8 @@ class SRequest(private val url: String) {
     }
 
 
-    fun resultRoselle(serverAddr: String, showFavicon: Int): RosellemcServerInfo {
-        //params用于存储要请求的参数
-        val params = HashMap<String, Any>()
-        params["server_addr"] = serverAddr
-        params["show_favicon"] = showFavicon
-        //调用httpRequest方法，这个方法主要用于请求地址，并加上请求参数
-        val strRequest = httpRequest(params)
-        //处理返回的JSON数据并返回
-        return Gson().fromJson(strRequest, RosellemcServerInfo::class.java)
-    }
-    
-    
     companion object {
+        
         private val okHttpClient = OkHttpClient()
         
     }

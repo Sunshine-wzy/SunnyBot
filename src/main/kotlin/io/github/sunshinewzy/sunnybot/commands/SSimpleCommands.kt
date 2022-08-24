@@ -1,14 +1,16 @@
 package io.github.sunshinewzy.sunnybot.commands
 
-import io.github.sunshinewzy.sunnybot.*
+import io.github.sunshinewzy.sunnybot.PluginMain
 import io.github.sunshinewzy.sunnybot.PluginMain.PERM_EXE_2
 import io.github.sunshinewzy.sunnybot.PluginMain.PERM_EXE_MEMBER
 import io.github.sunshinewzy.sunnybot.PluginMain.PERM_EXE_USER
+import io.github.sunshinewzy.sunnybot.antiRecall
 import io.github.sunshinewzy.sunnybot.games.SGameManager
+import io.github.sunshinewzy.sunnybot.isSunnyAdmin
 import io.github.sunshinewzy.sunnybot.objects.SRequest
 import io.github.sunshinewzy.sunnybot.objects.getSGroup
 import io.github.sunshinewzy.sunnybot.objects.getSPlayer
-import io.github.sunshinewzy.sunnybot.utils.SServerPing.pingServer
+import io.github.sunshinewzy.sunnybot.sendMsg
 import net.mamoe.mirai.console.command.CommandManager.INSTANCE.register
 import net.mamoe.mirai.console.command.CommandManager.INSTANCE.registeredCommands
 import net.mamoe.mirai.console.command.CommandSender
@@ -48,8 +50,6 @@ fun regSSimpleCommands() {
 //    SCOpen.reg()
     
     //Debug
-    SCDebugServerInfo.reg("console")
-    SCDebugIntroduction.reg("console")
 }
 
 
@@ -156,42 +156,6 @@ object SCAntiRecall: SimpleCommand(
     }
 }
 
-object SCDebugServerInfo: SimpleCommand(
-    PluginMain,
-    "DebugServerInfo", "dServer", "dzt",
-    description = "Debug 服务器状态查询"
-) {
-    @Handler
-    suspend fun CommandSender.handle(serverIp: String) {
-        val contact = sunnyBot.getGroup(423179929L) ?: return
-        
-        val roselleResult = SRequest(SCServerInfo.roselleUrl).resultRoselle(serverIp, 0)
-        if(roselleResult.code == 1){
-            val res = roselleResult.res
-            var serverStatus = "离线"
-            if(res.server_status == 1)
-                serverStatus = "在线"
-
-            sendMessage(
-                "\t『 SunnyBot 』\n" +
-                    "服务器IP: $serverIp\n" +
-                    "服务器状态: $serverStatus\n" +
-                    "当前在线玩家数: ${res.server_player_online}\n" +
-                    "在线玩家上限: ${res.server_player_max}\n" +
-                    "日均在线人数: ${res.server_player_average}\n" +
-                    "历史最高同时在线人数: ${res.server_player_history_max}\n" +
-                    "昨日平均在线人数: ${res.server_player_yesterday_average}\n" +
-                    "昨日最高同时在线人数: ${res.server_player_yesterday_max}\n" +
-                    "更新时间: ${res.update_time}\n" +
-                    "查询用时: ${roselleResult.run_time}s"
-            )
-            return
-        }
-
-        sendMessage(contact.pingServer(serverIp))
-    }
-}
-
 object SCRepeater : SimpleCommand(
     PluginMain,
     "Repeater", "rep", "复读",
@@ -238,22 +202,6 @@ object SCBingPicture : SimpleCommand(
         }
         
         contact.sendMsg(description, image)
-    }
-}
-
-object SCDebugIntroduction : SimpleCommand(
-    PluginMain,
-    "DebugIntroduction", "di", "自我介绍",
-    description = "Debug 发送自我介绍"
-) {
-    @Handler
-    suspend fun CommandSender.handle(groupId: Long) {
-        val group = sunnyBot.getGroup(groupId) ?: kotlin.run { 
-            PluginMain.logger.warning("群$groupId 获取失败")
-            return
-        }
-        
-        group.sendIntroduction()
     }
 }
 

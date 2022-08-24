@@ -11,10 +11,7 @@ import net.mamoe.mirai.message.data.Message
 import net.mamoe.mirai.message.data.MessageChain
 import net.mamoe.mirai.message.data.PlainText
 import java.awt.image.BufferedImage
-import java.io.ByteArrayInputStream
-import java.io.ByteArrayOutputStream
-import java.io.IOException
-import java.io.InputStream
+import java.io.*
 import java.util.regex.Pattern
 import javax.imageio.ImageIO
 import kotlin.math.pow
@@ -39,6 +36,28 @@ suspend fun Contact.sendMsg(title: String, text: Message) {
 
 suspend fun Contact.sendMsg(title: Message, text: String) {
     sendMsg(title, PlainText(text))
+}
+
+fun Contact.sendMessage(title: Message, text: Message) {
+    sunnyScope.launch {
+        val contact = if(this is Member) group else this@sendMessage
+        contact.sendMessage(PlainText("\t¡º") +
+            title + PlainText("¡»\n") +
+            text
+        )
+    }
+}
+
+fun Contact.sendMessage(title: String, text: String) {
+    sendMessage(PlainText(title), PlainText(text))
+}
+
+fun Contact.sendMessage(title: String, text: Message) {
+    sendMessage(PlainText(title), text)
+}
+
+fun Contact.sendMessage(title: Message, text: String) {
+    sendMessage(title, PlainText(text))
 }
 
 
@@ -196,6 +215,11 @@ fun String.isLetterDigitOrChinese(): Boolean {
     return matches(regex)
 }
 
+fun String.isLegalFileName(): Boolean {
+    val str = this.uppercase()
+    return !SunnyBot.illegalFileName.contains(str)
+}
+
 fun String.removeColor(): String =
     replace("¡ì[\\da-z]".toRegex(), "")
 
@@ -208,7 +232,7 @@ fun Char.isChineseChar(): Boolean =
 
 //endregion
 
-//region Map
+//region List
 
 fun List<Pair<String, String>>.toCommandParams(): String {
     var str = "ÃüÁî²ÎÊý:"
@@ -220,9 +244,28 @@ fun List<Pair<String, String>>.toCommandParams(): String {
 
 //endregion
 
+//region Map
+
+fun <K, T> MutableMap<K, MutableList<T>>.putElement(key: K, element: T) {
+    val value = this[key]
+    if(value != null) {
+        value += element
+    } else this[key] = arrayListOf(element)
+}
+
+fun <K, T> MutableMap<K, MutableList<T>>.clearAndPutElement(key: K, element: T) {
+    val value = this[key]
+    if(value != null) {
+        value.clear()
+        value += element
+    } else this[key] = arrayListOf(element)
+}
+
+//endregion
+
 //region MessageChain
 
-fun <L: MutableList<String>> MessageChain.getPlainText(list: L): L {
+fun <L: MutableList<String>> MessageChain.getPlainTextContents(list: L): L {
     forEach { 
         if(it is PlainText) {
             list += it.content
@@ -239,6 +282,39 @@ fun Bot.getUser(id: Long): User? {
     getFriend(id)?.let { return it }
     getStranger(id)?.let { return it }
     return null
+}
+
+//endregion
+
+//region Stream
+
+fun InputStream.copyToFile(file: File): Boolean {
+    return try {
+        file.createFile()
+        
+        val fos = FileOutputStream(file)
+        copyTo(fos)
+        fos.close()
+        true
+    } catch (ex: Exception) {
+        ex.printStackTrace()
+        false
+    }
+}
+
+//endregion
+
+//region File
+
+@Throws(IOException::class)
+fun File.createFile() {
+    parentFile?.let { 
+        if(!it.exists()) {
+            it.mkdirs()
+        }
+    }
+    
+    createNewFile()
 }
 
 //endregion
