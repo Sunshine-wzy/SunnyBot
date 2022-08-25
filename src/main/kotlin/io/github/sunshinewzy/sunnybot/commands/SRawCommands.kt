@@ -1622,13 +1622,13 @@ object SCImage : SRawCommand(
                         val imageName = text
                         if(imageName == CONFIRM) return@image
                         
-                        val imageData = lib.imageMap[imageName] ?: kotlin.run {
+                        if(!lib.imageMap.containsKey(imageName)) {
                             sendMsg(description, "图片 '$imageName' 不存在")
                             return@image
                         }
 
                         CONFIRM {
-                            if(imageData.remove()) {
+                            if(lib.removeImage(imageName)) {
                                 sendMsg(description, "图库 '${lib.name}($libName)' 中的图片 '$imageName' 删除成功")
                             } else {
                                 sendMsg(description, "图库 '${lib.name}($libName)' 中的图片 '$imageName' 删除失败")

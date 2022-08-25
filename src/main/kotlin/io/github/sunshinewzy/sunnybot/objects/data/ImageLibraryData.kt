@@ -34,12 +34,32 @@ class ImageLibraryData(
         SCImage.removeLibraryMap(this)
         return true
     }
+
+    fun removeImage(imageName: String): Boolean {
+        val imageData = imageMap[imageName] ?: return true
+        if(!imageData.remove()) return false
+        
+        imageMap -= imageName
+        return true
+    }
     
     fun removeImages(): Boolean {
+        var flag = true
+        val removeKeys = hashSetOf<String>()
+        
         imageMap.forEach { (imageName, imageData) -> 
-            if(!imageData.remove()) return false
+            if(imageData.remove()) {
+                removeKeys += imageName
+            } else {
+                flag = false
+            }
         }
-        return true
+        
+        removeKeys.forEach { 
+            imageMap -= it
+        }
+        
+        return flag
     }
     
     
