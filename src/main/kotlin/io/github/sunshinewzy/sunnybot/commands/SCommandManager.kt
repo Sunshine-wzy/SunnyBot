@@ -1,18 +1,23 @@
 package io.github.sunshinewzy.sunnybot.commands
 
 import net.mamoe.mirai.console.command.CommandSender
+import net.mamoe.mirai.console.permission.PermissionService.Companion.testPermission
 import net.mamoe.mirai.message.data.MessageChain
+import net.mamoe.mirai.message.data.MessageSource.Key.quote
 import net.mamoe.mirai.message.data.PlainText
 import net.mamoe.mirai.message.data.buildMessageChain
 import net.mamoe.mirai.message.data.toPlainText
 
 object SCommandManager {
     
-    private val commandableMap: MutableMap<String, SCommandable> = hashMapOf()
+    private val commandMap: MutableMap<String, SRawCommand> = hashMapOf()
     
     
-    fun register(commandable: SCommandable) {
-        commandableMap[commandable.sCommandName] = commandable
+    fun register(sRawCommand: SRawCommand) {
+        commandMap[sRawCommand.primaryName] = sRawCommand
+        sRawCommand.secondaryNames.forEach { 
+            commandMap[it] = sRawCommand
+        }
     }
     
     suspend fun executeCommand(sender: CommandSender, args: MessageChain, text: String) {
@@ -23,7 +28,12 @@ object SCommandManager {
         val cmd = firstText.lowercase()
         if(cmd.isEmpty()) return
         
-        val commandable = commandableMap[cmd] ?: return
+        val command = commandMap[cmd] ?: return
+        if(!command.permission.testPermission(sender)) {
+            sender.sendMessage(args.quote() + "È¨ÏÞ²»×ã")
+            return
+        }
+        
         val newArgs = buildMessageChain { 
             +args
             removeAll { it is PlainText }
@@ -33,12 +43,7 @@ object SCommandManager {
             }
         }
         
-        commandable.executeCommand(sender, newArgs)
-    }
-    
-    
-    fun SCommandable.registerSCommand() {
-        register(this)
+        command.executeCommand(sender, newArgs)
     }
     
 }

@@ -1,17 +1,14 @@
 package io.github.sunshinewzy.sunnybot.objects
 
+import io.github.sunshinewzy.sunnybot.objects.data.ImageLibraryData
 import kotlinx.serialization.Serializable
 import net.mamoe.mirai.console.data.AutoSavePluginData
 import net.mamoe.mirai.console.data.value
 
 object SunnyData : AutoSavePluginData("SunnyData") {
     val rcon: MutableMap<String, RconData> by value()
-    val image: MutableMap<String, ImageData> by value()
+    val image: MutableMap<String, ImageLibraryData> by value()
     
-    
-    fun getImageData(name: String): ImageData {
-        return image.getOrPut(name) { ImageData() }
-    }
 }
 
 @Serializable
@@ -40,7 +37,3 @@ class RconData(
     }
 }
 
-@Serializable
-class ImageData(
-    val nameMap: MutableMap<String, MutableList<String>> = hashMapOf()
-)

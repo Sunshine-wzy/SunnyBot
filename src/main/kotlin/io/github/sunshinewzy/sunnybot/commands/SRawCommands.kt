@@ -6,10 +6,12 @@ import io.github.sunshinewzy.sunnybot.PluginMain.PERM_EXE_2
 import io.github.sunshinewzy.sunnybot.PluginMain.PERM_EXE_3
 import io.github.sunshinewzy.sunnybot.PluginMain.PERM_EXE_MEMBER
 import io.github.sunshinewzy.sunnybot.PluginMain.PERM_EXE_USER
-import io.github.sunshinewzy.sunnybot.commands.SCommandManager.registerSCommand
 import io.github.sunshinewzy.sunnybot.enums.ServerType
 import io.github.sunshinewzy.sunnybot.enums.SunSTSymbol
 import io.github.sunshinewzy.sunnybot.objects.*
+import io.github.sunshinewzy.sunnybot.objects.data.ImageData
+import io.github.sunshinewzy.sunnybot.objects.data.ImageData.Companion.getImageFromFile
+import io.github.sunshinewzy.sunnybot.objects.data.ImageLibraryData
 import io.github.sunshinewzy.sunnybot.timer.STimer
 import io.github.sunshinewzy.sunnybot.utils.MessageCache
 import io.github.sunshinewzy.sunnybot.utils.RconManager
@@ -28,10 +30,8 @@ import net.mamoe.mirai.message.code.MiraiCode.deserializeMiraiCode
 import net.mamoe.mirai.message.data.*
 import net.mamoe.mirai.message.data.Image.Key.queryUrl
 import net.mamoe.mirai.utils.ExternalResource.Companion.toExternalResource
-import net.mamoe.mirai.utils.ExternalResource.Companion.uploadAsImage
 import net.mamoe.mirai.utils.ExternalResource.Companion.uploadAsVoice
 import net.mamoe.mirai.utils.MiraiExperimentalApi
-import net.mamoe.mirai.utils.MiraiInternalApi
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
@@ -59,7 +59,6 @@ fun regSRawCommands() {
     SCRcon.register()
     SCRconRun.register()
     SCJavaDoc.register()
-    SCImage.register()
     SCImage.registerSCommand()
     
     //默认m*为任意群员 u*为任意用户
@@ -1569,17 +1568,35 @@ object SCJavaDoc: RawCommand(
     }
 }
 
-object SCImage : RawCommand(
+object SCImage : SRawCommand(
     PluginMain,
     "ImageLibrary", "img",
     description = "图库", usage = "图库",
     parentPermission = PERM_EXE_2
-), SCommandable {
-    override val sCommandName: String = "img"
-
+) {
+    private val libraryMap: MutableMap<String, ImageLibraryData> = hashMapOf()
+    
+    private const val CONFIRM = ".confirm"
+    
+    
+    init {
+        SunnyData.image.forEach { (key, lib) -> 
+            libraryMap[key] = lib
+            lib.aliases.forEach { 
+                libraryMap[it] = lib
+            }
+            
+            lib.imageMap.forEach { (imageName, imageData) -> 
+                imageData.messages.forEach { message ->
+                    ImageData.messageImages[message] = imageData
+                }
+            }
+        }
+    }
+    
     
     override suspend fun CommandSender.onCommand(args: MessageChain) {
-        val subject = subject ?: return
+        val contact = subject ?: return
         
         processSCommand(args) {
             "add" add@{
@@ -1589,28 +1606,67 @@ object SCImage : RawCommand(
             }
 
             "remove" {
-                content(false) {
+                text lib@{
+                    val libName = text
+                    val lib = contact.getLibrary(libName) ?: return@lib
                     
+                    CONFIRM {
+                        if(lib.remove()) {
+                            sendMsg(description, "图库 '${lib.name}($libName)' 删除成功")
+                        } else {
+                            sendMsg(description, "图库 '${lib.name}($libName)' 删除失败")
+                        }
+                    }
+                    
+                    text image@{
+                        val imageName = text
+                        if(imageName == CONFIRM) return@image
+                        
+                        val imageData = lib.imageMap[imageName] ?: kotlin.run {
+                            sendMsg(description, "图片 '$imageName' 不存在")
+                            return@image
+                        }
+
+                        CONFIRM {
+                            if(imageData.remove()) {
+                                sendMsg(description, "图库 '${lib.name}($libName)' 中的图片 '$imageName' 删除成功")
+                            } else {
+                                sendMsg(description, "图库 '${lib.name}($libName)' 中的图片 '$imageName' 删除失败")
+                            }
+                        }
+                        
+                        empty { 
+                            sendMsg(description, "在 [图片名] 后输入 $CONFIRM 以确认删除图库 '$libName' 中的图片 '$imageName'")
+                        }
+                    }
+
+                    empty {
+                        sendMsg(
+                            description,
+                            buildString {
+                                appendLine("在 [图库名] 后输入 $CONFIRM 以确认删除图库 '$libName'")
+                                append("在 [图库名] 后输入 [图片名] 以删除该图片")
+                            }
+                        )
+                    }
                 }
-            }
 
-            "alias" {
-                contents {
-
+                empty {
+                    sendMsg(
+                        description,
+                        "在 remove 后输入 [图库名] 以删除该图库"
+                    )
                 }
             }
 
             "list" {
                 text lib@{ 
                     val libName = text
-                    val data = SunnyData.image[libName] ?: kotlin.run {
-                        sendMsg(description, "图库 '$libName' 不存在")
-                        return@lib
-                    }
+                    val data = contact.getLibrary(libName) ?: return@lib
                     
                     text image@{ 
                         val imageName = text
-                        val fileNames = data.nameMap[imageName] ?: kotlin.run { 
+                        val imageData = data.imageMap[imageName] ?: kotlin.run { 
                             sendMsg(description, "图片 '$imageName' 不存在")
                             return@image
                         }
@@ -1620,19 +1676,14 @@ object SCImage : RawCommand(
                                 description,
                                 buildMessageChain {
                                     +"> 图库 '$libName' 中的图片 '$imageName'\n"
-
-                                    fileNames.forEach { fileName ->
-                                        subject.getImageFromFile(libName, fileName)?.let { 
-                                            +it
-                                        }
-                                    }
+                                    addAll(imageData.getImages(contact))
                                 }
                             )
                         }
                     }
                     
                     empty {
-                        val imageNames = data.nameMap.keys
+                        val imageNames = data.imageMap.keys
                         sendMsg(
                             description,
                             buildString {
@@ -1649,35 +1700,105 @@ object SCImage : RawCommand(
                 }
                 
                 empty {
-                    val msg = buildString {
-                        appendLine("在 list 后输入 [图库名] 以查看该图库存有的图片名")
-                        appendLine()
-                        
-                        val imageDataKeys = SunnyData.image.keys
-                        if(imageDataKeys.isEmpty()) {
-                            appendLine("> 当前没有任何图库")
-                        } else {
-                            appendLine("> 所有图库名")
-                            append(imageDataKeys.joinToString())
+                    sendMsg(
+                        description,
+                        buildString {
+                            appendLine("在 list 后输入 [图库名] 以查看该图库存有的图片名")
+                            appendLine()
+
+                            val imageDataKeys = SunnyData.image.keys
+                            if (imageDataKeys.isEmpty()) {
+                                append("> 当前没有任何图库")
+                            } else {
+                                appendLine("> 所有图库名")
+                                append(imageDataKeys.joinToString())
+                            }
                         }
-                    }
-                    
-                    sendMsg(description, msg)
+                    )
                 }
             }
             
             "edit" {
-                text {
+                text lib@{
                     val libName = text
-                    
+                    val lib = contact.getLibrary(libName) ?: return@lib
                     
                     "alias" {
+                        text { 
+                            val aliasName = text
+                            if(lib.addAlias(aliasName)) {
+                                sendMsg(description, "成功为图库 '$libName' 添加了别名 '$aliasName'")
+                            } else {
+                                sendMsg(description, "已有名为 '$aliasName' 的图库了，换个名字吧~")
+                            }
+                        }
                         
+                        empty { 
+                            sendMsg(
+                                description,
+                                buildString { 
+                                    appendLine("请在 alias 后输入 [图库别名] 以添加别名")
+                                    appendLine()
+                                    
+                                    if(lib.aliases.isEmpty()) {
+                                        append("> 图库 '${lib.name}' 没有别名")
+                                    } else {
+                                        appendLine("> 图库 '${lib.name}' 的所有别名")
+                                        append(lib.aliases.joinToString())
+                                    }
+                                }
+                            )
+                        }
                     }
                     
                     "message" {
+                        text image@{
+                            val imageName = text
+                            val imageData = lib.getImageData(contact, imageName) ?: return@image
+                            
+                            text message@{
+                                val message = text
+                                imageData.addMessage(message)
+                                sendMsg(description, """
+                                    消息图片添加成功
+                                    '$message' -> '$libName/$imageName'
+                                """.trimIndent())
+                            }
+                            
+                            empty { 
+                                sendMsg(description, "请在 [图片名] 后输入 [消息内容] 以添加消息图片")
+                            }
+                            
+//                            sunnyScope.launch(Dispatchers.IO) {
+//                                val images = data.getImages(imageName, subject)
+//                                if(images.isEmpty()) {
+//                                    sendMsg(description, )
+//                                    return@launch
+//                                }
+//                            }
+                        }
                         
+                        empty { 
+                            sendMsg(
+                                description,
+                                buildString { 
+                                    appendLine("请在 message 后输入 [图片名]")
+                                }
+                            )
+                        }
                     }
+                    
+                    empty { 
+                        sendMsg(description, """
+                            > 指令参数
+                            alias  -  图库别名
+                            message  -  消息图片
+                        """.trimIndent())
+                    }
+                }
+                
+                empty { 
+                    sendMsg(description, "请在 edit 后输入 [图库名]")
                 }
             }
             
@@ -1687,13 +1808,13 @@ object SCImage : RawCommand(
                     > 指令参数
                     add  -  添加图片到图库
                     remove  -  删除图库或图片
-                    
+                    list  -  查看图库
+                    edit  -  编辑图库
                 """.trimIndent())
             }
         }
     }
 
-    
     override suspend fun executeCommand(sender: CommandSender, args: MessageChain) {
         sender.processSCommand(args) {
             sunnyScope.launch {
@@ -1701,46 +1822,26 @@ object SCImage : RawCommand(
             }
         }
     }
-    
-    
-    suspend fun sendRandomImage(sender: Contact, libName: String) {
-        val data = SunnyData.image[libName] ?: kotlin.run { 
-            sender.sendMsg(description, "图库 '$libName' 不存在")
-            return
-        }
-        
-        val key = data.nameMap.keys.random()
-        val fileName = data.nameMap[key]?.random() ?: kotlin.run { 
-            sender.sendMsg(description, "图片 '$key' 路径获取失败")
-            return
-        }
-        
-        withContext(Dispatchers.IO) {
-            sender.getImageFromFile(libName, fileName)?.let { sender.sendMsg(description, it) }
-        }
-    }
-    
-    
-    @OptIn(MiraiInternalApi::class)
+
     private suspend fun CommandSender.commandAdd(args: MessageChain, wrapper: SCommandWrapper) {
         wrapper.apply {
-            text textLib@{
+            text lib@{
                 val libName = text
                 if(!libName.isLegalFileName()) {
                     sendMsg(description, "非法的文件名！")
-                    return@textLib
+                    return@lib
                 }
 
                 if(!libName.isLetterDigitOrChinese()) {
                     sendMsg(description, "[图库名] 只能含有英文、数字、汉字，不能包含任何符号！")
-                    return@textLib
+                    return@lib
                 }
 
-                text textImage@{
+                text image@{
                     val imageName = text
                     if(!imageName.isLetterDigitOrChinese()) {
                         sendMsg(description, "[图片名] 只能含有英文、数字、汉字，不能包含任何符号！")
-                        return@textImage
+                        return@image
                     }
 
                     val images = LinkedList<Image>()
@@ -1748,18 +1849,15 @@ object SCImage : RawCommand(
                     args[QuoteReply]?.source?.ids?.elementAtOrNull(0)?.let { id ->
                         MessageCache[id]?.filterIsInstanceTo(images)
                     }
-                    
+
                     if(images.isEmpty()) {
                         sendMsg(description, "请在 [图片名] 后添加您需要存入图库的图片，或在引用回复包含图片的消息的同时输入: #img [图库名] [图片名]")
-                        return@textImage
-                    }
-
-                    val data = SunnyData.image[libName] ?: kotlin.run {
-                        sendMsg(description, "没有检索到图库 '$libName'，已为您自动创建~")
-                        ImageData().also { SunnyData.image[libName] = it }
+                        return@image
                     }
 
                     sunnyScope.launch(Dispatchers.IO) {
+                        val lib = getOrCreateLibrary(libName)
+                        
                         val failedOrders = LinkedList<Int>()
                         images.forEachIndexed { index, image ->
                             val order = index + 1
@@ -1770,27 +1868,29 @@ object SCImage : RawCommand(
                                 return@forEachIndexed
                             }
 
-                            val uuid = UUID.randomUUID()
-                            val fileName = "$uuid.${image.imageType.formatName}"
-
+                            val fileName = "${lib.name}/${image.imageId.run { 
+                                if(endsWith(".mirai")) {
+                                    replaceAfterLast('.', "gif")
+                                } else this
+                            }}"
                             if(!byteStream.copyToFile(
-                                File(
-                                    PluginMain.dataFolder,
-                                    "image/$libName/$fileName"
-                                )
-                            )) {
+                                    File(
+                                        PluginMain.dataFolder,
+                                        "image/$fileName"
+                                    )
+                                )) {
                                 sendMsg(description, "第 $order 张图片下载失败")
                                 failedOrders += order
                                 return@forEachIndexed
                             }
                             byteStream.close()
-                            
-                            data.nameMap.putElement(imageName, fileName)
+
+                            lib.addImage(imageName, fileName)
                         }
-                        
+
                         sendMsg(description, """
                             ${if(failedOrders.isEmpty()) "全部图片下载成功~" else "第 ${failedOrders.joinToString()} 张图片下载失败"}
-                            成功将 ${images.size - failedOrders.size} 张图片添加进图库 '$libName'
+                            成功将 ${images.size - failedOrders.size} 张图片添加进图库 '$libName' 中的 '$imageName'
                         """.trimIndent())
                     }
                 }
@@ -1806,21 +1906,54 @@ object SCImage : RawCommand(
             }
         }
     }
-    
-    private suspend fun Contact.getImageFromFile(libName: String, fileName: String): Image? {
-        try {
-            File(
-                PluginMain.dataFolder,
-                "image/$libName/$fileName"
-            ).toExternalResource().use {
-                return it.uploadAsImage(this)
-            }
-        } catch (ex: Exception) {
-            ex.printStackTrace()
-            sendMsg(description, "图片 '$libName/$fileName' 获取失败")
+
+
+    suspend fun sendRandomImage(sender: Contact, libName: String) {
+        val lib = sender.getLibrary(libName) ?: return
+        val key = lib.imageMap.keys.random()
+        val fileName = lib.imageMap[key]?.fileNames?.random() ?: kotlin.run { 
+            sender.sendMsg(description, "图片 '$key' 路径获取失败")
+            return
         }
         
-        return null
+        withContext(Dispatchers.IO) {
+            sender.getImageFromFile(fileName)?.let {
+                sender.sendMsg(description, it)
+            } ?: sender.sendMsg(description, "图片 '$fileName' 获取失败")
+        }
+    }
+
+    fun removeLibraryMap(library: ImageLibraryData) {
+        libraryMap -= library.name
+        library.aliases.forEach {
+            libraryMap -= it
+        }
+    }
+    
+    
+    fun ImageLibraryData.addAlias(alias: String): Boolean {
+        if(libraryMap.containsKey(alias)) return false
+        
+        this.aliases += alias
+        libraryMap[alias] = this
+        return true
+    }
+    
+    fun CommandSender.getOrCreateLibrary(libName: String): ImageLibraryData {
+        return libraryMap[libName] ?: kotlin.run {
+            sendMsg(description, "没有检索到图库 '$libName'，已为您自动创建~")
+            ImageLibraryData(libName).also {
+                SunnyData.image[libName] = it
+                libraryMap[libName] = it
+            }
+        }
+    }
+    
+    fun Contact.getLibrary(name: String): ImageLibraryData? {
+        return libraryMap[name] ?: kotlin.run {
+            sunnyScope.launch { sendMsg(description, "图库 '$name' 不存在") }
+            null
+        }
     }
     
 }

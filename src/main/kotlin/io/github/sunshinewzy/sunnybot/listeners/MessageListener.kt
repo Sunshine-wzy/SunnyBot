@@ -1,6 +1,6 @@
 package io.github.sunshinewzy.sunnybot.listeners
 
-import io.github.sunshinewzy.sunnybot.*
+import io.github.sunshinewzy.sunnybot.antiRecall
 import io.github.sunshinewzy.sunnybot.commands.SCImage
 import io.github.sunshinewzy.sunnybot.commands.SCMiraiCode
 import io.github.sunshinewzy.sunnybot.commands.SCommandManager
@@ -8,8 +8,14 @@ import io.github.sunshinewzy.sunnybot.enums.RunningState
 import io.github.sunshinewzy.sunnybot.games.SGameManager
 import io.github.sunshinewzy.sunnybot.objects.SBOwnThink
 import io.github.sunshinewzy.sunnybot.objects.SRequest
+import io.github.sunshinewzy.sunnybot.objects.data.ImageData
 import io.github.sunshinewzy.sunnybot.objects.getSData
 import io.github.sunshinewzy.sunnybot.objects.setRunningState
+import io.github.sunshinewzy.sunnybot.sendIntroduction
+import io.github.sunshinewzy.sunnybot.sendMsg
+import io.github.sunshinewzy.sunnybot.sunnyChannel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import net.mamoe.mirai.console.command.CommandSender.Companion.toCommandSender
 import net.mamoe.mirai.contact.Group
 import net.mamoe.mirai.contact.Member
@@ -22,18 +28,9 @@ import net.mamoe.mirai.message.data.At
 import net.mamoe.mirai.message.data.PlainText
 import net.mamoe.mirai.message.data.QuoteReply
 import net.mamoe.mirai.message.data.findIsInstance
-import net.mamoe.mirai.utils.ExternalResource.Companion.uploadAsImage
-import java.io.File
-import java.io.FileOutputStream
-import java.io.InputStream
 
 object MessageListener {
-    private const val MESSAGE_IMAGES = "MessageImages"
     private val brackets = hashMapOf("(" to ")", "£®" to "£©", "[" to "]", "°æ" to "°ø", "{" to "}", "<" to ">", "°∂" to "°∑")
-    private val classLoader = javaClass.classLoader
-    private val msgImageList = getMsgImageMap("…œÕº" to "jpg", "≈¿" to "gif")
-    private val extensionImage = arrayOf("jpg", "jpeg", "png", "gif", "bmp")
-    private val messageImages = getMessageImages()
     
 
     fun listenMessage() {
@@ -156,8 +153,10 @@ object MessageListener {
 //                    }
                     
                     // …œÕº
-                    messageImages[content]?.let {
-                        group.sendMessage(QuoteReply(message) + it.uploadAsImage(group))
+                    ImageData.messageImages[content]?.let {
+                        withContext(Dispatchers.IO) {
+                            group.sendMessage(QuoteReply(message) + it.getImages(group))
+                        }
                     }
                 }
                 
@@ -183,51 +182,4 @@ object MessageListener {
         
     }
     
-    fun getMessageImages(): HashMap<String, File> {
-        val folder = File(PluginMain.dataFolder, MESSAGE_IMAGES)
-        if(!folder.exists()) {
-            folder.mkdirs()
-            
-            msgImageList.forEach { pair ->  
-                val file = File(folder, pair.first)
-                if(!file.exists()) {
-                    file.createNewFile()
-                }
-                
-                val output = FileOutputStream(file)
-                val bytes = ByteArray(1024)
-                val input = pair.second
-                
-                var index: Int
-                do {
-                    index = input.read(bytes)
-                    output.write(bytes, 0, index)
-                } while (index != -1)
-                
-                output.flush()
-                output.close()
-                input.close()
-            }
-        }
-        
-        val map = hashMapOf<String, File>()
-        folder.listFiles()?.forEach { 
-            if(it.extension in extensionImage) {
-                map[it.nameWithoutExtension] = it
-            }
-        }
-        
-        return map
-    }
-    
-    fun getMsgImageMap(vararg name: Pair<String, String>): ArrayList<Pair<String, InputStream>> {
-        val list = arrayListOf<Pair<String, InputStream>>()
-        name.forEach { pair ->
-            val theName = "${pair.first}.${pair.second}"
-            classLoader.getResourceAsStream("/$MESSAGE_IMAGES/$theName")?.let {
-                list += theName to it
-            }
-        }
-        return list
-    }
 }
