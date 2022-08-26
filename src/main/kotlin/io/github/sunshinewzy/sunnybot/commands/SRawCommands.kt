@@ -2,7 +2,6 @@ package io.github.sunshinewzy.sunnybot.commands
 
 import io.github.sunshinewzy.sunnybot.*
 import io.github.sunshinewzy.sunnybot.PluginMain.PERM_EXE_1
-import io.github.sunshinewzy.sunnybot.PluginMain.PERM_EXE_2
 import io.github.sunshinewzy.sunnybot.PluginMain.PERM_EXE_3
 import io.github.sunshinewzy.sunnybot.PluginMain.PERM_EXE_MEMBER
 import io.github.sunshinewzy.sunnybot.PluginMain.PERM_EXE_USER
@@ -12,6 +11,7 @@ import io.github.sunshinewzy.sunnybot.objects.*
 import io.github.sunshinewzy.sunnybot.objects.data.ImageData
 import io.github.sunshinewzy.sunnybot.objects.data.ImageData.Companion.getImageFromFile
 import io.github.sunshinewzy.sunnybot.objects.data.ImageLibraryData
+import io.github.sunshinewzy.sunnybot.objects.internal.RequestAddImage
 import io.github.sunshinewzy.sunnybot.timer.STimer
 import io.github.sunshinewzy.sunnybot.utils.MessageCache
 import io.github.sunshinewzy.sunnybot.utils.RconManager
@@ -25,10 +25,12 @@ import net.mamoe.mirai.console.command.CommandManager.INSTANCE.register
 import net.mamoe.mirai.console.command.CommandSender
 import net.mamoe.mirai.console.command.MemberCommandSender
 import net.mamoe.mirai.console.command.RawCommand
+import net.mamoe.mirai.console.permission.PermissionService.Companion.testPermission
 import net.mamoe.mirai.contact.*
 import net.mamoe.mirai.message.code.MiraiCode.deserializeMiraiCode
 import net.mamoe.mirai.message.data.*
 import net.mamoe.mirai.message.data.Image.Key.queryUrl
+import net.mamoe.mirai.message.data.MessageSource.Key.quote
 import net.mamoe.mirai.utils.ExternalResource.Companion.toExternalResource
 import net.mamoe.mirai.utils.ExternalResource.Companion.uploadAsVoice
 import net.mamoe.mirai.utils.MiraiExperimentalApi
@@ -1572,9 +1574,10 @@ object SCImage : SRawCommand(
     PluginMain,
     "ImageLibrary", "img",
     description = "图库", usage = "图库",
-    parentPermission = PERM_EXE_2
+    parentPermission = PERM_EXE_USER
 ) {
     private val libraryMap: MutableMap<String, ImageLibraryData> = hashMapOf()
+    private val commandPermission = PERM_EXE_1
     
     private const val CONFIRM = ".confirm"
     
@@ -1599,10 +1602,92 @@ object SCImage : SRawCommand(
         val contact = subject ?: return
         
         processSCommand(args) {
+            empty {
+                sendMsg(description, """
+                    > 指令参数
+                    add  -  添加图片到图库
+                    list  -  查看图库
+                    remove  -  删除图库或图片 (需要一级执行权限)
+                    edit  -  编辑图库 (需要一级执行权限)
+                """.trimIndent())
+            }
+            
             "add" add@{
                 sunnyScope.launch {
                     commandAdd(args, this@add)
                 }
+            }
+
+            "list" {
+                text lib@{
+                    val libName = text
+                    val data = contact.getLibrary(libName) ?: return@lib
+
+                    text image@{
+                        val imageName = text
+                        val imageData = data.imageMap[imageName] ?: kotlin.run {
+                            sendMsg(description, "图片 '$imageName' 不存在")
+                            return@image
+                        }
+
+                        sunnyScope.launch(Dispatchers.IO) {
+                            sendMsg(
+                                description,
+                                buildMessageChain {
+                                    +"> 图库 '$libName' 中的图片 '$imageName'\n"
+                                    addAll(imageData.getImages(contact))
+                                }
+                            )
+                        }
+                    }
+
+                    empty {
+                        val imageNames = data.imageMap.keys
+                        sendMsg(
+                            description,
+                            buildString {
+                                appendLine("在 [图库名] 后输入 [图片名] 以查看该图片")
+                                appendLine()
+
+                                append(
+                                    if(imageNames.isEmpty()) "> 图库 '$libName' 空空如也"
+                                    else "> 图库 '$libName' 的所有图片名\n${imageNames.joinToString()}"
+                                )
+                            }
+                        )
+                    }
+                }
+
+                empty {
+                    sendMsg(
+                        description,
+                        buildString {
+                            appendLine("在 list 后输入 [图库名] 以查看该图库存有的图片名")
+                            appendLine()
+
+                            val libs = SunnyData.image
+                            if (libs.isEmpty()) {
+                                append("> 当前没有任何图库")
+                            } else {
+                                appendLine("> 所有图库名")
+                                var flag = false
+                                libs.forEach { (key, lib) ->
+                                    if(flag) append(", ") else flag = true
+
+                                    if(lib.aliases.isEmpty()) {
+                                        append(lib.name)
+                                    } else {
+                                        append("${lib.name}(${lib.aliases.joinToString()})")
+                                    }
+                                }
+                            }
+                        }
+                    )
+                }
+            }
+
+            if(!commandPermission.testPermission(this@onCommand)) {
+                return@processSCommand
             }
 
             "remove" {
@@ -1659,65 +1744,6 @@ object SCImage : SRawCommand(
                 }
             }
 
-            "list" {
-                text lib@{ 
-                    val libName = text
-                    val data = contact.getLibrary(libName) ?: return@lib
-                    
-                    text image@{ 
-                        val imageName = text
-                        val imageData = data.imageMap[imageName] ?: kotlin.run { 
-                            sendMsg(description, "图片 '$imageName' 不存在")
-                            return@image
-                        }
-                        
-                        sunnyScope.launch(Dispatchers.IO) {
-                            sendMsg(
-                                description,
-                                buildMessageChain {
-                                    +"> 图库 '$libName' 中的图片 '$imageName'\n"
-                                    addAll(imageData.getImages(contact))
-                                }
-                            )
-                        }
-                    }
-                    
-                    empty {
-                        val imageNames = data.imageMap.keys
-                        sendMsg(
-                            description,
-                            buildString {
-                                appendLine("在 [图库名] 后输入 [图片名] 以查看该图片")
-                                appendLine()
-
-                                append(
-                                    if(imageNames.isEmpty()) "> 图库 '$libName' 空空如也"
-                                    else "> 图库 '$libName' 的所有图片名\n${imageNames.joinToString()}"
-                                )
-                            }
-                        )
-                    }
-                }
-                
-                empty {
-                    sendMsg(
-                        description,
-                        buildString {
-                            appendLine("在 list 后输入 [图库名] 以查看该图库存有的图片名")
-                            appendLine()
-
-                            val imageDataKeys = SunnyData.image.keys
-                            if (imageDataKeys.isEmpty()) {
-                                append("> 当前没有任何图库")
-                            } else {
-                                appendLine("> 所有图库名")
-                                append(imageDataKeys.joinToString())
-                            }
-                        }
-                    )
-                }
-            }
-            
             "edit" {
                 text lib@{
                     val libName = text
@@ -1766,7 +1792,20 @@ object SCImage : SRawCommand(
                             }
                             
                             empty { 
-                                sendMsg(description, "请在 [图片名] 后输入 [消息内容] 以添加消息图片")
+                                sendMsg(
+                                    description,
+                                    buildString { 
+                                        appendLine("请在 [图片名] 后输入 [消息内容] 以添加消息")
+                                        appendLine()
+                                        
+                                        if(imageData.messages.isEmpty()) {
+                                            append("> 图片 '$libName/$imageName' 没有消息")
+                                        } else {
+                                            appendLine("> 图片 '$libName/$imageName' 的所有消息")
+                                            append(imageData.messages.joinToString())
+                                        }
+                                    }
+                                )
                             }
                             
 //                            sunnyScope.launch(Dispatchers.IO) {
@@ -1802,16 +1841,6 @@ object SCImage : SRawCommand(
                 }
             }
             
-            
-            empty { 
-                sendMsg(description, """
-                    > 指令参数
-                    add  -  添加图片到图库
-                    remove  -  删除图库或图片
-                    list  -  查看图库
-                    edit  -  编辑图库
-                """.trimIndent())
-            }
         }
     }
 
@@ -1824,6 +1853,9 @@ object SCImage : SRawCommand(
     }
 
     private suspend fun CommandSender.commandAdd(args: MessageChain, wrapper: SCommandWrapper) {
+        val subject = subject ?: return
+        val user = user ?: return
+        
         wrapper.apply {
             text lib@{
                 val libName = text
@@ -1855,48 +1887,81 @@ object SCImage : SRawCommand(
                         return@image
                     }
 
-                    sunnyScope.launch(Dispatchers.IO) {
-                        val lib = getOrCreateLibrary(libName)
-                        
-                        val failedOrders = LinkedList<Int>()
-                        images.forEachIndexed { index, image ->
-                            val order = index + 1
-                            val queryUrl = image.queryUrl()
-                            val byteStream = SRequest(queryUrl).resultByteStream() ?: run {
-                                sendMsg(description, "第 $order 张图片下载连接获取失败")
-                                failedOrders += order
-                                return@forEachIndexed
-                            }
+                    var message = ""
+                    content(false) {
+                        message = it
+                    }
+                    
+                    sunnyScope.launch {
+                        if(!commandPermission.testPermission(this@commandAdd)) {
+                            val uuid = UUID.randomUUID()
+                            val msg = buildString {
+                                appendLine("[$uuid]")
+                                if(subject is Group) {
+                                    appendLine("群 ${subject.name}(${subject.id}) 中的 ${user.nameCardOrNick}(${user.id})")
+                                } else {
+                                    appendLine("${user.remarkOrNick}(${user.id})")
+                                }
 
-                            val fileName = "${lib.name}/${image.imageId.run { 
-                                if(endsWith(".mirai")) {
-                                    replaceAfterLast('.', "gif")
-                                } else this
-                            }}"
-                            if(!byteStream.copyToFile(
-                                    File(
-                                        PluginMain.dataFolder,
-                                        "image/$fileName"
-                                    )
-                                )) {
-                                sendMsg(description, "第 $order 张图片下载失败")
-                                failedOrders += order
-                                return@forEachIndexed
+                                appendLine("请求向图库 '$libName' 中添加图片 '$imageName'${if(message.isNotEmpty()) " <- '$message'" else ""}:")
+                            }.toPlainText() + images
+                            getSunnyAdminUsers().forEach { admin ->
+                                admin.sendMsg(description, msg)
                             }
-                            byteStream.close()
-
-                            lib.addImage(imageName, fileName)
+                            
+                            RequestAddImage.cacheMap[uuid.toString()] = RequestAddImage(libName, imageName, message, images)
+                            
+                            sendMsg(description, args.quote() + """
+                                成功申请向图库 '$libName' 中添加图片 '$imageName'${if (message.isNotEmpty()) " <- '$message'" else ""}
+                                请等待我的主人处理哦~
+                            """.trimIndent())
+                            return@launch
                         }
+                        
+                        val lib = getOrCreateLibrary(libName)
+                        withContext(Dispatchers.IO) {
+                            val failedOrders = LinkedList<Int>()
+                            images.forEachIndexed { index, image ->
+                                val order = index + 1
+                                val queryUrl = image.queryUrl()
+                                val byteStream = SRequest(queryUrl).resultByteStream() ?: run {
+                                    sendMsg(description, "第 $order 张图片下载连接获取失败")
+                                    failedOrders += order
+                                    return@forEachIndexed
+                                }
 
-                        sendMsg(description, """
+                                val fileName = "${lib.name}/${image.imageId.run {
+                                    if(endsWith(".mirai")) {
+                                        replaceAfterLast('.', "gif")
+                                    } else this
+                                }}"
+
+                                byteStream.use {
+                                    if(!it.copyToFile(
+                                            File(
+                                                PluginMain.dataFolder,
+                                                "image/$fileName"
+                                            )
+                                        )) {
+                                        sendMsg(description, "第 $order 张图片下载失败")
+                                        failedOrders += order
+                                        return@forEachIndexed
+                                    }
+                                }
+
+                                lib.addImage(imageName, fileName, message)
+                            }
+
+                            sendMsg(description, """
                             ${if(failedOrders.isEmpty()) "全部图片下载成功~" else "第 ${failedOrders.joinToString()} 张图片下载失败"}
-                            成功将 ${images.size - failedOrders.size} 张图片添加进图库 '$libName' 中的 '$imageName'
+                            成功将 ${images.size - failedOrders.size} 张图片添加进图库 '$libName' 中的 '$imageName'${if(message.isNotEmpty()) " <- '$message'" else ""}
                         """.trimIndent())
+                        }
                     }
                 }
 
                 empty {
-                    sendMsg(description, "请在 [图库名] 后输入 [图片名]")
+                    sendMsg(description, "请在 [图库名] 后输入 [图片名] ([消息名])")
                 }
 
             }

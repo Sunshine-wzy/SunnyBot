@@ -18,12 +18,23 @@ import net.mamoe.mirai.contact.User
 import net.mamoe.mirai.event.globalEventChannel
 import net.mamoe.mirai.message.data.Message
 import java.io.File
+import java.util.*
 
 val sunnyScope = CoroutineScope(SupervisorJob())
 val sunnyChannel = sunnyScope.globalEventChannel()
 var antiRecall: AntiRecall? = null
 //超级管理员
 val sunnyAdmins = listOf(1123574549L)
+
+fun getSunnyAdminUsers(): List<User> {
+    val list = LinkedList<User>()
+    sunnyAdmins.forEach { id->
+        sunnyBot.getUser(id)?.let { 
+            list += it
+        }
+    }
+    return list
+}
 
 suspend fun sunnyInit() {
     //注册简单指令

@@ -12,6 +12,7 @@ import net.mamoe.mirai.message.data.MessageChain
 import net.mamoe.mirai.message.data.PlainText
 import java.awt.image.BufferedImage
 import java.io.*
+import java.util.*
 import java.util.regex.Pattern
 import javax.imageio.ImageIO
 import kotlin.math.pow
@@ -272,6 +273,20 @@ fun <L: MutableList<String>> MessageChain.getPlainTextContents(list: L): L {
         }
     }
     return list
+}
+
+fun MessageChain.getPlainTextContents(): List<String> {
+    return LinkedList<String>().also { getPlainTextContents(it) }
+}
+
+fun MessageChain.getPlainTextContent(): String {
+    return buildString {
+        this@getPlainTextContent.forEach {
+            if(it is PlainText) {
+                append(it.content)
+            }
+        }
+    }
 }
 
 //endregion

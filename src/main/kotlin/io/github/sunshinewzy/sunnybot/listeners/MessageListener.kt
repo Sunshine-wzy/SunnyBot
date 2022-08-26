@@ -1,6 +1,6 @@
 package io.github.sunshinewzy.sunnybot.listeners
 
-import io.github.sunshinewzy.sunnybot.antiRecall
+import io.github.sunshinewzy.sunnybot.*
 import io.github.sunshinewzy.sunnybot.commands.SCImage
 import io.github.sunshinewzy.sunnybot.commands.SCMiraiCode
 import io.github.sunshinewzy.sunnybot.commands.SCommandManager
@@ -10,12 +10,11 @@ import io.github.sunshinewzy.sunnybot.objects.SBOwnThink
 import io.github.sunshinewzy.sunnybot.objects.SRequest
 import io.github.sunshinewzy.sunnybot.objects.data.ImageData
 import io.github.sunshinewzy.sunnybot.objects.getSData
+import io.github.sunshinewzy.sunnybot.objects.internal.RequestAddImage
 import io.github.sunshinewzy.sunnybot.objects.setRunningState
-import io.github.sunshinewzy.sunnybot.sendIntroduction
-import io.github.sunshinewzy.sunnybot.sendMsg
-import io.github.sunshinewzy.sunnybot.sunnyChannel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import net.mamoe.mirai.console.command.CommandSender.Companion.asCommandSender
 import net.mamoe.mirai.console.command.CommandSender.Companion.toCommandSender
 import net.mamoe.mirai.contact.Group
 import net.mamoe.mirai.contact.Member
@@ -23,11 +22,9 @@ import net.mamoe.mirai.event.EventPriority
 import net.mamoe.mirai.event.events.GroupMessageEvent
 import net.mamoe.mirai.event.events.MessageEvent
 import net.mamoe.mirai.event.events.MessageRecallEvent
+import net.mamoe.mirai.event.events.UserMessageEvent
 import net.mamoe.mirai.event.subscribeMessages
-import net.mamoe.mirai.message.data.At
-import net.mamoe.mirai.message.data.PlainText
-import net.mamoe.mirai.message.data.QuoteReply
-import net.mamoe.mirai.message.data.findIsInstance
+import net.mamoe.mirai.message.data.*
 
 object MessageListener {
     private val brackets = hashMapOf("(" to ")", "£¨" to "£©", "[" to "]", "¡¾" to "¡¿", "{" to "}", "<" to ">", "¡¶" to "¡·")
@@ -176,8 +173,34 @@ object MessageListener {
                 
                 SCMiraiCode.userGetMiraiCode.remove(sender)
             }
-            
-            it.message
+        }
+        
+        sunnyChannel.subscribeAlways<UserMessageEvent> { 
+            if(sender.isSunnyAdmin()) {
+                val firstContent = message.findIsInstance<PlainText>()?.content ?: return@subscribeAlways
+                if(firstContent.contentEquals("Y", true)) {
+                    val quoteReply = message[QuoteReply] ?: return@subscribeAlways
+                    val originMessage = quoteReply.source.originalMessage
+                    val text = originMessage.getPlainTextContent()
+                    
+                    val i = text.indexOf('[').takeIf { it != -1 } ?: return@subscribeAlways
+                    val j = text.indexOf(']').takeIf { it != -1 } ?: return@subscribeAlways
+                    val uuid = text.substring(i + 1, j).takeIf { it.length == 36 } ?: return@subscribeAlways
+                    val requestAddImage = RequestAddImage[uuid] ?: return@subscribeAlways
+                    
+                    requestAddImage.apply {
+                        SCImage.executeCommand(
+                            sender.asCommandSender(true),
+                            buildMessageChain { 
+                                +libName.toPlainText()
+                                +imageName.toPlainText()
+                                if(message.isNotEmpty()) +message.toPlainText()
+                                addAll(images)
+                            }
+                        )
+                    }
+                }
+            }
         }
         
     }

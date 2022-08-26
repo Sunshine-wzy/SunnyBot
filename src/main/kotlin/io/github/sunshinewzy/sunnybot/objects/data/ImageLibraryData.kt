@@ -16,8 +16,11 @@ class ImageLibraryData(
     val aliases: MutableSet<String> = hashSetOf()
 ) {
     
-    fun addImage(imageName: String, fileName: String) {
-        imageMap.getOrPut(imageName) { ImageData(imageName) }.fileNames += fileName
+    fun addImage(imageName: String, fileName: String, message: String = "") {
+        imageMap.getOrPut(imageName) { ImageData(imageName) }.apply {
+            fileNames += fileName
+            if(message.isNotEmpty()) addMessage(message)
+        }
     }
     
     fun getImageData(contact: Contact, imageName: String): ImageData? {
