@@ -150,7 +150,7 @@ object MessageListener {
 //                    }
                     
                     // ÏûÏ¢Í¼Æ¬
-                    ImageData.messageImages[content]?.let {
+                    ImageData.messageImages[content.lowercase()]?.let {
                         withContext(Dispatchers.IO) {
                             group.sendMessage(QuoteReply(message) + it.getImages(group))
                         }

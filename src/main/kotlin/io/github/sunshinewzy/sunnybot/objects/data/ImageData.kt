@@ -18,8 +18,9 @@ class ImageData(
     val messages: MutableSet<String> = hashSetOf()
 ) {
     fun addMessage(message: String) {
-        messages += message
-        messageImages[message] = this
+        val msg = message.lowercase()
+        messages += msg
+        messageImages[msg] = this
     }
     
     
