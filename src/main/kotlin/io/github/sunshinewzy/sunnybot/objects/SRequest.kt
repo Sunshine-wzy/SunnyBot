@@ -6,12 +6,12 @@ import io.github.sunshinewzy.sunnybot.toInputStream
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+import net.mamoe.mirai.contact.AudioSupported
 import net.mamoe.mirai.contact.Contact
+import net.mamoe.mirai.message.data.Audio
 import net.mamoe.mirai.message.data.Image
-import net.mamoe.mirai.message.data.Voice
 import net.mamoe.mirai.utils.ExternalResource.Companion.toExternalResource
 import net.mamoe.mirai.utils.ExternalResource.Companion.uploadAsImage
-import net.mamoe.mirai.utils.ExternalResource.Companion.uploadAsVoice
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -56,8 +56,10 @@ class SRequest(private val url: String) {
         return result(params)?.body?.byteStream()
     }
     
-    inline fun <reified T: SBean> resultBean(params: Map<String, Any> = emptyMap()): T {
-        return Gson().fromJson(resultString(params), T::class.java)
+    inline fun <reified T: SBean> resultBean(params: Map<String, Any> = emptyMap()): T? {
+        val string = resultString(params)
+        if(string.isEmpty()) return null
+        return Gson().fromJson(string, T::class.java)
     }
     
     
@@ -76,27 +78,19 @@ class SRequest(private val url: String) {
         return image
     }
 
-    fun resultVoice(contact: Contact): Voice? {
-        val theURL = URL(encodeUrl)
-        val connection = theURL.openConnection()
-        connection.setRequestProperty("Accept-Language", "zh-CN,zh;q=0.9,zh-TW;q=0.8,en-US;q=0.7,en;q=0.6")
-        val input = connection.getInputStream()
-        
-//        val buffer = ByteArray(1204)
-//        var byteReader = input.read(buffer)
-//        while(byteReader != -1){
-//            byteReader = input.read(buffer)
-//        }
+    suspend fun resultAudio(contact: Contact): Audio? {
+        val audioSupported = contact as? AudioSupported ?: return null
 
-        var voice: Voice?
-        runBlocking {
-            val extResource = input.toExternalResource()
-            voice = extResource.uploadAsVoice(contact)
-            withContext(Dispatchers.IO) {
-                extResource.close()
+        return withContext(Dispatchers.IO) {
+            val theURL = URL(encodeUrl)
+            val connection = theURL.openConnection()
+            connection.setRequestProperty("Accept-Language", "zh-CN,zh;q=0.9,zh-TW;q=0.8,en-US;q=0.7,en;q=0.6")
+            val input = connection.getInputStream()
+            
+            input.toExternalResource().use {
+                audioSupported.uploadAudio(it)
             }
         }
-        return voice
     }
     
     

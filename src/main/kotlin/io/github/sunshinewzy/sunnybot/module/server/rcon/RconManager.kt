@@ -1,6 +1,5 @@
-package io.github.sunshinewzy.sunnybot.utils
+package io.github.sunshinewzy.sunnybot.module.server.rcon
 
-import io.github.sunshinewzy.sunnybot.objects.CustomRcon
 import io.github.sunshinewzy.sunnybot.objects.RconData
 import java.util.concurrent.ConcurrentHashMap
 

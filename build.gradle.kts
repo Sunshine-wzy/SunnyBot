@@ -1,12 +1,11 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    val kotlinVersion = "1.5.10"
+    val kotlinVersion = "1.6.21"
     kotlin("jvm") version kotlinVersion
     kotlin("plugin.serialization") version kotlinVersion
-
-    id("net.mamoe.mirai-console") version "2.9.2"
-    id("com.github.johnrengelman.shadow") version "2.0.4"
+    
+    id("net.mamoe.mirai-console") version "2.12.2"
 }
 
 dependencies {
@@ -19,10 +18,17 @@ dependencies {
     
     implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar"))))
     implementation(kotlin("stdlib-jdk8"))
+    
+    shadowLink("nl.vv32.rcon:rcon")
+    shadowLink("com.github.Sunshine-wzy:rkon-core")
+
+
+    testImplementation(platform("org.junit:junit-bom:5.9.0"))
+    testImplementation("org.junit.jupiter:junit-jupiter")
 }
 
 group = "io.github.sunshinewzy"
-version = "1.2.4"
+version = "1.2.5"
 
 repositories {
     mavenLocal()
@@ -50,6 +56,13 @@ tasks {
     compileKotlin {
         kotlinOptions {
             freeCompilerArgs = freeCompilerArgs + "-Xopt-in=kotlin.RequiresOptIn"
+        }
+    }
+
+    test {
+        useJUnitPlatform()
+        testLogging {
+            events("passed", "skipped", "failed")
         }
     }
 }

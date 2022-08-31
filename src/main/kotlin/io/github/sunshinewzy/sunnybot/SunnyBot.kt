@@ -144,7 +144,7 @@ object SunnyBot {
                 names += it.nameWithoutExtension
             }
 
-            val popular = SRequest(SCSound.popularUrl).resultBean<SBSounds>()
+            val popular = SRequest(SCSound.popularUrl).resultBean<SBSounds>() ?: return@launch
             popular.sounds.forEach { sound ->
                 if(!names.contains(sound.title)){
                     val slug = sound.slug

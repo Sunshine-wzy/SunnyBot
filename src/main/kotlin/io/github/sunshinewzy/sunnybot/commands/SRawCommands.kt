@@ -7,6 +7,9 @@ import io.github.sunshinewzy.sunnybot.PluginMain.PERM_EXE_MEMBER
 import io.github.sunshinewzy.sunnybot.PluginMain.PERM_EXE_USER
 import io.github.sunshinewzy.sunnybot.enums.ServerType
 import io.github.sunshinewzy.sunnybot.enums.SunSTSymbol
+import io.github.sunshinewzy.sunnybot.module.server.ping.SServerPing
+import io.github.sunshinewzy.sunnybot.module.server.ping.SServerPing.pingServer
+import io.github.sunshinewzy.sunnybot.module.server.rcon.RconManager
 import io.github.sunshinewzy.sunnybot.objects.*
 import io.github.sunshinewzy.sunnybot.objects.data.ImageData
 import io.github.sunshinewzy.sunnybot.objects.data.ImageData.Companion.getImageFromFile
@@ -14,10 +17,7 @@ import io.github.sunshinewzy.sunnybot.objects.data.ImageLibraryData
 import io.github.sunshinewzy.sunnybot.objects.internal.RequestAddImage
 import io.github.sunshinewzy.sunnybot.timer.STimer
 import io.github.sunshinewzy.sunnybot.utils.MessageCache
-import io.github.sunshinewzy.sunnybot.utils.RconManager
 import io.github.sunshinewzy.sunnybot.utils.SLaTeX.laTeXImage
-import io.github.sunshinewzy.sunnybot.utils.SServerPing
-import io.github.sunshinewzy.sunnybot.utils.SServerPing.pingServer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -32,7 +32,6 @@ import net.mamoe.mirai.message.data.*
 import net.mamoe.mirai.message.data.Image.Key.queryUrl
 import net.mamoe.mirai.message.data.MessageSource.Key.quote
 import net.mamoe.mirai.utils.ExternalResource.Companion.toExternalResource
-import net.mamoe.mirai.utils.ExternalResource.Companion.uploadAsVoice
 import net.mamoe.mirai.utils.MiraiExperimentalApi
 import java.io.File
 import java.text.SimpleDateFormat
@@ -63,19 +62,6 @@ fun regSRawCommands() {
     SCJavaDoc.register()
     SCImage.registerSCommand()
     
-    //默认m*为任意群员 u*为任意用户
-//    SCLaTeX.reg("u*")
-//    SCDailySignIn.reg("u*")
-//    SCServerInfo.reg("u*")
-//    SCIpBind.reg()
-//    SCXmlMessage.reg("u*")
-//    SCRandomImage.reg("u*")
-//    SCWords.reg("u*")
-//    SCSound.reg("u*")
-//    SCGroupManager.reg()
-//    SCMiraiCode.reg("u*")
-//    SCMoeImage.reg("u*")
-
     //Debug
 //    SCDebugLaTeX.reg("console")
 }
@@ -226,44 +212,57 @@ object SCServerInfo: RawCommand(
     "ServerInfo", "server", "zt", "服务器状态", "状态", "服务器",
     description = "服务器状态查询",
     usage = "服务器状态查询" usageWith """
-        /zt         默认查询方式
-        /zt m       显示详细mod信息
-        /zt [IP代号] 根据代号绑定的IP查询
-        /zt [ip]    根据IP查询
+        /zt         查询默认服务器简略状态信息
+        /zt all     查询默认服务器详细状态信息
+        /zt list     查询默认服务器详细状态信息与在线玩家列表
+        /zt [IP代号] 查询代号绑定的服务器详细状态信息
+        /zt [ip]    查询给定IP的服务器详细状态信息
     """.trimIndent(),
-    parentPermission = PERM_EXE_USER
+    parentPermission = PERM_EXE_MEMBER
 ) {
 
     override suspend fun CommandSender.onCommand(args: MessageChain) {
         val str = args.contentToString()
-        
-        if(user == null || user !is Member)
-            return
-        val member = user as Member
+        val member = user as? Member ?: return
         val group = member.group
         val sGroup = group.getSGroup()
 
-        if(sGroup.serverIps.containsKey(str)) {
-            sGroup.serverIps[str]?.let {
-                group.sendMsg(description, group.pingServer(it.second, it.first))
+        if(sGroup.serverIp.first != ServerType.NOT) {
+            if(args.isEmpty() || str == "") {
+                group.pingServer(sGroup.serverIp.second, sGroup.serverIp.first)
+                return
+            }
+
+            if(str == "all") {
+                group.pingServer(sGroup.serverIp.second, sGroup.serverIp.first, isDetailed = true)
+                return
+            }
+
+            if(str == "list") {
+                group.pingServer(sGroup.serverIp.second, sGroup.serverIp.first, isDetailed = true, isPlayerSample = true)
+                return
             }
         }
+
+        sGroup.serverIps[str]?.let {
+            group.pingServer(it.second, it.first, isDetailed = true, isPlayerSample = true)
+            return
+        }
         
-        else if((str == "m" || str == "" || args.isEmpty()) && sGroup.serverIp.first != ServerType.NOT)
-            group.sendMsg(description, group.pingServer(sGroup.serverIp.second, sGroup.serverIp.first, str.contains("m")))
-        
-        else if(str != ""){
+        if(str != "") {
             val check = SServerPing.checkServer(str)
             if(check != ServerType.NOT)
-                group.sendMsg(description, group.pingServer(str, check, true))
+                group.pingServer(str, check, isDetailed = true, isPlayerSample = true)
             else group.sendMsg(description, "查询失败= =\n" +
                 "请确保服务器IP正确且当前服务器在线！")
+            
+            return
         }
 
-        else sendMessage("""
-                本群还未绑定服务器
-                请输入 "/ip 服务器IP" 以绑定服务器
-            """.trimIndent())
+        sendMsg(description, """
+            本群还未绑定服务器
+            请输入 "/ip 服务器IP" 以绑定服务器
+        """.trimIndent())
     }
 }
 
@@ -276,93 +275,104 @@ object SCIpBind: RawCommand(
 ) {
 
     override suspend fun CommandSender.onCommand(args: MessageChain) {
-        if(user != null && user is Member){
-            val member = user as Member
-            val group = member.group
-            val sGroup = group.getSGroup()
+        val member = user as? Member ?: return
+        val group = member.group
+        val sGroup = group.getSGroup()
 
+
+        processSCommand(args) {
+            "bind" {
+                content(false) {
+                    sunnyScope.launch {
+                        val check = SServerPing.checkServer(it)
+                        if(check != ServerType.NOT){
+                            sGroup.serverIp = check to it
+                            sendMsg("$it ($check) 绑定成功！")
+                        } else sendMsg(description, "绑定失败= =\n" +
+                            "请确保服务器IP正确且当前服务器在线！")
+                    }
+                }
+
+                empty {
+                    sendMsg(description, """
+                        请在bind后输入: [服务器IP]
+                        例: /ip bind www.baidu.com
+                        
+                        Tip: 使用 /zt 即可查询绑定的默认IP的服务器状态
+                    """.trimIndent())
+                }
+            }
             
-            processSCommand(args) {
-                "set" {
-                    contents { list ->
-                        val symbol = list.first
-                        if(symbol.isLetterDigitOrChinese()) {
-                            if(list.size >= 2) {
-                                val ip = list[1]
+            "set" {
+                contents { list ->
+                    val symbol = list.first
+                    if(symbol.isLetterDigitOrChinese()) {
+                        if(list.size >= 2) {
+                            val ip = list[1]
+                            sunnyScope.launch {
                                 val check = SServerPing.checkServer(ip)
                                 if(check != ServerType.NOT){
                                     sGroup.serverIps[symbol] = check to ip
                                     sendMsg("$ip ($check) 绑定成功！")
                                 } else sendMsg(description, "绑定失败= =\n" +
                                     "请确保服务器IP正确且当前服务器在线！")
-                            } else sendMsg(description, "请在 [IP代号] 后输入 [服务器IP]")
-                            
-                            
-                        } else sendMsg(description, "IP的代号只能含有英文、数字、汉字，不能包含任何符号！")
-                    }
-                    
-                    empty { 
-                        sendMsg(description, """
-                            请在set后输入: [绑定IP的代号] [服务器IP]
-                            例: /ip set bd www.baidu.com
-                            
-                            Tips:
-                            IP的代号只能含有英文、数字、汉字，不能包含任何符号！
-                        """.trimIndent())
-                    }
-                }
-                
-                "remove" {
-                    content(false) { 
-                        if(sGroup.serverIps.containsKey(it)) {
-                            sGroup.serverIps.remove(it)
-                            sendMsg(description, "IP代号 '$it' 删除成功~")
-                        } else sendMsg(description, "IP代号 '$it' 不存在！")
-                    }
-                }
-                
-                "list" {
-                    empty { 
-                        if(sGroup.serverIps.isEmpty()) {
-                            sendMsg(description, "本群未绑定任何IP代号！")
-                            return@empty
-                        }
+                            }
+                        } else sendMsg(description, "请在 [IP代号] 后输入 [服务器IP]")
                         
-                        var symbolIps = "已绑定的所有IP代号:"
-                        var index = 1
-                        sGroup.serverIps.forEach { (symbol, pair) -> 
-                            symbolIps += "\n$index. $symbol -> ${pair.second} (${pair.first})"
-                            index++
-                        }
                         
-                        sendMsg(description, symbolIps)
-                    }
+                    } else sendMsg(description, "IP的代号只能含有英文、数字、汉字，不能包含任何符号！")
                 }
                 
-                content(false) {
-                    if(it.startsWith("set") || it.startsWith("remove") || it.startsWith("list"))
-                        return@content
-                    
-                    val check = SServerPing.checkServer(it)
-                    if(check != ServerType.NOT){
-                        sGroup.serverIp = check to it
-                        sendMsg("$it ($check) 绑定成功！")
-                    } else sendMsg(description, "绑定失败= =\n" +
-                        "请确保服务器IP正确且当前服务器在线！")
-                }
-                
-                empty {
-                    sendMsg(
-                        description, """
-                            命令参数:
-                            set     -   设置绑定IP代号
-                            remove  -   移除IP代号
-                            list    -   显示所有IP代号
-                        """.trimIndent())
+                empty { 
+                    sendMsg(description, """
+                        请在set后输入: [绑定IP的代号] [服务器IP]
+                        例: /ip set bd www.baidu.com
+                        
+                        Tips:
+                        IP的代号只能含有英文、数字、汉字，不能包含任何符号！
+                    """.trimIndent())
                 }
             }
+            
+            "remove" {
+                content(false) { 
+                    if(sGroup.serverIps.containsKey(it)) {
+                        sGroup.serverIps.remove(it)
+                        sendMsg(description, "IP代号 '$it' 删除成功~")
+                    } else sendMsg(description, "IP代号 '$it' 不存在！")
+                }
+            }
+            
+            "list" {
+                empty { 
+                    if(sGroup.serverIps.isEmpty()) {
+                        sendMsg(description, "本群未绑定任何IP代号！")
+                        return@empty
+                    }
+                    
+                    var symbolIps = "已绑定的所有IP代号:"
+                    var index = 1
+                    sGroup.serverIps.forEach { (symbol, pair) -> 
+                        symbolIps += "\n$index. $symbol -> ${pair.second} (${pair.first})"
+                        index++
+                    }
+                    
+                    sendMsg(description, symbolIps)
+                }
+            }
+            
+            empty {
+                sendMsg(
+                    description, """
+                        命令参数:
+                        bind  -  绑定默认IP
+                        set  -  设置绑定IP代号
+                        remove  -  移除IP代号
+                        list  -  显示所有IP代号
+                    """.trimIndent())
+            }
         }
-        
+
     }
     
 }
@@ -578,6 +588,8 @@ object SCSound : RawCommand(
     
     override suspend fun CommandSender.onCommand(args: MessageChain) {
         val contact = subject ?: return
+        val audioSupported = contact as? AudioSupported ?: return
+        
         val arg = args.findIsInstance<PlainText>()?.content
         var text = ""
         
@@ -599,10 +611,12 @@ object SCSound : RawCommand(
                 if(order - 1 in files.indices){
                     val sound = files[order - 1]
                     
-                    contact.sendMessage(sound.toExternalResource().uploadAsVoice(contact))
+                    sound.toExternalResource().use { 
+                        contact.sendMessage(audioSupported.uploadAudio(it))
+                    }
                     text = "${sound.nameWithoutExtension} 奉上~"
                 }
-                else{
+                else {
                     text = "获取失败！\n不存在序号 $order"
                 }
             }

@@ -107,7 +107,9 @@ object SGChess : SGroupGame("Î§Æå", RunningState.CHESS) {
         if(board.judge(group, x, y))
             return
         
-        val image = board.printBoard().toInputStream()?.uploadAsImage(group) ?: return
+        val image = board.printBoard().toInputStream()?.use { 
+            it.uploadAsImage(group)
+        } ?: return
         group.sendMsg(name, image)
         
         //»ØºÏ¸üÌæ
@@ -182,7 +184,9 @@ object SGChess : SGroupGame("Î§Æå", RunningState.CHESS) {
                 )
                 
                 dataChess.init()
-                val image = dataChess.board?.printBoard()?.toInputStream()?.uploadAsImage(group) ?: return
+                val image = dataChess.board?.printBoard()?.toInputStream()?.use { 
+                    it.uploadAsImage(group)
+                } ?: return
                 group.sendMsg(name, image)
                 group.sendMsg(
                     name, At(dataChess.players[1]!!) +

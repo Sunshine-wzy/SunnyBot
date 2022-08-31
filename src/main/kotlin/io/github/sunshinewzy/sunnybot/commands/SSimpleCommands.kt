@@ -39,16 +39,6 @@ fun regSSimpleCommands() {
     SCBingPicture.register()
 //    SCOpen.register()
     
-    //默认m*为任意群员 u*为任意用户
-//    SCMenu.reg("u*")
-//    SCGameMenu.reg()
-//    SCInfo.reg("u*")
-//    SCAntiRecall.reg()
-//    SCJavaDoc.reg("u*")
-//    SCRepeater.reg()
-//    SCBingPicture.reg()
-//    SCOpen.reg()
-    
     //Debug
 }
 

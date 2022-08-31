@@ -26,5 +26,7 @@ object SLaTeX {
         return bimg
     }
     
-    suspend fun Contact.laTeXImage(formula: String): Image? = generate(formula).toInputStream()?.uploadAsImage(this)
+    suspend fun Contact.laTeXImage(formula: String): Image? = generate(formula).toInputStream()?.use {
+        it.uploadAsImage(this)
+    }
 }

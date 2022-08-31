@@ -1,4 +1,4 @@
-package io.github.sunshinewzy.sunnybot.objects
+package io.github.sunshinewzy.sunnybot.module.server.rcon
 
 import io.github.sunshinewzy.sunnybot.removeColor
 import net.kronos.rkon.core.Rcon

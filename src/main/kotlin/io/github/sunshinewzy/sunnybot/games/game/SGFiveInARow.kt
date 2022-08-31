@@ -105,7 +105,9 @@ object SGFiveInARow : SGroupGame("五子棋", RunningState.FIVE_IN_A_ROW) {
             return
         }
 
-        val image = board.printBoard().toInputStream()?.uploadAsImage(group) ?: return
+        val image = board.printBoard().toInputStream()?.use { 
+            it.uploadAsImage(group)
+        } ?: return
         group.sendMsg(name, image)
 
         if(board.judge(x, y)) {
@@ -198,7 +200,9 @@ object SGFiveInARow : SGroupGame("五子棋", RunningState.FIVE_IN_A_ROW) {
                 )
                 
                 dataChess.init()
-                val image = dataChess.board?.printBoard()?.toInputStream()?.uploadAsImage(group) ?: return
+                val image = dataChess.board?.printBoard()?.toInputStream()?.use { 
+                    it.uploadAsImage(group)
+                } ?: return
                 group.sendMsg(name, image)
                 group.sendMsg(
                     name, At(dataChess.players[1]!!) +
