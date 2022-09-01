@@ -5,6 +5,7 @@ import com.google.gson.Gson;
 import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 
 public class ServerPing {
     private static final Gson gson = new Gson();
@@ -118,9 +119,9 @@ public class ServerPing {
 
         byte[] in = new byte[length];
         dataInputStream.readFully(in);  //read json string
-        String json = new String(in);
+        String json = new String(in, StandardCharsets.UTF_8);
 
-
+        
         long now = System.currentTimeMillis();
         dataOutputStream.writeByte(0x09); //size of packet
         dataOutputStream.writeByte(0x01); //0x01 for ping

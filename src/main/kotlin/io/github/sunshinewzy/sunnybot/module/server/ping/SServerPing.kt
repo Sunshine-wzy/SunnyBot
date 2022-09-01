@@ -13,6 +13,7 @@ import net.mamoe.mirai.contact.Contact.Companion.uploadImage
 import net.mamoe.mirai.message.data.buildMessageChain
 import java.net.InetAddress
 import java.net.InetSocketAddress
+import javax.naming.directory.InitialDirContext
 
 object SServerPing {
     const val apiBEServer = "http://motdpe.blackbe.xyz/api.php"
@@ -54,9 +55,14 @@ object SServerPing {
         }
 
         return withContext(Dispatchers.IO) {
+            val newIp = resolveIp(hostname, port) ?: kotlin.run { 
+                sendMsg(description, "服务器IP解析失败")
+                return@withContext false
+            }
+            
             val ping = kotlin.runCatching {
-                val address = InetAddress.getByName(hostname)
-                ServerPing(InetSocketAddress(address, port))
+                val address = InetAddress.getByName(newIp.first)
+                ServerPing(InetSocketAddress(address, newIp.second))
             }.onFailure {
                 sendMsg(description, "无法连接到服务器")
             }.getOrNull() ?: return@withContext false
@@ -83,15 +89,16 @@ object SServerPing {
                     if(isDetailed) {
                         +"""
                             服务器IP: $ip
-                            解析IP: ${ping.host.address.hostName}:${ping.host.port}
+                            解析IP: ${newIp.first}:${newIp.second}
                             服务器版本: ${response.version.name}
                             在线人数: ${response.players.online}/${response.players.max}
                             协议版本: ${response.version.protocol}
                             延迟: ${ping.ping}ms
                             
-                            MOTD:
-                            ${response.description.text}
+                            > 
                         """.trimIndent()
+                        +response.description.text
+                        +response.description.extraContent
                     } else {
                         +"""
                             服务器IP: $ip
@@ -102,12 +109,13 @@ object SServerPing {
                     }
 
                     if(isPlayerSample) {
-                        appendLine().appendLine()
-                        +"> 在线玩家列表"
-                        appendLine()
-
-                        +response.players.sample.joinToString {
+                        response.players?.sample?.joinToString {
                             it.name
+                        }?.let {
+                            appendLine().appendLine()
+                            +"> 在线玩家列表"
+                            appendLine()
+                            +it
                         }
                     }
                 }
@@ -164,13 +172,15 @@ object SServerPing {
         val (hostname, port) = ip.toIpAndPort() ?: return NOT
 
         return withContext(Dispatchers.IO) {
-            kotlin.runCatching {
-                val address = InetAddress.getByName(hostname)
-                ServerPing(InetSocketAddress(address, port)).fetchData()
-            }.onSuccess { 
-                return@withContext JAVA_EDITION
+            resolveIp(hostname, port)?.let { newIp ->
+                kotlin.runCatching {
+                    val address = InetAddress.getByName(newIp.first)
+                    ServerPing(InetSocketAddress(address, newIp.second)).fetchData()
+                }.onSuccess {
+                    return@withContext JAVA_EDITION
+                }
             }
-
+            
             kotlin.runCatching {
                 pingBEServer(ip)
             }.onSuccess { 
@@ -185,6 +195,20 @@ object SServerPing {
     fun pingBEServer(serverIp: String): SBBEServerPing? {
         val (ip, port) = serverIp.toIpAndPort() ?: return null
         return SRequest(apiBEServer).resultBean(mapOf("ip" to ip, "port" to port))
+    }
+    
+    fun resolveIp(hostname: String, port: Int): Pair<String, Int>? {
+        try {
+            val host = InitialDirContext().getAttributes("dns:/_Minecraft._tcp.$hostname", arrayOf("SRV")).get("SRV")
+            val domain = host.toString().split(' ')
+            val newIp = domain.last().let { 
+                it.substring(0, it.length - 1)
+            }
+            val newPort = domain[domain.size - 2].toInt()
+            return newIp to newPort
+        } catch (_: Exception) {}
+        
+        return null
     }
     
     
