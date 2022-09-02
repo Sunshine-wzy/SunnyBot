@@ -1,16 +1,14 @@
 package io.github.sunshinewzy.sunnybot.commands
 
-import io.github.sunshinewzy.sunnybot.PluginMain
+import io.github.sunshinewzy.sunnybot.*
 import io.github.sunshinewzy.sunnybot.PluginMain.PERM_EXE_2
 import io.github.sunshinewzy.sunnybot.PluginMain.PERM_EXE_MEMBER
 import io.github.sunshinewzy.sunnybot.PluginMain.PERM_EXE_USER
-import io.github.sunshinewzy.sunnybot.antiRecall
 import io.github.sunshinewzy.sunnybot.games.SGameManager
-import io.github.sunshinewzy.sunnybot.isSunnyAdmin
 import io.github.sunshinewzy.sunnybot.objects.SRequest
 import io.github.sunshinewzy.sunnybot.objects.getSGroup
 import io.github.sunshinewzy.sunnybot.objects.getSPlayer
-import io.github.sunshinewzy.sunnybot.sendMsg
+import io.github.sunshinewzy.sunnybot.utils.SImage
 import net.mamoe.mirai.console.command.CommandManager.INSTANCE.register
 import net.mamoe.mirai.console.command.CommandManager.INSTANCE.registeredCommands
 import net.mamoe.mirai.console.command.CommandSender
@@ -21,6 +19,7 @@ import net.mamoe.mirai.contact.isOperator
 import net.mamoe.mirai.message.data.At
 import net.mamoe.mirai.message.data.LightApp
 import net.mamoe.mirai.message.data.PlainText
+import java.awt.image.BufferedImage
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -46,25 +45,33 @@ fun regSSimpleCommands() {
 object SCMenu: SimpleCommand(
     PluginMain,
     "Menu", "cd", "菜单", "功能",
-    description = "菜单|功能列表",
+    description = "菜单",
     parentPermission = PERM_EXE_USER
 ) {
-    @Handler
-    suspend fun CommandSender.handle() {
-        val text = StringBuilder("===============\n")
-        PluginMain.registeredCommands.forEach { 
+    private val menuImage: BufferedImage by lazy {
+        val text = StringBuilder()
+        PluginMain.registeredCommands.forEach {
             if(it.usage.contains("Debug")) return@forEach
-            
+
             text.append("◆ ${it.usage.replaceFirst("\n", "")}\n")
-            
+
             it.secondaryNames.forEach { seName ->
                 text.append("/$seName  ")
             }
             text.append("\n\n")
         }
-        text.append("===============\n")
+
+        SImage.showTextWithSilverBackground(text.toString())
+    }
+    
+    
+    @Handler
+    suspend fun CommandSender.handle() {
+        val subject = subject ?: return
         
-        subject?.sendMsg("菜单 | 功能列表", text.toString())
+        menuImage.uploadAsImage(subject)?.let {
+            sendMsg(description, it)
+        } ?: sendMsg(description, "图片加载失败")
     }
 }
 

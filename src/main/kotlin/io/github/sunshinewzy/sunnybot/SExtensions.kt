@@ -7,9 +7,11 @@ import net.mamoe.mirai.console.command.CommandSender
 import net.mamoe.mirai.contact.Contact
 import net.mamoe.mirai.contact.Member
 import net.mamoe.mirai.contact.User
+import net.mamoe.mirai.message.data.Image
 import net.mamoe.mirai.message.data.Message
 import net.mamoe.mirai.message.data.MessageChain
 import net.mamoe.mirai.message.data.PlainText
+import net.mamoe.mirai.utils.ExternalResource.Companion.uploadAsImage
 import java.awt.image.BufferedImage
 import java.io.*
 import java.util.*
@@ -193,6 +195,14 @@ fun BufferedImage.toInputStream(): InputStream? {
         return ByteArrayInputStream(os.toByteArray())
     } catch (e: IOException) {
         e.printStackTrace()
+    }
+    
+    return null
+}
+
+suspend fun BufferedImage.uploadAsImage(contact: Contact): Image? {
+    toInputStream()?.use { 
+        return it.uploadAsImage(contact)
     }
     
     return null

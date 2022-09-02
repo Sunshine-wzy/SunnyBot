@@ -125,14 +125,16 @@ object MessageListener {
                     return@atBot
                 }
 
-                val ownThink = SRequest("https://api.ownthink.com/bot?spoken=$msg")
-                    .resultBean<SBOwnThink>() ?: kotlin.run {
+                withContext(Dispatchers.IO) {
+                    val ownThink = SRequest("https://api.ownthink.com/bot?spoken=$msg").resultBean<SBOwnThink>() ?: kotlin.run {
                         member.group.sendMessage("思 考 不 能")
-                        return@atBot
+                        return@withContext
+                    }
+
+                    if(ownThink.message == "success") {
+                        member.group.sendMessage(QuoteReply(message) + At(member) + " ${ownThink.data.info.text}")
+                    } else member.group.sendMessage("思 考 不 能")
                 }
-                if(ownThink.message == "success") {
-                    member.group.sendMessage(QuoteReply(message) + At(member) + " ${ownThink.data.info.text}")
-                } else member.group.sendMessage("思 考 不 能")
 
             }
 

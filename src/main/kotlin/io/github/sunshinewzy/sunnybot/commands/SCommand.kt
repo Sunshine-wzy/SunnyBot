@@ -30,10 +30,6 @@ class SCommandWrapper(val cmdArgs: LinkedList<String>) {
     var text = ""
     
     
-    fun process() {
-        
-    }
-    
     private fun wrap(name: String, cmd: SCWrapper, type: Type = NORMAL) {
         var theText = ""
         

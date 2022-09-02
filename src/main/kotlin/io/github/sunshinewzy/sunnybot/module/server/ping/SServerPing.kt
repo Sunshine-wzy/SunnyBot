@@ -98,6 +98,7 @@ object SServerPing {
                             > 
                         """.trimIndent()
                         +response.description.text
+                        appendLine()
                         +response.description.extraContent
                     } else {
                         +"""
@@ -148,8 +149,7 @@ object SServerPing {
                     Ð­Òé°æ±¾: ${bean.agreement}
                     ÑÓ³Ù: ${bean.delay}ms
                     
-                    MOTD:
-                    ${bean.motd}
+                    > ${bean.motd}
                 """.trimIndent())
                 } else {
                     sendMsg(description, """

@@ -548,13 +548,16 @@ object SCWords : RawCommand(
         val plainText = args.findIsInstance<PlainText>()
 
         var words: String? = null
-        if(plainText == null || plainText.content == ""){
-            words = SRequest(url).resultString()
-        }
-        else{
+        if(plainText == null || plainText.content == "") {
+            words = withContext(Dispatchers.IO) {
+                SRequest(url).resultString()
+            }
+        } else {
             val text = plainText.content
             if(params.contains(text)){
-                words = SRequest("$url?lang=$text").resultString()
+                words = withContext(Dispatchers.IO) {
+                    SRequest("$url?lang=$text").resultString()
+                }
             }
             else{
                 var res = "参数不正确！\n请输入以下参数之一:\n"
@@ -566,7 +569,7 @@ object SCWords : RawCommand(
         }
 
 
-        if(words == null){
+        if(words == null) {
             contact.sendMsg(description, "一言获取失败...")
             return
         }
@@ -913,17 +916,15 @@ object SCMoeImage : RawCommand(
         val user = user ?: return
         
         if(!user.isSunnyAdmin() || args.isEmpty()) {
-            sunnyScope.launch(Dispatchers.IO) {
-                SRequest(apiPcUrl).resultImage(contact)?.let { image ->
-                    sendMsg(description, image)
-                }
+            SRequest(apiPcUrl).resultImage(contact)?.let { image ->
+                sendMsg(description, image)
             }
             return
         }
         
         processSCommand(args) {
             content(false) { 
-                sunnyScope.launch(Dispatchers.IO) {
+                sunnyScope.launch {
                     SRequest(apiUrl + it).resultImage(contact)?.let { image ->
                         sendMsg(description, image)
                     }

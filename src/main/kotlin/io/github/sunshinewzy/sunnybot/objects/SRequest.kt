@@ -2,16 +2,14 @@ package io.github.sunshinewzy.sunnybot.objects
 
 import com.google.gson.Gson
 import io.github.sunshinewzy.sunnybot.isChineseChar
-import io.github.sunshinewzy.sunnybot.toInputStream
+import io.github.sunshinewzy.sunnybot.uploadAsImage
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import net.mamoe.mirai.contact.AudioSupported
 import net.mamoe.mirai.contact.Contact
 import net.mamoe.mirai.message.data.Audio
 import net.mamoe.mirai.message.data.Image
 import net.mamoe.mirai.utils.ExternalResource.Companion.toExternalResource
-import net.mamoe.mirai.utils.ExternalResource.Companion.uploadAsImage
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -63,19 +61,12 @@ class SRequest(private val url: String) {
     }
     
     
-    fun resultImage(contact: Contact): Image? {
-        var image: Image? = null
-        
-        try {
-            val bufImg = ImageIO.read(URL(url))
-            runBlocking { 
-                image = bufImg?.toInputStream()?.uploadAsImage(contact)
+    suspend fun resultImage(contact: Contact): Image? {
+        return try {
+            withContext(Dispatchers.IO) {
+                ImageIO.read(URL(url))?.uploadAsImage(contact)
             }
-        } catch (_: Exception) {
-            
-        }
-        
-        return image
+        } catch (_: Exception) { null }
     }
 
     suspend fun resultAudio(contact: Contact): Audio? {
