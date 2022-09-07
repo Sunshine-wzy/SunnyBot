@@ -6,10 +6,12 @@ import io.github.sunshinewzy.sunnybot.functions.DailySignIn
 import io.github.sunshinewzy.sunnybot.objects.SSaveGroup
 import io.github.sunshinewzy.sunnybot.utils.SImage
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import net.mamoe.mirai.message.data.AtAll
 import net.mamoe.mirai.message.data.toPlainText
 import java.util.*
+import kotlin.random.Random
 
 object STimer : Runnable {
     private val time = STime()
@@ -64,6 +66,8 @@ object STimer : Runnable {
                                                     imageGaoKaoCountDown.uploadAsImage(it) ?: "图片渲染失败".toPlainText()
                                                 )
                                             }
+                                            
+                                            delay(Random.nextLong(100, 200))
                                         }
                                     }
                                 }
