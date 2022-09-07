@@ -17,6 +17,7 @@ import io.github.sunshinewzy.sunnybot.objects.data.ImageLibraryData
 import io.github.sunshinewzy.sunnybot.objects.internal.RequestAddImage
 import io.github.sunshinewzy.sunnybot.timer.STimer
 import io.github.sunshinewzy.sunnybot.utils.MessageCache
+import io.github.sunshinewzy.sunnybot.utils.SImage
 import io.github.sunshinewzy.sunnybot.utils.SLaTeX.laTeXImage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -972,7 +973,11 @@ object SCGaoKaoCountDown : RawCommand(
             }
 
             empty {
-                sendMsg(description, getCountDownContent() + "\n\nTip: 发送 /gk on 或 /gk off\n  以 开启/关闭 高考倒计时每日提醒")
+                sunnyScope.launch(Dispatchers.IO) {
+                    SImage.showTextWithSilverBackground(getCountDownContent() + "\n\nTip: 发送 /gk on 或 /gk off\n  以 开启/关闭 高考倒计时每日提醒").uploadAsImage(group)?.let {
+                        sendMsg(description, it)
+                    } ?: sendMsg(description, "图片渲染失败")
+                }
             }
         }
     }

@@ -1,10 +1,12 @@
 package io.github.sunshinewzy.sunnybot.timer
 
+import io.github.sunshinewzy.sunnybot.*
 import io.github.sunshinewzy.sunnybot.commands.SCGaoKaoCountDown
 import io.github.sunshinewzy.sunnybot.functions.DailySignIn
 import io.github.sunshinewzy.sunnybot.objects.SSaveGroup
-import io.github.sunshinewzy.sunnybot.sendGroupMsg
-import io.github.sunshinewzy.sunnybot.sunnyBot
+import io.github.sunshinewzy.sunnybot.utils.SImage
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import net.mamoe.mirai.message.data.AtAll
 import net.mamoe.mirai.message.data.toPlainText
 import java.util.*
@@ -33,10 +35,6 @@ object STimer : Runnable {
                             if(minute == 0) {
                                 if(hour == 0) {
                                     DailySignIn.reset()
-                                } else if(hour == 9) {
-                                    if(sGroup.isGaoKaoCountDown) {
-                                        sunnyBot.sendGroupMsg(groupId, "高考倒计时每日提醒", SCGaoKaoCountDown.getCountDownContent() + "\n\nTip: 发送 /gk on 或 /gk off\n  以 开启/关闭 高考倒计时每日提醒")
-                                    }
                                 }
                             }
 
@@ -51,7 +49,30 @@ object STimer : Runnable {
                             for(i in remListReminders.size - 1 downTo 0)
                                 sGroup.reminders.removeAt(remListReminders[i])
                         }
+                        
+                        
+                        if(minute == 0) {
+                            if(hour == 9) {
+                                sunnyScope.launch(Dispatchers.IO) {
+                                    val imageGaoKaoCountDown = SImage.showTextWithSilverBackground(SCGaoKaoCountDown.getCountDownContent() + "\n\nTip: 发送 /gk on 或 /gk off\n  以 开启/关闭 高考倒计时每日提醒")
+                                    
+                                    SSaveGroup.sGroupMap.forEach { (groupId, sGroup) ->
+                                        if(sGroup.isGaoKaoCountDown) {
+                                            sunnyBot.getGroup(groupId)?.let { 
+                                                it.sendMsg(
+                                                    SCGaoKaoCountDown.description,
+                                                    imageGaoKaoCountDown.uploadAsImage(it) ?: "图片渲染失败".toPlainText()
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                                
+                                
+                            }
+                        }
                     }
+                    
                     
                 }
                 

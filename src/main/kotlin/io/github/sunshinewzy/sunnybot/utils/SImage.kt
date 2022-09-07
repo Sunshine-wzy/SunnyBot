@@ -64,11 +64,15 @@ object SImage {
             j = i + 1
             count++
         }
+        
+        if(j < content.length) {
+            drawString(content.substring(j), x, y + OFFSET_Y * count)
+        }
     }
     
     
     fun showTextWithSilverBackground(content: String): BufferedImage {
-        val lineCount = content.count { it == '\n' } + 1
+        val lineCount = content.count { it == '\n' } + 3
         val height = OFFSET_Y * lineCount
         
         val image = BufferedImage(imageTextureSilver.width, height, imageTextureSilver.type)
