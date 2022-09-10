@@ -22,5 +22,5 @@ object ServerPingTest {
         val response = ping.fetchData()
         println(response.players.online)
     }
-    
+
 }

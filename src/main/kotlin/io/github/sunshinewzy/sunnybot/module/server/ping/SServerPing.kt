@@ -80,47 +80,51 @@ object SServerPing {
                 return@withContext false
             }
 
-            sendMsg(
-                description,
-                buildMessageChain {
-                    +image
-                    appendLine()
+            runCatching {
+                sendMsg(
+                    description,
+                    buildMessageChain {
+                        +image
+                        appendLine()
 
-                    if(isDetailed) {
-                        +"""
+                        if(isDetailed) {
+                            +"""
                             服务器IP: $ip
                             解析IP: ${newIp.first}:${newIp.second}
-                            服务器版本: ${response.version.name}
-                            在线人数: ${response.players.online}/${response.players.max}
-                            协议版本: ${response.version.protocol}
+                            服务器版本: ${response.versionName}
+                            在线人数: ${response.playersNumber}
+                            协议版本: ${response.versionProtocol}
                             延迟: ${ping.ping}ms
                             
                             > 
                         """.trimIndent()
-                        +response.description.text
-                        appendLine()
-                        +response.description.extraContent
-                    } else {
-                        +"""
+                            +response.descriptionContent
+                        } else {
+                            +"""
                             服务器IP: $ip
-                            服务器版本: ${response.version.name}
-                            在线人数: ${response.players.online}/${response.players.max}
+                            服务器版本: ${response.versionName}
+                            在线人数: ${response.playersNumber}
                             延迟: ${ping.ping}ms
                         """.trimIndent()
-                    }
+                        }
 
-                    if(isPlayerSample) {
-                        response.players?.sample?.joinToString {
-                            it.name
-                        }?.let {
-                            appendLine().appendLine()
-                            +"> 在线玩家列表"
-                            appendLine()
-                            +it
+                        if(isPlayerSample) {
+                            response.players?.sample?.joinToString {
+                                it.name
+                            }?.let {
+                                appendLine().appendLine()
+                                +"> 在线玩家列表"
+                                appendLine()
+                                +it
+                            }
                         }
                     }
-                }
-            )
+                )
+            }.onFailure { 
+                sendMsg(description, "服务器信息获取异常:\n" + it.stackTraceToString())
+                return@withContext false
+            }
+            
             return@withContext true
         }
     }

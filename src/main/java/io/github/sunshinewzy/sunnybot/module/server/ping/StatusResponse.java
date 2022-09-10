@@ -1,11 +1,13 @@
 package io.github.sunshinewzy.sunnybot.module.server.ping;
 
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.util.Base64;
+import java.util.Optional;
 
 public class StatusResponse {
     private static final String FAVICON_PREFIX = "data:image/png;base64,";
@@ -21,13 +23,60 @@ public class StatusResponse {
     public Description getDescription() {
         return description;
     }
+    
+    @NotNull
+    public String getDescriptionText() {
+        return Optional.ofNullable(getDescription())
+                .map(Description::getText)
+                .orElse("?");
+    }
+    
+    @NotNull
+    public String getDescriptionExtraContent() {
+        return Optional.ofNullable(getDescription())
+                .map(Description::getExtraContent)
+                .orElse("?");
+    }
+    
+    @NotNull
+    public String getDescriptionContent() {
+        return getDescriptionText() + "\n" + getDescriptionExtraContent();
+    }
 
     public Players getPlayers() {
         return players;
     }
+    
+    @NotNull
+    public String getPlayersNumber() {
+        Players p = getPlayers();
+        if(p != null) {
+            return p.getOnline() + "/" + p.getMax();
+        }
+        return "?";
+    }
+    
 
     public Version getVersion() {
         return version;
+    }
+    
+    @NotNull
+    public String getVersionName() {
+        Version ver = getVersion();
+        if(ver != null) {
+            return ver.getName();
+        }
+        return "?";
+    }
+    
+    @NotNull
+    public String getVersionProtocol() {
+        Version ver = getVersion();
+        if(ver != null) {
+            return String.valueOf(ver.getProtocol());
+        }
+        return "?";
     }
 
     
