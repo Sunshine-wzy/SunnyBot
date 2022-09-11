@@ -6,12 +6,9 @@ import io.github.sunshinewzy.sunnybot.commands.SCMiraiCode
 import io.github.sunshinewzy.sunnybot.commands.SCommandManager
 import io.github.sunshinewzy.sunnybot.enums.RunningState
 import io.github.sunshinewzy.sunnybot.games.SGameManager
-import io.github.sunshinewzy.sunnybot.objects.SBOwnThink
-import io.github.sunshinewzy.sunnybot.objects.SRequest
+import io.github.sunshinewzy.sunnybot.objects.*
 import io.github.sunshinewzy.sunnybot.objects.data.ImageData
-import io.github.sunshinewzy.sunnybot.objects.getSData
 import io.github.sunshinewzy.sunnybot.objects.internal.RequestAddImage
-import io.github.sunshinewzy.sunnybot.objects.setRunningState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import net.mamoe.mirai.console.command.CommandSender.Companion.asCommandSender
@@ -164,6 +161,10 @@ object MessageListener {
                 
             }
             
+            val sGroup = group.getSGroup()
+            sGroup.transmitGroupMap.forEach { (groupId, data) ->
+                data.update(group, this)
+            }
         }
 
         sunnyChannel.subscribeAlways<MessageRecallEvent.GroupRecall> {

@@ -14,6 +14,7 @@ import io.github.sunshinewzy.sunnybot.objects.*
 import io.github.sunshinewzy.sunnybot.objects.data.ImageData
 import io.github.sunshinewzy.sunnybot.objects.data.ImageData.Companion.getImageFromFile
 import io.github.sunshinewzy.sunnybot.objects.data.ImageLibraryData
+import io.github.sunshinewzy.sunnybot.objects.data.TransmitGroupData
 import io.github.sunshinewzy.sunnybot.objects.internal.RequestAddImage
 import io.github.sunshinewzy.sunnybot.timer.STimer
 import io.github.sunshinewzy.sunnybot.utils.MessageCache
@@ -62,6 +63,7 @@ fun regSRawCommands() {
     SCRconRun.register()
     SCJavaDoc.register()
     SCImage.registerSCommand()
+    SCTransmit.register()
     
     //Debug
 //    SCDebugLaTeX.reg("console")
@@ -2043,3 +2045,185 @@ object SCImage : SRawCommand(
     
 }
 
+
+object SCTransmit : RawCommand(
+    PluginMain,
+    "Transmit", "转发", "tran",
+    usage = "群消息转发", description = "群消息转发",
+    parentPermission = PERM_EXE_MEMBER
+) {
+
+    override suspend fun CommandSender.onCommand(args: MessageChain) {
+        val member = user as? Member ?: return
+        
+        if(!member.isOperator() && !member.isSunnyAdmin()) {
+            sendMsg(description, "您不是群管理员，权限不足")
+            return
+        }
+        
+        val group = member.group
+        val transmitGroups = group.getSGroup().transmitGroupMap
+        processSCommand(args) {
+            "add" {
+                text { 
+                    val id = text.toLongOrNull() ?: kotlin.run {
+                        sendMsg(description, "[群号] 格式错误")
+                        return@text
+                    }
+                    
+                    if(id in transmitGroups) {
+                        sendMsg(description, "群 $id 已经在转发列表中了")
+                        return@text
+                    }
+                    
+                    val transmitGroup = sunnyBot.getGroup(id) ?: kotlin.run { 
+                        sendMsg(description, "群 $id 获取失败")
+                        return@text
+                    }
+                    
+                    val transmitMember = transmitGroup[member.id] ?: kotlin.run { 
+                        sendMsg(description, "您不是该群的成员")
+                        return@text
+                    }
+                    
+                    if(!transmitMember.isOperator() && !transmitMember.isSunnyAdmin()) {
+                        sendMsg(description, "您不是该群的管理员，权限不足")
+                        return@text
+                    }
+                    
+                    transmitGroups[id] = TransmitGroupData(id)
+                    sendMsg(description, "成功将群 $id 添加到转发列表")
+                }
+                
+                empty { 
+                    sendMsg(description, "在 add 后输入 [群号] 以添加要转发的群")
+                }
+            }
+            
+            "remove" {
+                text {
+                    val id = text.toLongOrNull() ?: kotlin.run {
+                        sendMsg(description, "[群号] 格式错误")
+                        return@text
+                    }
+
+                    if(id !in transmitGroups) {
+                        sendMsg(description, "群 $id 不在转发列表中")
+                        return@text
+                    }
+                    
+                    transmitGroups -= id
+                    sendMsg(description, "成功将群 $id 从转发列表中移除")
+                }
+                
+                empty { 
+                    sendMsg(description, "在 remove 后输入 [群号] 以从转发列表中移除该群")
+                }
+            }
+            
+            "list" {
+                empty { 
+                    sendMsg(description, """
+                        > 转发列表
+                        ${transmitGroups.keys.joinToString()}
+                    """.trimIndent())
+                }
+            }
+            
+            "edit" {
+                text {
+                    val id = text.toLongOrNull() ?: kotlin.run {
+                        sendMsg(description, "[群号] 格式错误")
+                        return@text
+                    }
+
+                    val data = transmitGroups[id] ?: kotlin.run {
+                        sendMsg(description, "群 $id 不在转发列表中")
+                        return@text
+                    }
+                    
+                    "period" {
+                        text period@{
+                            val period = text.toLongOrNull() ?: kotlin.run {
+                                sendMsg(description, "[转发周期(毫秒)] 格式错误")
+                                return@period
+                            }
+                            
+                            data.period = period
+                            sendMsg(description, "成功将群 $id 的转发周期修改为: $period 毫秒")
+                        }
+                        
+                        empty { 
+                            sendMsg(description, """
+                                在 period 后输入 [转发周期(毫秒)]
+                                
+                                群 $id 的转发周期为: ${data.period} 毫秒
+                            """.trimIndent())
+                        }
+                    }
+                    
+                    "number" {
+                        text number@{
+                            val number = text.toIntOrNull() ?: kotlin.run {
+                                sendMsg(description, "[消息条数] 格式错误")
+                                return@number
+                            }
+
+                            data.number = number
+                            sendMsg(description, "成功将群 $id 的消息条数修改为: $number 条")
+                        }
+
+                        empty {
+                            sendMsg(description, """
+                                在 number 后输入 [消息条数]
+                                
+                                群 $id 的消息条数为: ${data.number} 条
+                            """.trimIndent())
+                        }
+                    }
+                    
+                    "prefix" {
+                        text prefix@{
+                            val prefix = text
+
+                            data.prefix = prefix
+                            sendMsg(description, "成功将群 $id 的转发消息前缀修改为: $prefix")
+                        }
+
+                        empty {
+                            sendMsg(description, """
+                                在 prefix 后输入 [转发消息前缀]
+                                
+                                群 $id 的转发消息前缀为: '${data.prefix}'
+                            """.trimIndent())
+                        }
+                    }
+                    
+                    empty { 
+                        sendMsg(description, """
+                            > 命令参数
+                            period  -  转发周期(毫秒)
+                            number  -  消息条数
+                            prefix  -  转发消息前缀
+                        """.trimIndent())
+                    }
+                }
+
+                empty {
+                    sendMsg(description, "在 edit 后输入 [群号] 以编辑该转发群")
+                }
+            }
+            
+            empty { 
+                sendMsg(description, """
+                    > 命令参数
+                    add  -  添加转发群
+                    remove  -  移除转发群
+                    list  -  查看转发列表
+                    edit  -  编辑转发群
+                """.trimIndent())
+            }
+        }
+    }
+    
+}

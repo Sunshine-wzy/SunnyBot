@@ -4,6 +4,7 @@ import io.github.sunshinewzy.sunnybot.enums.RunningState
 import io.github.sunshinewzy.sunnybot.enums.ServerType
 import io.github.sunshinewzy.sunnybot.games.game.SGChess
 import io.github.sunshinewzy.sunnybot.games.game.SGFiveInARow
+import io.github.sunshinewzy.sunnybot.objects.data.TransmitGroupData
 import kotlinx.serialization.Serializable
 import net.mamoe.mirai.console.data.AutoSavePluginData
 import net.mamoe.mirai.console.data.value
@@ -27,6 +28,7 @@ class SGroup(private val groupID: Long) {
     val autoReject = ArrayList<String>()
     val serverIps = HashMap<String, Pair<ServerType, String>>()
     val reminders = ArrayList<DataReminder>()
+    val transmitGroupMap = HashMap<Long, TransmitGroupData>()
 }
 
 object SSaveGroup: AutoSavePluginData("SGroupData") {
