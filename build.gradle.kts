@@ -13,14 +13,15 @@ dependencies {
     implementation("com.google.guava:guava:31.1-jre")
     implementation("org.scilab.forge:jlatexmath:1.0.7")
     implementation("io.netty:netty-all:4.1.67.Final")
-    implementation("nl.vv32.rcon:rcon:1.2.0")
     implementation("com.github.Sunshine-wzy:rkon-core:1.2.2")
+    implementation("com.github.Sunshine-wzy:SunnyFlow:1.0.3")
     
     implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar"))))
     implementation(kotlin("stdlib-jdk8"))
     
     shadowLink("nl.vv32.rcon:rcon")
     shadowLink("com.github.Sunshine-wzy:rkon-core")
+    shadowLink("com.github.Sunshine-wzy:SunnyFlow")
 
 
     testImplementation(platform("org.junit:junit-bom:5.9.0"))
@@ -28,7 +29,7 @@ dependencies {
 }
 
 group = "io.github.sunshinewzy"
-version = "1.2.5"
+version = "1.2.6"
 
 repositories {
     mavenLocal()

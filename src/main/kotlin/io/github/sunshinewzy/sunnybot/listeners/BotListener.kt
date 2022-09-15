@@ -17,13 +17,12 @@ object BotListener {
 
     fun listenBot() {
         sunnyChannel.apply {
-            
             msgListener = subscribeAlways { 
                 if(!isOnline) {
                     sunnyBot = bot
                     isOnline = true
                     sunnyInit()
-                    
+
                     msgListener.complete()
                 }
             }

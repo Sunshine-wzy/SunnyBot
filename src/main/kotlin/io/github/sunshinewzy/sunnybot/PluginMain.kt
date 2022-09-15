@@ -24,7 +24,7 @@ lateinit var sunnyBot: Bot
 object PluginMain : KotlinPlugin(
     JvmPluginDescription(
         id = "io.github.sunshinewzy.sunnybot",
-        version = "1.2.5",
+        version = "1.2.6",
         name = "SunnyBot"
     )
 ) {
@@ -50,7 +50,8 @@ object PluginMain : KotlinPlugin(
         setPermissions()
         reloadData()
         
-        runTimer()
+        runTasks()
+        init()
     }
 
     override fun onDisable() {
@@ -85,7 +86,12 @@ object PluginMain : KotlinPlugin(
         SunnyData.reload()
     }
     
-    private fun runTimer() {
+    private fun runTasks() {
         Thread(STimer).start()
+        
+    }
+    
+    private fun init() {
+        
     }
 }

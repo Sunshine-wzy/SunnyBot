@@ -1,5 +1,6 @@
 package io.github.sunshinewzy.sunnybot.objects
 
+import io.github.sunshinewzy.sunnybot.objects.data.MinecraftTransmitData
 import kotlinx.serialization.Serializable
 import net.mamoe.mirai.console.data.AutoSavePluginData
 import net.mamoe.mirai.console.data.value
@@ -13,10 +14,12 @@ import net.mamoe.mirai.contact.User
 data class SPlayer(
     private val id: Long,
     var std: Long = 0,
-    var isDailySignIn: Boolean = false
+    var isDailySignIn: Boolean = false,
+    val minecraftTransmit: MinecraftTransmitData = MinecraftTransmitData()
 ) {
     val rconKeyMap = hashMapOf<String, String>()
     var selectedRconSymbol = ""
+    
 }
 
 object SSavePlayer: AutoSavePluginData("SPlayerData") {

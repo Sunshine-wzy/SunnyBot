@@ -6,6 +6,7 @@ import io.github.sunshinewzy.sunnybot.commands.SCMiraiCode
 import io.github.sunshinewzy.sunnybot.commands.SCommandManager
 import io.github.sunshinewzy.sunnybot.enums.RunningState
 import io.github.sunshinewzy.sunnybot.games.SGameManager
+import io.github.sunshinewzy.sunnybot.module.server.sunnyflow.SunnyFlowManager
 import io.github.sunshinewzy.sunnybot.objects.*
 import io.github.sunshinewzy.sunnybot.objects.data.ImageData
 import io.github.sunshinewzy.sunnybot.objects.internal.RequestAddImage
@@ -157,6 +158,9 @@ object MessageListener {
                             group.sendMessage(QuoteReply(message) + it.getImages(group))
                         }
                     }
+                    
+                    // MinecraftTransmit
+                    SunnyFlowManager.transmit(group, message.contentToString())
                 }
                 
             }

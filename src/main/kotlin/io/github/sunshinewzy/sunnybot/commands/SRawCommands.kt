@@ -10,16 +10,19 @@ import io.github.sunshinewzy.sunnybot.enums.SunSTSymbol
 import io.github.sunshinewzy.sunnybot.module.server.ping.SServerPing
 import io.github.sunshinewzy.sunnybot.module.server.ping.SServerPing.pingServer
 import io.github.sunshinewzy.sunnybot.module.server.rcon.RconManager
+import io.github.sunshinewzy.sunnybot.module.server.sunnyflow.SunnyFlowManager
 import io.github.sunshinewzy.sunnybot.objects.*
 import io.github.sunshinewzy.sunnybot.objects.data.ImageData
 import io.github.sunshinewzy.sunnybot.objects.data.ImageData.Companion.getImageFromFile
 import io.github.sunshinewzy.sunnybot.objects.data.ImageLibraryData
+import io.github.sunshinewzy.sunnybot.objects.data.MinecraftTransmitServerGroupData
 import io.github.sunshinewzy.sunnybot.objects.data.TransmitGroupData
 import io.github.sunshinewzy.sunnybot.objects.internal.RequestAddImage
 import io.github.sunshinewzy.sunnybot.timer.STimer
 import io.github.sunshinewzy.sunnybot.utils.MessageCache
 import io.github.sunshinewzy.sunnybot.utils.SImage
 import io.github.sunshinewzy.sunnybot.utils.SLaTeX.laTeXImage
+import io.github.sunshinewzy.sunnyflow.util.SunnyFlowUtil
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -64,6 +67,7 @@ fun regSRawCommands() {
     SCJavaDoc.register()
     SCImage.registerSCommand()
     SCTransmit.register()
+    SCMinecraftTransmit.register()
     
     //Debug
 //    SCDebugLaTeX.reg("console")
@@ -2226,4 +2230,295 @@ object SCTransmit : RawCommand(
         }
     }
     
+}
+
+object SCMinecraftTransmit : RawCommand(
+    PluginMain,
+    "MinecraftTransmit", "mc转发", "mct",
+    usage = "Minecraft服务器消息转发", description = "Minecraft服务器消息转发",
+    parentPermission = PERM_EXE_USER
+) {
+    private val BIND = """
+                            请在bind后输入: [服务器代号] [服务器IP]:[SunnyFlow端口] [SunnyFlow密码]
+                            例: /mct bind a aminecraft.cc:25585 123456789
+                            
+                            Tips:
+                            服务器代号只能含有英文、数字、汉字，不能包含任何符号！
+                            SunnyFlow是一个轻量的为Sunny定制的Minecraft服务端插件
+                            使用SunnyFlow配合Sunny可轻松实现服务器与Q群的消息互通
+                            关于SunnyFlow请加Q群 423179929 以了解详情
+                        """.trimIndent()
+    
+
+    override suspend fun CommandSender.onCommand(args: MessageChain) {
+        val user = user ?: return
+        val transmitData = user.getSPlayer().minecraftTransmit
+        
+        processSCommand(args) {
+            "bind" {
+                if(this@onCommand !is MemberCommandSender) {
+                    contents { list ->
+                        val symbol = list.first
+                        if(symbol.isLetterDigitOrChinese()) {
+                            if(transmitData.serverMap.containsKey(symbol)) {
+                                sendMsg(description, "服务器代号 '$symbol' 已存在")
+                                return@contents
+                            }
+                            
+                            if(list.size >= 3) {
+                                val ip = list[1]
+                                val strList = ip.split(':')
+                                if(strList.size == 2) {
+                                    val port = strList[1]
+                                    if(port.isInteger()) {
+                                        val password = SunnyFlowUtil.stringToMD5(list[2])
+                                        SunnyFlowManager.open(strList[0], port.toInt(), password) ?: kotlin.run {
+                                            sendMsg(description, "绑定失败= =\n请确保服务器IP正确且当前服务器在线！")
+                                            return@contents
+                                        }
+                                        
+                                        transmitData.addServer(symbol, ip, password)
+                                        sendMsg(description, "绑定成功!\n$symbol -> $ip")
+                                    } else sendMsg(description, "[SunnyFlow端口] 只能为数字")
+                                } else sendMsg(description, "[服务器IP]:[SunnyFlow端口] 格式不正确")
+                            } else sendMsg(description, "请在 [服务器代号] 后输入 [服务器IP]:[SunnyFlow端口] [SunnyFlow密码]")
+                        } else sendMsg(description, "服务器代号只能含有英文、数字、汉字，不能包含任何符号！")
+                    }
+
+                    empty {
+                        sendMsg(description, BIND)
+                    }
+                } else sendMsg(description, "bind指令只允许在私聊中使用!\n\n$BIND")
+            }
+
+            "unbind" {
+                content(false) {
+                    if(transmitData.serverMap.containsKey(it)) {
+                        transmitData.serverMap.remove(it)
+                        sendMsg(description, "服务器代号 '$it' 删除成功~")
+                    } else sendMsg(description, "服务器代号 '$it' 不存在！")
+                }
+
+                empty {
+                    sendMsg(description, "/mct unbind [服务器代号]\n解绑服务器")
+                }
+            }
+
+            "list" {
+                empty {
+                    if(transmitData.serverMap.isEmpty()) {
+                        sendMsg(description, "您未绑定任何SunnyFlow Minecraft服务器")
+                        return@empty
+                    }
+
+                    val symbolIps = StringBuilder("已绑定的所有SunnyFlow Minecraft服务器:")
+                    var index = 1
+                    transmitData.serverMap.forEach { (symbol, key) ->
+                        symbolIps.append("\n$index. $symbol -> ${key.ip}")
+                        index++
+                    }
+
+                    sendMsg(description, symbolIps.toString())
+                }
+            }
+
+            "select" {
+                content(false) {
+                    if(transmitData.serverMap.containsKey(it)) {
+                        transmitData.select = it
+                        sendMsg(description, "服务器代号 '$it' 选择成功")
+                    } else sendMsg(description, "未绑定服务器代号 '$it'")
+                }
+
+                empty {
+                    sendMsg(description, "/mct select [服务器代号]\n选择服务器代号")
+                }
+            }
+            
+            "add" add@{
+                val serverData = transmitData.getSelectedServerData() ?: kotlin.run {
+                    sendMsg(description, "未选择服务器代号\n请输入 /mct select [服务器代号]\n进行选择")
+                    return@add
+                }
+                
+                text {
+                    val id = text.toLongOrNull() ?: kotlin.run {
+                        sendMsg(description, "[群号] 格式错误")
+                        return@text
+                    }
+
+                    if(id in serverData.groupMap) {
+                        sendMsg(description, "群 $id 已经在转发列表中了")
+                        return@text
+                    }
+
+                    val transmitGroup = sunnyBot.getGroup(id) ?: kotlin.run {
+                        sendMsg(description, "群 $id 获取失败")
+                        return@text
+                    }
+
+                    val transmitMember = transmitGroup[user.id] ?: kotlin.run {
+                        sendMsg(description, "您不是该群的成员")
+                        return@text
+                    }
+
+                    if(!transmitMember.isOperator() && !transmitMember.isSunnyAdmin()) {
+                        sendMsg(description, "您不是该群的管理员，权限不足")
+                        return@text
+                    }
+
+                    serverData.groupMap[id] = MinecraftTransmitServerGroupData(id)
+                    sendMsg(description, "成功将群 $id 添加到转发列表")
+                }
+
+                empty {
+                    sendMsg(description, "在 add 后输入 [群号] 以添加要转发的群")
+                }
+            }
+
+            "remove" remove@{
+                val serverData = transmitData.getSelectedServerData() ?: kotlin.run {
+                    sendMsg(description, "未选择服务器代号\n请输入 /mct select [服务器代号]\n进行选择")
+                    return@remove
+                }
+                
+                text {
+                    val id = text.toLongOrNull() ?: kotlin.run {
+                        sendMsg(description, "[群号] 格式错误")
+                        return@text
+                    }
+
+                    if(id !in serverData.groupMap) {
+                        sendMsg(description, "群 $id 不在转发列表中")
+                        return@text
+                    }
+
+                    serverData.groupMap -= id
+                    sendMsg(description, "成功将群 $id 从转发列表中移除")
+                }
+
+                empty {
+                    sendMsg(description, "在 remove 后输入 [群号] 以从转发列表中移除该群")
+                }
+            }
+
+            "show" show@{
+                val serverData = transmitData.getSelectedServerData() ?: kotlin.run {
+                    sendMsg(description, "未选择服务器代号\n请输入 /mct select [服务器代号]\n进行选择")
+                    return@show
+                }
+                
+                empty {
+                    sendMsg(description, """
+                        > 转发列表
+                        ${serverData.groupMap.keys.joinToString()}
+                    """.trimIndent())
+                }
+            }
+
+            "edit" edit@{
+                val serverData = transmitData.getSelectedServerData() ?: kotlin.run {
+                    sendMsg(description, "未选择服务器代号\n请输入 /mct select [服务器代号]\n进行选择")
+                    return@edit
+                }
+                
+                text {
+                    val id = text.toLongOrNull() ?: kotlin.run {
+                        sendMsg(description, "[群号] 格式错误")
+                        return@text
+                    }
+
+                    val data = serverData.groupMap[id] ?: kotlin.run {
+                        sendMsg(description, "群 $id 不在转发列表中")
+                        return@text
+                    }
+
+                    "period" {
+                        text period@{
+                            val period = text.toLongOrNull() ?: kotlin.run {
+                                sendMsg(description, "[转发周期(毫秒)] 格式错误")
+                                return@period
+                            }
+
+                            data.period = period
+                            sendMsg(description, "成功将群 $id 的转发周期修改为: $period 毫秒")
+                        }
+
+                        empty {
+                            sendMsg(description, """
+                                在 period 后输入 [转发周期(毫秒)]
+                                
+                                群 $id 的转发周期为: ${data.period} 毫秒
+                            """.trimIndent())
+                        }
+                    }
+
+                    "number" {
+                        text number@{
+                            val number = text.toIntOrNull() ?: kotlin.run {
+                                sendMsg(description, "[消息条数] 格式错误")
+                                return@number
+                            }
+
+                            data.number = number
+                            sendMsg(description, "成功将群 $id 的消息条数修改为: $number 条")
+                        }
+
+                        empty {
+                            sendMsg(description, """
+                                在 number 后输入 [消息条数]
+                                
+                                群 $id 的消息条数为: ${data.number} 条
+                            """.trimIndent())
+                        }
+                    }
+
+                    "prefix" {
+                        text prefix@{
+                            val prefix = text
+
+                            data.prefix = prefix
+                            sendMsg(description, "成功将群 $id 的转发消息前缀修改为: $prefix")
+                        }
+
+                        empty {
+                            sendMsg(description, """
+                                在 prefix 后输入 [转发消息前缀]
+                                
+                                群 $id 的转发消息前缀为: '${data.prefix}'
+                            """.trimIndent())
+                        }
+                    }
+
+                    empty {
+                        sendMsg(description, """
+                            > 命令参数
+                            period  -  转发周期(毫秒)
+                            number  -  消息条数
+                            prefix  -  转发消息前缀
+                        """.trimIndent())
+                    }
+                }
+
+                empty {
+                    sendMsg(description, "在 edit 后输入 [群号] 以编辑该转发群")
+                }
+            }
+
+            empty {
+                sendMsg(description, """
+                    > 命令参数
+                    bind  -  绑定服务器
+                    unbind  -  解绑服务器
+                    list  -  显示所有已绑定的服务器
+                    select  -  选择服务器代号
+                    add  -  添加转发群
+                    remove  -  移除转发群
+                    show  -  显示转发列表
+                    edit  -  编辑转发群
+                """.trimIndent())
+            }
+        }
+    }
+
 }
