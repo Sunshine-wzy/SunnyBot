@@ -264,12 +264,27 @@ fun <K, T> MutableMap<K, MutableList<T>>.putElement(key: K, element: T) {
     } else this[key] = arrayListOf(element)
 }
 
+fun <K, T> MutableMap<K, MutableList<T>>.removeElement(key: K, element: T) {
+    this[key]?.remove(element)
+}
+
 fun <K, T> MutableMap<K, MutableList<T>>.clearAndPutElement(key: K, element: T) {
     val value = this[key]
     if(value != null) {
         value.clear()
         value += element
     } else this[key] = arrayListOf(element)
+}
+
+fun <K, T> MutableMap<K, MutableSet<T>>.putElementInSet(key: K, element: T) {
+    val value = this[key]
+    if(value != null) {
+        value += element
+    } else this[key] = hashSetOf(element)
+}
+
+fun <K, T> MutableMap<K, MutableSet<T>>.removeElementInSet(key: K, element: T) {
+    this[key]?.remove(element)
 }
 
 //endregion

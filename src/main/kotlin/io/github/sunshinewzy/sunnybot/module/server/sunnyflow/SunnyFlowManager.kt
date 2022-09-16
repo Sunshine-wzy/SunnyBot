@@ -2,28 +2,25 @@ package io.github.sunshinewzy.sunnybot.module.server.sunnyflow
 
 import io.github.sunshinewzy.sunnybot.commands.SCMinecraftTransmit
 import io.github.sunshinewzy.sunnybot.objects.SSavePlayer
-import io.github.sunshinewzy.sunnybot.putElement
 import io.github.sunshinewzy.sunnybot.sendMsg
 import io.github.sunshinewzy.sunnybot.sunnyBot
 import io.github.sunshinewzy.sunnybot.sunnyScope
-import io.github.sunshinewzy.sunnyflow.packet.SunnyFlowConnection
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import net.mamoe.mirai.contact.Group
+import java.net.SocketException
 import java.util.concurrent.ConcurrentHashMap
 
 object SunnyFlowManager {
-    private val cacheMap: MutableMap<String, SunnyFlowConnection> = ConcurrentHashMap()
-    private val connectionToGroupMap: MutableMap<SunnyFlowConnection, MutableList<Group>> = ConcurrentHashMap()
-    private val groupToConnectionMap: MutableMap<Group, MutableList<SunnyFlowConnection>> = ConcurrentHashMap()
+    private val cacheMap: MutableMap<String, CustomSunnyFlowConnection> = ConcurrentHashMap()
     
 
-    fun open(hostname: String, port: Int, password: String): SunnyFlowConnection? {
+    fun open(hostname: String, port: Int, password: String): CustomSunnyFlowConnection? {
         val ip = "$hostname:$port"
         cacheMap[ip]?.let { return it }
 
         try {
-            val connection = SunnyFlowConnection(hostname, port, password)
+            val connection = CustomSunnyFlowConnection(hostname, port, password)
             cacheMap[ip] = connection
             return connection
         } catch (_: Exception) {}
@@ -31,14 +28,14 @@ object SunnyFlowManager {
         return null
     }
 
-    fun open(ip: String, password: String): SunnyFlowConnection? {
+    fun open(ip: String, password: String): CustomSunnyFlowConnection? {
         cacheMap[ip]?.let { return it }
 
         val strList = ip.split(':')
         if(strList.size != 2) return null
 
         try {
-            val connection = SunnyFlowConnection(strList[0], strList[1].toInt(), password)
+            val connection = CustomSunnyFlowConnection(strList[0], strList[1].toInt(), password)
             cacheMap[ip] = connection
             return connection
         } catch (_: Exception) {}
@@ -52,14 +49,13 @@ object SunnyFlowManager {
             sPlayer.minecraftTransmit.serverMap.forEach { (symbol, serverData) ->
                 sunnyScope.launch(Dispatchers.IO) {
                     open(serverData.ip, serverData.password)?.let { connection ->
-                        serverData.groupMap.forEach { (groupId, groupData) -> 
+                        serverData.groupMap.forEach { (groupId, groupData) ->
                             sunnyBot.getGroup(groupId)?.let {
-                                connectionToGroupMap.putElement(connection, it)
-                                groupToConnectionMap.putElement(it, connection)
+                                connection.addGroup(it)
                             }
                         }
                         
-                        connection.startListen()
+                        connection.start()
                     }
                 }
             }
@@ -68,25 +64,19 @@ object SunnyFlowManager {
     
     fun transmit(group: Group, message: String) {
         sunnyScope.launch(Dispatchers.IO) {
-            groupToConnectionMap[group]?.forEach { connection ->
-                connection.message(message)
-            }
-        }
-    }
-    
-    
-    private fun SunnyFlowConnection.startListen() {
-        sunnyScope.launch(Dispatchers.IO) { 
-            try {
-                while(true) {
-                    val packet = read()
-                    val text = packet.text
-                    connectionToGroupMap[this@startListen]?.forEach { group ->
-                        group.sendMsg(SCMinecraftTransmit.description, text)
-                    }
+            CustomSunnyFlowConnection.groupToConnectionMap[group]?.forEach { connection ->
+                if(connection.running) {
+                    try {
+                        connection.message(message)
+                    } catch (ex: SocketException) {
+                        connection.stop()
+                        group.sendMsg(
+                            SCMinecraftTransmit.description,
+                            "服务器 ${connection.socket.remoteSocketAddress} 连接失败\n" +
+                                "请输入 /mct connect 以重新连接"
+                        )
+                    } catch (_: Exception) {}
                 }
-            } catch (ex: Exception) {
-                ex.printStackTrace()
             }
         }
     }

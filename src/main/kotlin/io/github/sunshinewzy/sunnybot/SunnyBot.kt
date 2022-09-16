@@ -4,7 +4,6 @@ import io.github.sunshinewzy.sunnybot.commands.*
 import io.github.sunshinewzy.sunnybot.functions.AntiRecall
 import io.github.sunshinewzy.sunnybot.functions.Repeater
 import io.github.sunshinewzy.sunnybot.games.SGameManager
-import io.github.sunshinewzy.sunnybot.module.server.sunnyflow.SunnyFlowManager
 import io.github.sunshinewzy.sunnybot.objects.SBSounds
 import io.github.sunshinewzy.sunnybot.objects.SRequest
 import kotlinx.coroutines.CoroutineScope
@@ -57,7 +56,7 @@ suspend fun sunnyInit() {
     //ÏÂÔØÓïÒôÎÄ¼ş
 //    SunnyBot.downloadVoice()
     //MinecraftTransmit
-    SunnyFlowManager.init()
+//    SunnyFlowManager.init()
 }
 
 /**

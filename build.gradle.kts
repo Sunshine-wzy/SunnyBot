@@ -14,7 +14,7 @@ dependencies {
     implementation("org.scilab.forge:jlatexmath:1.0.7")
     implementation("io.netty:netty-all:4.1.67.Final")
     implementation("com.github.Sunshine-wzy:rkon-core:1.2.2")
-    implementation("com.github.Sunshine-wzy:SunnyFlow:1.0.3")
+    implementation("com.github.Sunshine-wzy:SunnyFlow:1.0.4")
     
     implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar"))))
     implementation(kotlin("stdlib-jdk8"))

@@ -67,7 +67,7 @@ fun regSRawCommands() {
     SCJavaDoc.register()
     SCImage.registerSCommand()
     SCTransmit.register()
-    SCMinecraftTransmit.register()
+//    SCMinecraftTransmit.register()
     
     //Debug
 //    SCDebugLaTeX.reg("console")
@@ -2272,13 +2272,15 @@ object SCMinecraftTransmit : RawCommand(
                                     val port = strList[1]
                                     if(port.isInteger()) {
                                         val password = SunnyFlowUtil.stringToMD5(list[2])
-                                        SunnyFlowManager.open(strList[0], port.toInt(), password) ?: kotlin.run {
-                                            sendMsg(description, "绑定失败= =\n请确保服务器IP正确且当前服务器在线！")
-                                            return@contents
+                                        sunnyScope.launch(Dispatchers.IO) {
+                                            SunnyFlowManager.open(strList[0], port.toInt(), password) ?: kotlin.run {
+                                                sendMsg(description, "绑定失败= =\n请确保服务器IP正确且当前服务器在线！")
+                                                return@launch
+                                            }
+
+                                            transmitData.addServer(symbol, ip, password)
+                                            sendMsg(description, "绑定成功!\n$symbol -> $ip")
                                         }
-                                        
-                                        transmitData.addServer(symbol, ip, password)
-                                        sendMsg(description, "绑定成功!\n$symbol -> $ip")
                                     } else sendMsg(description, "[SunnyFlow端口] 只能为数字")
                                 } else sendMsg(description, "[服务器IP]:[SunnyFlow端口] 格式不正确")
                             } else sendMsg(description, "请在 [服务器代号] 后输入 [服务器IP]:[SunnyFlow端口] [SunnyFlow密码]")
@@ -2301,6 +2303,25 @@ object SCMinecraftTransmit : RawCommand(
 
                 empty {
                     sendMsg(description, "/mct unbind [服务器代号]\n解绑服务器")
+                }
+            }
+            
+            "connect" {
+                empty {
+                    sunnyScope.launch(Dispatchers.IO) {
+                        sendMsg(
+                            description,
+                            buildString {
+                                transmitData.serverMap.forEach { (symbol, serverData) ->
+                                    SunnyFlowManager.open(serverData.ip, serverData.password)?.let { connection ->
+                                        if(connection.start()) {
+                                            appendLine("服务器 $symbol -> ${serverData.ip} 连接成功")
+                                        } else appendLine("服务器 $symbol -> ${serverData.ip} 连接失败")
+                                    } ?: appendLine("服务器 $symbol -> ${serverData.ip} 连接失败")
+                                }
+                            }
+                        )
+                    }
                 }
             }
 
@@ -2369,6 +2390,10 @@ object SCMinecraftTransmit : RawCommand(
 
                     serverData.groupMap[id] = MinecraftTransmitServerGroupData(id)
                     sendMsg(description, "成功将群 $id 添加到转发列表")
+                    
+                    sunnyScope.launch(Dispatchers.IO) {
+                        SunnyFlowManager.open(serverData.ip, serverData.password)?.addGroup(transmitGroup)
+                    }
                 }
 
                 empty {
@@ -2395,6 +2420,12 @@ object SCMinecraftTransmit : RawCommand(
 
                     serverData.groupMap -= id
                     sendMsg(description, "成功将群 $id 从转发列表中移除")
+
+                    sunnyScope.launch(Dispatchers.IO) {
+                        sunnyBot.getGroup(id)?.let { group ->
+                            SunnyFlowManager.open(serverData.ip, serverData.password)?.removeGroup(group)
+                        }
+                    }
                 }
 
                 empty {
@@ -2510,6 +2541,7 @@ object SCMinecraftTransmit : RawCommand(
                     > 命令参数
                     bind  -  绑定服务器
                     unbind  -  解绑服务器
+                    connect  -  连接服务器
                     list  -  显示所有已绑定的服务器
                     select  -  选择服务器代号
                     add  -  添加转发群
