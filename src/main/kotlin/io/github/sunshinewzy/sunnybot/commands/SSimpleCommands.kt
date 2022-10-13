@@ -323,7 +323,7 @@ object SListInvite : SimpleCommand(
 
 object SAccept : SimpleCommand(
     PluginMain,
-    "accept",
+    "Accept",
     description = "查看未处理的申请",
     parentPermission = PERM_EXE_1
 ) {
