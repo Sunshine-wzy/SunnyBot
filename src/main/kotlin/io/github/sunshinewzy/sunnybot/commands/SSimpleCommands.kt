@@ -37,10 +37,10 @@ fun regSSimpleCommands() {
     SCAntiRecall.register()
     SCRepeater.register()
     SCBingPicture.register()
-    SSpeed.register()
-    SGroups.register()
-    SListInvite.register()
-    SAccept.register()
+    SCSpeed.register()
+    SCGroups.register()
+    SCListInvite.register()
+    SCAccept.register()
 //    SCOpen.register()
 
     //Debug
@@ -271,7 +271,7 @@ object SCOpen : SimpleCommand(
     }
 }
 
-object SSpeed : SimpleCommand(
+object SCSpeed : SimpleCommand(
     PluginMain,
     "Speed", "sp",
     description = "Sunny消息处理速度和统计",
@@ -289,7 +289,7 @@ Sunny消息统计:
     }
 }
 
-object SGroups : SimpleCommand(
+object SCGroups : SimpleCommand(
     PluginMain,
     "Groups", "gs",
     description = "查看Sunny总计加了多少个群",
@@ -305,7 +305,7 @@ Sunny目前总共添加了: ${sunnyBot.groups.size}个群聊
     }
 }
 
-object SListInvite : SimpleCommand(
+object SCListInvite : SimpleCommand(
     PluginMain,
     "ListInvite", "li",
     description = "查看未处理的申请",
@@ -321,9 +321,9 @@ object SListInvite : SimpleCommand(
     }
 }
 
-object SAccept : SimpleCommand(
+object SCAccept : SimpleCommand(
     PluginMain,
-    "Accept","ac",
+    "Accept","aci", "ac",
     description = "查看未处理的申请",
     parentPermission = PERM_EXE_1
 ) {
