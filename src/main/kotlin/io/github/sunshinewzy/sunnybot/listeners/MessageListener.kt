@@ -9,8 +9,7 @@ import io.github.sunshinewzy.sunnybot.games.SGameManager
 import io.github.sunshinewzy.sunnybot.objects.*
 import io.github.sunshinewzy.sunnybot.objects.data.ImageData
 import io.github.sunshinewzy.sunnybot.objects.internal.RequestAddImage
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.*
 import net.mamoe.mirai.console.command.CommandSender.Companion.asCommandSender
 import net.mamoe.mirai.console.command.CommandSender.Companion.toCommandSender
 import net.mamoe.mirai.contact.Group
@@ -27,6 +26,7 @@ object MessageListener {
     private val brackets = hashMapOf("(" to ")", "£¨" to "£©", "[" to "]", "¡¾" to "¡¿", "{" to "}", "<" to ">", "¡¶" to "¡·")
     
 
+    @OptIn(DelicateCoroutinesApi::class)
     fun listenMessage() {
         sunnyChannel.subscribeMessages {
 
@@ -177,7 +177,15 @@ object MessageListener {
             antiRecall?.antiRecallByGroupEvent(this)
         }
         
-        sunnyChannel.subscribeAlways<MessageEvent> { 
+        sunnyChannel.subscribeAlways<MessageEvent> {
+
+            total++
+            minute++
+            sunnyScope.launch {
+                delay(60000)
+                minute--
+            }
+
             SCMiraiCode.userGetMiraiCode[sender]?.let { time ->
                 if(System.currentTimeMillis() - time <= 60_000L) {
                     sender.sendMsg(SCMiraiCode.description, QuoteReply(message) + message.serializeToMiraiCode())

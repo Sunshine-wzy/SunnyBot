@@ -1,6 +1,7 @@
 package io.github.sunshinewzy.sunnybot.commands
 
 import io.github.sunshinewzy.sunnybot.*
+import io.github.sunshinewzy.sunnybot.PluginMain.PERM_EXE_1
 import io.github.sunshinewzy.sunnybot.PluginMain.PERM_EXE_2
 import io.github.sunshinewzy.sunnybot.PluginMain.PERM_EXE_MEMBER
 import io.github.sunshinewzy.sunnybot.PluginMain.PERM_EXE_USER
@@ -36,13 +37,17 @@ fun regSSimpleCommands() {
     SCAntiRecall.register()
     SCRepeater.register()
     SCBingPicture.register()
+    SSpeed.register()
+    SGroups.register()
+    SListInvite.register()
+    SAccept.register()
 //    SCOpen.register()
-    
+
     //Debug
 }
 
 
-object SCMenu: SimpleCommand(
+object SCMenu : SimpleCommand(
     PluginMain,
     "Menu", "cd", "菜单", "功能",
     description = "菜单",
@@ -51,7 +56,7 @@ object SCMenu: SimpleCommand(
     private val menuImage: BufferedImage by lazy {
         val text = StringBuilder()
         PluginMain.registeredCommands.forEach {
-            if(it.usage.contains("Debug")) return@forEach
+            if (it.usage.contains("Debug")) return@forEach
 
             text.append("◆ ${it.usage.replaceFirst("\n", "")}\n")
 
@@ -63,19 +68,19 @@ object SCMenu: SimpleCommand(
 
         SImage.showTextWithSilverBackground(text.toString())
     }
-    
-    
+
+
     @Handler
     suspend fun CommandSender.handle() {
         val subject = subject ?: return
-        
+
         menuImage.uploadAsImage(subject)?.let {
             sendMsg(description, it)
         } ?: sendMsg(description, "图片加载失败")
     }
 }
 
-object SCGameMenu: SimpleCommand(
+object SCGameMenu : SimpleCommand(
     PluginMain,
     "GameMenu", "game", "游戏", "游戏菜单",
     description = "游戏菜单",
@@ -87,24 +92,26 @@ object SCGameMenu: SimpleCommand(
         SGameManager.sGroupGameHandlers.forEach {
             str.append("◆ ${it.name}\n")
         }
-        str.append("""
+        str.append(
+            """
             ===============
             请输入 '#游戏名称'
             以开始一局游戏
             
             [例] #24点
-        """.trimIndent())
+        """.trimIndent()
+        )
         str.toString()
     }
-    
-    
+
+
     @Handler
     suspend fun CommandSender.handle() {
         subject?.sendMsg("游戏菜单", message)
     }
 }
 
-object SCInfo: SimpleCommand(
+object SCInfo : SimpleCommand(
     PluginMain,
     "信息", "info",
     description = "查询个人信息",
@@ -114,19 +121,23 @@ object SCInfo: SimpleCommand(
     suspend fun CommandSender.handle() {
         val player = user ?: return
         val sPlayer = player.getSPlayer()
-        
-        if(user is Member){
+
+        if (user is Member) {
             val member = user as Member
-            sendMessage(PlainText("[Sunshine Technology Dollar]\n") + At(member) + 
-                PlainText("您的STD余额为: ${sPlayer.std}"))
+            sendMessage(
+                PlainText("[Sunshine Technology Dollar]\n") + At(member) +
+                    PlainText("您的STD余额为: ${sPlayer.std}")
+            )
             return
         }
-        sendMessage("[Sunshine Technology Dollar]\n" +
-            "您的STD余额为: ${sPlayer.std}")
+        sendMessage(
+            "[Sunshine Technology Dollar]\n" +
+                "您的STD余额为: ${sPlayer.std}"
+        )
     }
 }
 
-object SCAntiRecall: SimpleCommand(
+object SCAntiRecall : SimpleCommand(
     PluginMain,
     "AntiRecall", "atrc", "防撤回",
     description = "启用/关闭防撤回",
@@ -134,20 +145,19 @@ object SCAntiRecall: SimpleCommand(
 ) {
     @Handler
     suspend fun CommandSender.handle(str: String) {
-        if(user == null || user !is Member)
+        if (user == null || user !is Member)
             return
         val member = user as Member
         val group = member.group
-        
-        if(member.isOperator() || member.isSunnyAdmin()){
+
+        if (member.isOperator() || member.isSunnyAdmin()) {
             val msg = str.lowercase(Locale.getDefault())
-            if(msg.contains("开") || msg.contains("t"))
+            if (msg.contains("开") || msg.contains("t"))
                 antiRecall?.setAntiRecallStatus(group.id, true)
-            else if(msg.contains("关") || msg.contains("f"))
+            else if (msg.contains("关") || msg.contains("f"))
                 antiRecall?.setAntiRecallStatus(group.id, false)
             sendMessage("防撤回状态为: ${antiRecall?.checkAntiRecallStatus(group.id)}")
-        }
-        else{
+        } else {
             sendMessage(At(member).plus(PlainText("您不是群主或管理员，没有启用/关闭防撤回功能的权限！")))
         }
     }
@@ -163,22 +173,20 @@ object SCRepeater : SimpleCommand(
     suspend fun MemberCommandSender.handle(isRepeat: String) {
         val rep = isRepeat.lowercase(Locale.getDefault())
         val sGroup = group.getSGroup()
-        
-        if(!user.isOperator() && !user.isSunnyAdmin()){
+
+        if (!user.isOperator() && !user.isSunnyAdmin()) {
             sendMessage(At(user).plus(PlainText("您不是群主或管理员，没有启用/关闭复读功能的权限！")))
             group.sendMsg("复读", "群复读状态: ${sGroup.isRepeat}")
             return
         }
-        
-        if(rep.contains("t") || rep.contains("开")){
+
+        if (rep.contains("t") || rep.contains("开")) {
             sGroup.isRepeat = true
             group.sendMsg("复读", "复读已开启！")
-        }
-        else if(rep.contains("f") || rep.contains("关")){
+        } else if (rep.contains("f") || rep.contains("关")) {
             sGroup.isRepeat = false
             group.sendMsg("复读", "复读已关闭！")
-        }
-        else{
+        } else {
             group.sendMsg("复读", "群复读状态: ${sGroup.isRepeat}")
         }
     }
@@ -193,11 +201,11 @@ object SCBingPicture : SimpleCommand(
     @Handler
     suspend fun CommandSender.handle() {
         val contact = subject ?: return
-        val image = SRequest("https://api.yimian.xyz/img?type=wallpaper").resultImage(contact) ?: kotlin.run { 
+        val image = SRequest("https://api.yimian.xyz/img?type=wallpaper").resultImage(contact) ?: kotlin.run {
             contact.sendMsg(description, "图片获取失败...")
             return
         }
-        
+
         contact.sendMsg(description, image)
     }
 }
@@ -212,16 +220,18 @@ object SCWeather : SimpleCommand(
     suspend fun CommandSender.handle() {
         val formatter = SimpleDateFormat("yyyy年MM月dd日")
         val date = formatter.format(Date(System.currentTimeMillis()))
-        
-        val msg = LightApp("""
+
+        val msg = LightApp(
+            """
             {"app":"com.tencent.weather","desc":"天气","view":"RichInfoView","ver":"0.0.0.1","prompt":"[应用]天气"}
-        """.trimIndent())
+        """.trimIndent()
+        )
 //        {"app":"com.tencent.weather","desc":"天气","view":"RichInfoView","ver":"0.0.0.1","prompt":"[应用]天气","meta":{"richinfo":{"adcode":"","air":"126","city":"$city","date":"$date","max":"13","min":"2","ts":"15158613","type":"201","wind":""}}}
-        
+
 //        val msg = """
 //            mirai:app:{"app":"com.tencent.weather","desc":"天气","view":"RichInfoView","ver":"0.0.0.1","prompt":"[应用]天气","meta":{"richinfo":{"adcode":"","air":"126","city":"济南","date":"1月30日 周六","max":"13","min":"2","ts":"15158613","type":"201","wind":""}}}
 //        """.trimIndent().parseMiraiCode()
-        
+
         sendMessage(msg)
     }
 }
@@ -242,23 +252,88 @@ object SCOpen : SimpleCommand(
     suspend fun MemberCommandSender.handle(isOpen: String) {
         val sGroup = group.getSGroup()
 
-        if(!user.isOperator() && !user.isSunnyAdmin()){
+        if (!user.isOperator() && !user.isSunnyAdmin()) {
             sendMessage(At(user).plus(PlainText("您不是群主或管理员，没有开启/关闭 本群Bot的权限！")))
-            group.sendMsg("Sunny状态", if(sGroup.isOpen) "开启" else "关闭")
+            group.sendMsg("Sunny状态", if (sGroup.isOpen) "开启" else "关闭")
             return
         }
 
         val open = isOpen.lowercase(Locale.getDefault())
-        if(open.contains("t") || open.contains("开")){
+        if (open.contains("t") || open.contains("开")) {
             sGroup.isOpen = true
             group.sendMsg("Sunny状态", "Sunny已开启！")
-        }
-        else if(open.contains("f") || open.contains("关")){
+        } else if (open.contains("f") || open.contains("关")) {
             sGroup.isOpen = false
             group.sendMsg("Sunny状态", "Sunny已关闭！")
+        } else {
+            group.sendMsg("Sunny状态", if (sGroup.isOpen) "开启" else "关闭")
         }
-        else{
-            group.sendMsg("Sunny状态", if(sGroup.isOpen) "开启" else "关闭")
+    }
+}
+
+object SSpeed : SimpleCommand(
+    PluginMain,
+    "Speed", "sp",
+    description = "Sunny消息处理速度和统计",
+    parentPermission = PERM_EXE_USER
+) {
+    @Handler
+    suspend fun CommandSender.handle() {
+        sendMessage(
+            """
+Sunny消息统计:
+自启动以来共收到了: ${total}条消息
+目前的消息处理速度为: ${minute}条/分
+                """.trimIndent()
+        )
+    }
+}
+
+object SGroups : SimpleCommand(
+    PluginMain,
+    "Groups", "gs",
+    description = "查看Sunny总计加了多少个群",
+    parentPermission = PERM_EXE_USER
+) {
+    @Handler
+    suspend fun CommandSender.handle() {
+        sendMessage(
+            """
+Sunny目前总共添加了: ${sunnyBot.groups.size}个群聊
+        """.trimIndent()
+        )
+    }
+}
+
+object SListInvite : SimpleCommand(
+    PluginMain,
+    "ListInvite", "li",
+    description = "查看未处理的申请",
+    parentPermission = PERM_EXE_1
+) {
+    @Handler
+    suspend fun MemberCommandSender.handle() {
+        var lmessage = "目前未处理的群号有(群号:ID):"
+        if (group.id == rootgroup.toLong()) {
+            invitList.forEach { (t, u) -> lmessage += "\n${u.groupId}:$t" }
         }
+        sunnyBot.getGroup(rootgroup.toLong())?.sendMessage(lmessage)
+    }
+}
+
+object SAccept : SimpleCommand(
+    PluginMain,
+    "accept",
+    description = "查看未处理的申请",
+    parentPermission = PERM_EXE_1
+) {
+    @Handler
+    suspend fun MemberCommandSender.handle(id: Int) {
+        val event = invitList[id]
+        if (event == null) group.sendMessage("不存在的事件ID")
+        event?.accept()
+        group.sendMessage("成功同意了 ${event?.groupId} 的加群请求")
+        event?.invitor?.sendMessage("已同意您对 ${event.groupId} 的加群请求")
+        invitList.remove(id)
     }
 }

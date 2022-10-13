@@ -15,6 +15,7 @@ import net.mamoe.mirai.console.permission.PermissionService
 import net.mamoe.mirai.contact.Group
 import net.mamoe.mirai.contact.Member
 import net.mamoe.mirai.contact.User
+import net.mamoe.mirai.event.events.BotInvitedJoinGroupRequestEvent
 import net.mamoe.mirai.event.globalEventChannel
 import net.mamoe.mirai.message.data.Message
 import java.io.File
@@ -23,8 +24,15 @@ import java.util.*
 val sunnyScope = CoroutineScope(SupervisorJob())
 val sunnyChannel = sunnyScope.globalEventChannel()
 var antiRecall: AntiRecall? = null
+//消息统计
+var total = 0
+var minute = 0
+//群聊申请
+val invitList = HashMap<Int, BotInvitedJoinGroupRequestEvent>()
+var invitId = 0
 //超级管理员
 val sunnyAdmins = listOf(1123574549L)
+val rootgroup = 423179929
 
 fun getSunnyAdminUsers(): List<User> {
     val list = LinkedList<User>()

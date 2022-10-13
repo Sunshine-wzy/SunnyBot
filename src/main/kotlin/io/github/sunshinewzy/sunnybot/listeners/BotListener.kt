@@ -1,10 +1,7 @@
 package io.github.sunshinewzy.sunnybot.listeners
 
+import io.github.sunshinewzy.sunnybot.*
 import io.github.sunshinewzy.sunnybot.objects.getSGroup
-import io.github.sunshinewzy.sunnybot.sendMsg
-import io.github.sunshinewzy.sunnybot.sunnyBot
-import io.github.sunshinewzy.sunnybot.sunnyChannel
-import io.github.sunshinewzy.sunnybot.sunnyInit
 import net.mamoe.mirai.contact.nameCardOrNick
 import net.mamoe.mirai.event.Listener
 import net.mamoe.mirai.event.events.*
@@ -37,9 +34,24 @@ object BotListener {
 //            }
 
             subscribeAlways<BotInvitedJoinGroupRequestEvent> {
+
                 invitor?.sendMessage(
-                    "请加群423179929，@群主 说明您对机器人的使用需求，等待群主手动同意(将会48小时内给予回复)"
+                    """
+已经收到了您的请求，请稍等，我们将在24小时内处理。
+当处理完成，我将通知您。
+                        """.trimIndent()
                 )
+                sunnyBot.getGroup(rootgroup.toLong())?.sendMessage("""
+收到了一个入群申请:
+群号为: $groupId
+申请人为: $invitorId
+
+如需同意,请输入下方命令:
+/accept $invitId
+            """.trimMargin())
+                invitList[invitId] = this
+                invitId++
+
             }
 
             subscribeAlways<NewFriendRequestEvent> {
