@@ -41,6 +41,7 @@ fun regSSimpleCommands() {
     SCGroups.register()
     SCListInvite.register()
     SCAccept.register()
+    SCDeny.register()
 //    SCOpen.register()
 
     //Debug
@@ -324,7 +325,7 @@ object SCListInvite : SimpleCommand(
 object SCAccept : SimpleCommand(
     PluginMain,
     "Accept","aci", "ac",
-    description = "查看未处理的申请",
+    description = "同意群加入申请",
     parentPermission = PERM_EXE_1
 ) {
     @Handler
@@ -334,6 +335,23 @@ object SCAccept : SimpleCommand(
         event?.accept()
         group.sendMessage("成功同意了 ${event?.groupId} 的加群请求")
         event?.invitor?.sendMessage("已同意您对 ${event.groupId} 的加群请求")
+        invitList.remove(id)
+    }
+}
+
+object SCDeny : SimpleCommand(
+    PluginMain,
+    "Deny","dci", "dc",
+    description = "拒绝群加入申请",
+    parentPermission = PERM_EXE_1
+) {
+    @Handler
+    suspend fun MemberCommandSender.handle(id: Int) {
+        val event = invitList[id]
+        if (event == null) group.sendMessage("不存在的事件ID")
+        event?.ignore()
+        group.sendMessage("成功拒绝了 ${event?.groupId} 的加群请求")
+        event?.invitor?.sendMessage("已拒绝您对 ${event.groupId} 的加群请求,请勿重复申请")
         invitList.remove(id)
     }
 }
