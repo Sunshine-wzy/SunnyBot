@@ -49,7 +49,7 @@ object BotListener {
 如需同意,请输入下方命令:
 /ac $invitId
 如需拒绝,请使用:
-/ac $invitId
+/dc $invitId
             """.trimMargin())
                 invitList[invitId] = this
                 invitId++
