@@ -331,10 +331,13 @@ object SCAccept : SimpleCommand(
     @Handler
     suspend fun MemberCommandSender.handle(id: Int) {
         val event = invitList[id]
-        if (event == null) group.sendMessage("不存在的事件ID")
-        event?.accept()
-        group.sendMessage("成功同意了 ${event?.groupId} 的加群请求")
-        event?.invitor?.sendMessage("已同意您对 ${event.groupId} 的加群请求")
+        if (event == null) {
+            group.sendMessage("不存在的事件ID")
+            return
+        }
+        event.accept()
+        group.sendMessage("成功同意了 ${event.groupId} 的加群请求")
+        event.invitor?.sendMessage("已同意您对 ${event.groupId} 的加群请求")
         invitList.remove(id)
     }
 }
@@ -348,10 +351,13 @@ object SCDeny : SimpleCommand(
     @Handler
     suspend fun MemberCommandSender.handle(id: Int) {
         val event = invitList[id]
-        if (event == null) group.sendMessage("不存在的事件ID")
-        event?.ignore()
-        group.sendMessage("成功拒绝了 ${event?.groupId} 的加群请求")
-        event?.invitor?.sendMessage("已拒绝您对 ${event.groupId} 的加群请求,请勿重复申请")
+        if (event == null) {
+            group.sendMessage("不存在的事件ID")
+            return
+        }
+        event.ignore()
+        group.sendMessage("成功拒绝了 ${event.groupId} 的加群请求")
+        event.invitor?.sendMessage("已拒绝您对 ${event.groupId} 的加群请求,请勿重复申请")
         invitList.remove(id)
     }
 }
