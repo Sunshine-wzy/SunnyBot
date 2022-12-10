@@ -68,6 +68,7 @@ fun regSRawCommands() {
     SCImage.registerSCommand()
     SCTransmit.register()
 //    SCMinecraftTransmit.register()
+//    SCGrayScaleImage.register()
     
     //Debug
 //    SCDebugLaTeX.reg("console")
@@ -1951,7 +1952,7 @@ object SCImage : SRawCommand(
                                 val order = index + 1
                                 val queryUrl = image.queryUrl()
                                 val byteStream = SRequest(queryUrl).resultByteStream() ?: run {
-                                    sendMsg(description, "第 $order 张图片下载连接获取失败")
+                                    sendMsg(description, "第 $order 张图片下载链接获取失败")
                                     failedOrders += order
                                     return@forEachIndexed
                                 }

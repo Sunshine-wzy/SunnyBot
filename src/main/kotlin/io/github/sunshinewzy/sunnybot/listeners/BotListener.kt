@@ -1,10 +1,16 @@
 package io.github.sunshinewzy.sunnybot.listeners
 
-import io.github.sunshinewzy.sunnybot.*
 import io.github.sunshinewzy.sunnybot.objects.getSGroup
+import io.github.sunshinewzy.sunnybot.sendMsg
+import io.github.sunshinewzy.sunnybot.sunnyBot
+import io.github.sunshinewzy.sunnybot.sunnyChannel
+import io.github.sunshinewzy.sunnybot.sunnyInit
 import net.mamoe.mirai.contact.nameCardOrNick
 import net.mamoe.mirai.event.Listener
-import net.mamoe.mirai.event.events.*
+import net.mamoe.mirai.event.events.MemberJoinEvent
+import net.mamoe.mirai.event.events.MemberJoinRequestEvent
+import net.mamoe.mirai.event.events.MemberLeaveEvent
+import net.mamoe.mirai.event.events.MessageEvent
 import net.mamoe.mirai.message.data.At
 import java.util.*
 
@@ -33,6 +39,7 @@ object BotListener {
 //                    sunnyInit()
 //            }
 
+            /*
             subscribeAlways<BotInvitedJoinGroupRequestEvent> {
 
                 invitor?.sendMessage(
@@ -59,6 +66,7 @@ object BotListener {
             subscribeAlways<NewFriendRequestEvent> {
                 accept()
             }
+             */
             
             subscribeAlways<MemberJoinEvent> { 
                 val msg = group.getSGroup().welcomeMessage
