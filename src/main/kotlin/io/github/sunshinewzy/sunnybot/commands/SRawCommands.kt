@@ -1536,7 +1536,7 @@ object SCJavaDoc: RawCommand(
 
     private val simpleJavaDocs = """
         > BukkitAPI
-        最新版: https://bukkit.windit.net
+        最新版: https://bukkit.windit.net/javadoc/
         1.12.2: https://docs.zoyn.top/
         1.7.10: https://jd.bukkit.org/
         
@@ -1548,7 +1548,7 @@ object SCJavaDoc: RawCommand(
         https://oi-wiki.org/
         
         > Bukkit教程
-        综合: https://plgdev.xuogroup.top/
+        综合: https://plugin-diary.pages.dev/#/
         基础: https://alpha.tdiant.net/BukkitDevelopmentNoteAlpha/home.html
         进阶: https://bdn.tdiant.net/
         
