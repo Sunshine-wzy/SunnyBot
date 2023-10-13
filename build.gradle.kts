@@ -1,11 +1,11 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    val kotlinVersion = "1.6.21"
+    val kotlinVersion = "1.8.10"
     kotlin("jvm") version kotlinVersion
     kotlin("plugin.serialization") version kotlinVersion
     
-    id("net.mamoe.mirai-console") version "2.12.2"
+    id("net.mamoe.mirai-console") version "2.15.0"
 }
 
 dependencies {
@@ -15,6 +15,7 @@ dependencies {
     implementation("io.netty:netty-all:4.1.67.Final")
     implementation("com.github.Sunshine-wzy:rkon-core:1.2.2")
     implementation("com.github.Sunshine-wzy:SunnyFlow:1.0.4")
+    implementation("com.squareup.okhttp3:okhttp:4.11.0")
     
     implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar"))))
     implementation(kotlin("stdlib-jdk8"))
