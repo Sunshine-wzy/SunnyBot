@@ -1497,6 +1497,44 @@ object SCRconRun : RawCommand(
             }
         }
     }
+    
+    fun runRconCommand(sender: CommandSender, command: String) {
+        val user = sender.user ?: return
+        val sPlayer = user.getSPlayer()
+        val symbol = sPlayer.selectedRconSymbol
+        
+        if (symbol.isEmpty()) {
+            sender.sendMsg(description, "未选择服务器代号\n请输入 /rcon select [服务器代号]\n进行选择")
+            return
+        }
+
+        sPlayer.rconKeyMap[symbol]?.let content@{ key ->
+            SunnyData.rcon[key]?.let { data ->
+                val executor = data.checkExecutor(user.id)
+                if(executor == RconData.Executor.OWNER || executor == RconData.Executor.OPERATOR) {
+                    RconManager.open(data)?.let { rcon ->
+                        sender.sendMsg(description, rcon.command(command))
+
+                        if(executor == RconData.Executor.OPERATOR) {
+                            sunnyBot.getUser(data.owner)?.let { owner ->
+                                sunnyScope.launch {
+                                    owner.sendMsg(description, "服务器 $symbol 的管理员 ${user.id} 执行了指令:\n/$command")
+                                }
+                            }
+                        }
+
+                        return@content
+                    }
+
+                    sender.sendMsg(description, "RCON '$key'\n连接失败")
+                    return@content
+                } else sender.sendMsg(description, "您无权访问此RCON")
+            }
+
+            sender.sendMsg(description, "RCON '$key'\n不存在，请重新绑定")
+            return@content
+        }
+    }
 }
 
 object SCJavaDoc: RawCommand(

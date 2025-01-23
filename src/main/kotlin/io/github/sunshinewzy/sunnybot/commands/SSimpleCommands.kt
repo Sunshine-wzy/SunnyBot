@@ -43,6 +43,8 @@ fun regSSimpleCommands() {
     SCAccept.register()
     SCDeny.register()
 //    SCOpen.register()
+    SCAddWhiteListByRcon.register()
+    SCRemoveWhiteListByRcon.register()
 
     //Debug
 }
@@ -359,5 +361,29 @@ object SCDeny : SimpleCommand(
         group.sendMessage("成功拒绝了 ${event.groupId} 的加群请求")
         event.invitor?.sendMessage("已拒绝您对 ${event.groupId} 的加群请求,请勿重复申请")
         invitList.remove(id)
+    }
+}
+
+object SCAddWhiteListByRcon : SimpleCommand(
+    PluginMain,
+    "AddWhiteListByRcon", "aw",
+    description = "通过RCON添加白名单",
+    parentPermission = PERM_EXE_USER
+) {
+    @Handler
+    fun CommandSender.handle(id: String) {
+        SCRconRun.runRconCommand(this, "littleskin add $id")
+    }
+}
+
+object SCRemoveWhiteListByRcon : SimpleCommand(
+    PluginMain,
+    "RemoveWhiteListByRcon", "rw",
+    description = "通过RCON移除白名单",
+    parentPermission = PERM_EXE_USER
+) {
+    @Handler
+    fun CommandSender.handle(id: String) {
+        SCRconRun.runRconCommand(this, "littleskin remove $id")
     }
 }
